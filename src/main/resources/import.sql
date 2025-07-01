@@ -1,0 +1,21 @@
+-- import.sql com UUIDs gerados automaticamente pelo PostgreSQL
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'João', 'Silva', 'joao@example.com', 'senha123');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Maria', 'Souza', 'maria@example.com', 'senha456');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Carlos', 'Almeida', 'carlos@example.com', 'senha789');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Ana', 'Lima', 'ana@example.com', 'senhaabc');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Bruno', 'Oliveira', 'bruno@example.com', 'senhaxyz');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Fernanda', 'Costa', 'fernanda.costa@example.com', 'segredo1');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Rafael', 'Martins', 'rafael.martins@example.com', '123rafael');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Juliana', 'Mendes', 'juliana.mendes@example.com', 'ju456senha');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Gustavo', 'Dias', 'gustavo.dias@example.com', 'gustavopw');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Paula', 'Ferreira', 'paula.ferreira@example.com', 'p@ulinha');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Thiago', 'Rocha', 'thiago.rocha@example.com', 'senha789!');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Camila', 'Barros', 'camila.barros@example.com', 'camilinha');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Ricardo', 'Teixeira', 'ricardo.teixeira@example.com', 'ric123');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Larissa', 'Ramos', 'larissa.ramos@example.com', 'lar1ssa');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'André', 'Pereira', 'andre.pereira@example.com', 'andrepass');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Letícia', 'Azevedo', 'leticia.azevedo@example.com', 'lety@123');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Eduardo', 'Moreira', 'eduardo.moreira@example.com', 'edpass22');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Vanessa', 'Carvalho', 'vanessa.carvalho@example.com', 'vcarv123');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Felipe', 'Nogueira', 'felipe.nogueira@example.com', 'nog@456');
+INSERT INTO app_user (id, name, surname, email, passwd) VALUES (gen_random_uuid(), 'Isabela', 'Santos', 'isabela.santos@example.com', 'isabelapw');
