@@ -64,15 +64,26 @@ public class ContentRecordResource {
         return new PaginatedResponse<>(items, totalItems, totalPages, page);
     }
 
-
     @GET
-    @Path("/{id}")
-    public Response findById(@PathParam("id") UUID id) {
-        ContentRecordModel content = ContentRecordModel.findById(id);
+    @Path("/find-first-title/{title}")
+    public Response findByTitle(@PathParam("title") String title) {
+        ContentRecordModel content = ContentRecordModel.findByTitle(title);
         if (content == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(content).build();
+    }
+
+    @GET
+    @Path("/search")
+    public Response searchContentsByTitle(@QueryParam("q") String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("O parâmetro de busca 'q' não pode ser vazio.")
+                    .build();
+        }
+        List<ContentRecordModel> results = ContentRecordModel.searchByTitle(query);
+        return Response.ok(results).build();
     }
 
     @POST
