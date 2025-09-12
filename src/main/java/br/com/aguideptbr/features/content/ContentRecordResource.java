@@ -1,15 +1,16 @@
 package br.com.aguideptbr.features.content;
 
 import br.com.aguideptbr.util.PaginatedResponse;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.HashMap;
+
 import java.util.List;
-import java.util.Map;
+
 import java.util.UUID;
 
 @Path("/contents")
@@ -17,37 +18,46 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ContentRecordResource {
 
+    @Inject
+    ContentService contentService;
+
+    //**
+    // Examples of usage:
+    // GET /contents?sort=title&order=asc - Alphabetical order
+    // GET /contents?sort=title&order=desc - Descending alphabetical order
+    // GET /contents?sort=channelName&order=asc - / By channel
+    // GET /contents?page=0&size=10&sort=title&order=asc - By page
+    //**
+
     // ✅ Paginated list if page/size is specified, otherwise returns the last 50...
     @GET
     public Response listContents(
             @QueryParam("page") Integer page,
-            @QueryParam("size") Integer size
+            @QueryParam("size") Integer size,
+            @QueryParam("sort") @DefaultValue("title") String sortField,
+            @QueryParam("order") @DefaultValue("asc") String sortOrder
     ) {
-        if (page != null && size != null) {
-            var query = ContentRecordModel.findAll().page(page, size);
-            long totalItems = ContentRecordModel.count();
-            int totalPages = (int) Math.ceil((double) totalItems / size);
-
-            var pagedResponse = new PaginatedResponse<>(
-                    query.list(),
-                    totalItems,
-                    totalPages,
-                    page
-            );
-            return Response.ok(pagedResponse).build();
-        } else {
-            List<ContentRecordModel> limited = ContentRecordModel.findAll()
-                    .page(0, 50)
-                    .list();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Limited to the 50 most recent items. Use pagination for full access.");
-            response.put("totalItems", limited.size());
-            response.put("items", limited);
-
-            return Response.ok(response).build();
+        try {
+            if (page != null && size != null) {
+                var pagedResponse = contentService.getPaginatedContents(page, size, sortField, sortOrder);
+                return Response.ok(pagedResponse).build();
+            } else {
+                var limitedResponse = contentService.getLimitedContents(sortField, sortOrder);
+                return Response.ok(limitedResponse).build();
+            }
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
         }
     }
+
+    //**
+    // This endpoint is redundant with the paginated option in listContents,
+    // but is kept here for educational purposes
+    // This method don't list by order because it's redundant with the main listContents method
+    // Example: GET /contents/paged?page=0&size=10
+    //**
 
     @GET
     @Path("/paged")

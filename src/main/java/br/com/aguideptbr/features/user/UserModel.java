@@ -1,5 +1,6 @@
 package br.com.aguideptbr.features.user;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
@@ -17,7 +18,7 @@ public class UserModel extends PanacheEntityBase {
     public String surname;
     public String email;
 
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String passwd;
 
     public static UserModel findByEmail(String email) {
