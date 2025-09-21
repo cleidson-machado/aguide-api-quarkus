@@ -100,7 +100,10 @@ public class ContentRecordResource {
     @Transactional
     public Response create(@Valid ContentRecordModel contentRecordModel) {
         contentRecordModel.persist();
-        return Response.status(Response.Status.CREATED).entity(contentRecordModel).build();
+        return Response
+                .status(Response.Status.CREATED)
+                .entity(contentRecordModel)
+                .build();
     }
 
     @PUT
