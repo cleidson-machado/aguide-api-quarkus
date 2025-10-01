@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  aguide-api:
+    # Constrói a imagem a partir do Dockerfile do projeto
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: aguide-api
+    restart: unless-stopped
+    environment:
+      # A URL agora aponta para o nome do container do banco de dados.
+      # Isso funciona porque ambos estarão na mesma rede!
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://quarkus_postgres:5432/quarkus_db
+      QUARKUS_DATASOURCE_USERNAME: quarkus
+      QUARKUS_DATASOURCE_PASSWORD: quarkus123
+    ports:
+      - "127.0.0.1:8083:8083"
+    # - "8083:8083" # Se quiser expor para toda a rede local, mas bloqueado para impedir acesso externo
+    # Conecta este container à rede que já existe
+    networks:
+      - proxy-network
+
+# Declara que vamos usar uma rede externa (criada pelo outro docker-compose)
+networks:
+  proxy-network:
+    external: true

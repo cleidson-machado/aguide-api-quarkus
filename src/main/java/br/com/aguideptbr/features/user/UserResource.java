@@ -23,6 +23,10 @@ public class UserResource {
     @POST
     @Transactional
     public Response createUser(UserModel userModel){
+        System.out.println("THIS IS THE NAME: " + userModel.name);
+        System.out.println("THIS IS THE SURNAME: " + userModel.surname);
+        System.out.println("THIS IS THE EMAIL: " + userModel.email);
+        System.out.println("THIS IS THE PASSWD: " + userModel.passwd);
         userModel.persist();
         return Response
                 .status(Response.Status.CREATED)
