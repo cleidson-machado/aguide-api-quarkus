@@ -2,8 +2,6 @@ package br.com.aguideptbr.features.content;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,30 +14,73 @@ import java.util.UUID;
 @Table(name = "content_record")
 public class ContentRecordModel extends PanacheEntityBase {
 
+    // ========== IDENTIFICAÇÃO ==========
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public UUID id;
 
-    @Column(nullable = false)
-    @NotBlank
+    // ========== INFORMAÇÕES BÁSICAS ==========
+    @Column(name = "title", nullable = false, length = 1000)
     public String title;
 
-    @Column(length = 1000)
-    @Size(max = 1000)
+    @Column(name = "description", columnDefinition = "TEXT")
     public String description;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "url", length = 2048)
     public String url;
-
-    @Column(name = "channel_name")
-    public String channelName;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    public ContentType type;
 
     @Column(name = "thumbnail_url")
     public String thumbnailUrl;
+
+    // ========== CANAL E TIPO ==========
+    @Column(name = "channel_name")
+    public String channelName;
+
+    @Column(name = "content_type")
+    @Enumerated(EnumType.STRING)
+    public ContentType type;
+
+    // ========== CATEGORIZAÇÃO ==========
+    @Column(name = "category_id", length = 50)
+    public String categoryId;
+
+    @Column(name = "category_name")
+    public String categoryName;
+
+    @Column(name = "tags", columnDefinition = "TEXT")
+    public String tags;
+
+    // ========== CARACTERÍSTICAS TÉCNICAS ==========
+    @Column(name = "duration_seconds")
+    public Integer durationSeconds;
+
+    @Column(name = "duration_iso", length = 50)
+    public String durationIso;
+
+    @Column(name = "definition", length = 20)
+    public String definition;
+
+    @Column(name = "caption")
+    public Boolean caption;
+
+    // ========== MÉTRICAS DE ENGAJAMENTO ==========
+    @Column(name = "view_count")
+    public Long viewCount;
+
+    @Column(name = "like_count")
+    public Long likeCount;
+
+    @Column(name = "comment_count")
+    public Long commentCount;
+
+    // ========== IDIOMAS ==========
+    @Column(name = "default_language", length = 10)
+    public String defaultLanguage;
+
+    @Column(name = "default_audio_language", length = 10)
+    public String defaultAudioLanguage;
+
+    // ========== MÉTODOS DE BUSCA ==========
 
     /**
      * Searches for content records whose title starts with the given search term.
@@ -65,4 +106,23 @@ public class ContentRecordModel extends PanacheEntityBase {
         return find("title", title_txt).firstResult();
     }
 
+    /**
+     * Finds content records by category ID.
+     *
+     * @param categoryId The YouTube category ID to search for.
+     * @return A list of ContentRecordModel matching the category.
+     */
+    public static List<ContentRecordModel> findByCategory(String categoryId) {
+        return list("categoryId", categoryId);
+    }
+
+    /**
+     * Finds content records by tag.
+     *
+     * @param tag The tag to search for.
+     * @return A list of ContentRecordModel containing the specified tag.
+     */
+    public static List<ContentRecordModel> findByTag(String tag) {
+        return list("lower(tags) like ?1", "%" + tag.toLowerCase() + "%");
+    }
 }
