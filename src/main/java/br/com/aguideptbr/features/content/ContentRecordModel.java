@@ -81,7 +81,7 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Column(name = "default_audio_language", length = 10)
     public String defaultAudioLanguage;
 
-    // ========== AUDITORIA - DATA E HORA DE CRIAÇÃO E ATUALIZAÇÃO ==========
+    // ========== AUDITORIA - DATA E HORA DE CRIAÇÃO E ATUALIZAÇÃO ============
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;

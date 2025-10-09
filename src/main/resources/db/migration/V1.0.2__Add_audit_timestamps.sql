@@ -2,7 +2,7 @@
 -- ADD AUDIT TIMESTAMPS TO CONTENT_RECORD
 -- Versão: 1.0.2
 -- Data: 2025-10-09
--- ========================================
+-- ==========================================
 
 -- Adiciona colunas de auditoria para rastrear criação e atualização
 ALTER TABLE content_record
