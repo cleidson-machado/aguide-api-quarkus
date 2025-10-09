@@ -45,6 +45,6 @@ jobs:
           git pull origin main
           docker compose down
           docker compose build --no-cache
-          docker compose up -d --force-recreate
+          docker compose up -d
           docker system prune -f
           echo "✅ Deploy concluído com sucesso!"
