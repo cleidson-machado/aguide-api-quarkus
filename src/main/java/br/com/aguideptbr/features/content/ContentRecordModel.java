@@ -26,7 +26,7 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Column(name = "description", columnDefinition = "TEXT")
     public String description;
 
-    @Column(name = "url", length = 2048)
+    @Column(name = "url", length = 2048, unique = true)
     public String url;
 
     @Column(name = "thumbnail_url")
@@ -64,14 +64,14 @@ public class ContentRecordModel extends PanacheEntityBase {
     public Boolean caption;
 
     // ========== MÉTRICAS DE ENGAJAMENTO ==========
-    @Column(name = "view_count")
-    public Long viewCount;
+    @Column(name = "view_count", columnDefinition = "BIGINT DEFAULT 0")
+    public Long viewCount = 0L;
 
-    @Column(name = "like_count")
-    public Long likeCount;
+    @Column(name = "like_count", columnDefinition = "BIGINT DEFAULT 0")
+    public Long likeCount = 0L;
 
-    @Column(name = "comment_count")
-    public Long commentCount;
+    @Column(name = "comment_count", columnDefinition = "BIGINT DEFAULT 0")
+    public Long commentCount = 0L;
 
     // ========== IDIOMAS ==========
     @Column(name = "default_language", length = 10)
@@ -124,5 +124,15 @@ public class ContentRecordModel extends PanacheEntityBase {
      */
     public static List<ContentRecordModel> findByTag(String tag) {
         return list("lower(tags) like ?1", "%" + tag.toLowerCase() + "%");
+    }
+
+    /**
+     * Finds a content record by URL.
+     *
+     * @param url The URL to search for.
+     * @return The found ContentRecordModel, or null if not found.
+     */
+    public static ContentRecordModel findByUrl(String url) {
+        return find("url", url).firstResult();
     }
 }
