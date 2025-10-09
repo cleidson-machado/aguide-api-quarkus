@@ -22,7 +22,7 @@ jobs:
         cache: 'maven'
     
     - name: Build com Maven (SEM executar testes)
-      run: mvn clean package -DskipTests
+      run: ./mvnw clean package -DskipTests
     
     - name: Verificar build
       run: ls -lh target/
