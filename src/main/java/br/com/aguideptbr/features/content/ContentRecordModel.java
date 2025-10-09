@@ -3,6 +3,7 @@ package br.com.aguideptbr.features.content;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -79,6 +80,44 @@ public class ContentRecordModel extends PanacheEntityBase {
 
     @Column(name = "default_audio_language", length = 10)
     public String defaultAudioLanguage;
+
+    // ========== AUDITORIA - DATA E HORA DE CRIAÇÃO E ATUALIZAÇÃO ==========
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime updatedAt;
+
+    /**
+     * Automatically sets the creation timestamp before persisting the entity.
+     * This method is called by JPA before the entity is inserted into the database.
+     */
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Automatically updates the modification timestamp before updating the entity.
+     * This method is called by JPA before the entity is updated in the database.
+     */
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // ========== GETTERS E SETTERS PARA AUDITORIA ==========
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
     // ========== MÉTODOS DE BUSCA ==========
 
