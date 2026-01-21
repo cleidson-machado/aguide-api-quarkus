@@ -44,3 +44,6 @@ nb-configuration.xml
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+
+# Maven local repository (Jenkins cache)
+.m2/repository/
