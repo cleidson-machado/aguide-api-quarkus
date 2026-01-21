@@ -14,8 +14,10 @@ services:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://quarkus_postgres:5432/quarkus_db
       QUARKUS_DATASOURCE_USERNAME: quarkus
       QUARKUS_DATASOURCE_PASSWORD: quarkus123
-      QUARKUS_PROFILE: dev  # ← MUDE PARA 'dev' TEMPORARIAMENTE
-      QUARKUS_FLYWAY_CLEAN_AT_START: "true"  # ← FORÇA LIMPEZA
+      # Use 'dev' para desenvolvimento ou 'prod' para produção
+      # dev: porta 8083, SSL habilitado, limpa banco
+      # prod: porta 8080, sem SSL, NÃO limpa banco
+      QUARKUS_PROFILE: prod
     ports:
       - "127.0.0.1:8083:8080"
     # - "8083:8083" # Se quiser expor para toda a rede local, mas bloqueado para impedir acesso externo
