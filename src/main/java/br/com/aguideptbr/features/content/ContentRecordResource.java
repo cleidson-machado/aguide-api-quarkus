@@ -8,9 +8,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-
 import java.util.List;
-
 import java.util.UUID;
 
 @Path("/contents")
@@ -45,9 +43,9 @@ public class ContentRecordResource {
                 var limitedResponse = contentService.getLimitedContents(sortField, sortOrder);
                 return Response.ok(limitedResponse).build();
             }
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException err) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
+                    .entity(err.getMessage())
                     .build();
         }
     }
@@ -77,11 +75,11 @@ public class ContentRecordResource {
     @GET
     @Path("/find-first-title/{title}")
     public Response findByTitle(@PathParam("title") String title) {
-        ContentRecordModel content = ContentRecordModel.findByTitle(title);
-        if (content == null) {
+        ContentRecordModel result = ContentRecordModel.findByTitle(title);
+        if (result == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(content).build();
+        return Response.ok(result).build();
     }
 
     @GET
@@ -129,10 +127,53 @@ public class ContentRecordResource {
     @Path("/{id}")
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
+        ContentRecordModel existing = ContentRecordModel.findById(id);
+        if (existing == null) {
+            //Create a more detailed response for not found
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("The Content with ID " + id + " was not found to DELETE!.")
+                    .build();
+        }
+
         boolean deleted = ContentRecordModel.deleteById(id);
         if (deleted) {
             return Response.noContent().build();
+        } else {
+            // Rare case: content existed but was not deleted....
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Failed to delete the Content with ID " + id + ".")
+                    .build();
         }
-        return Response.status(Response.Status.NOT_FOUND).build();
     }
+
+    // New method to show content with plusInfoMsg when querying by ID
+    @GET
+    @Path("/{id}")
+    public Response getContentById(@PathParam("id") String idStr) {
+        UUID idHash;
+        try {
+            idHash = UUID.fromString(idStr);
+        } catch (IllegalArgumentException err) {
+            String plusInfoMsg = "Found a error: " + err.getMessage();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ContentWithComment(null, plusInfoMsg))
+                    .build();
+        }
+
+        ContentRecordModel result = ContentRecordModel.findById(idHash);
+        if (result == null) {
+            String plusInfoMsg = "No content found for the provided ID: " + idHash;
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ContentWithComment(null, plusInfoMsg))
+                    .build();
+        }
+
+        String plusInfoMsg = "Query executed successfully.";
+        return Response.ok()
+                .entity(new ContentWithComment(result, plusInfoMsg))
+                .build();
+    }
+
+    // Internal record class to hold content and plusInfoMsg
+    public record ContentWithComment(ContentRecordModel content, String plusInfoMsg) {}
 }
