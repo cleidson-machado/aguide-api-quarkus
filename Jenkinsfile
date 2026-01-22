@@ -2,11 +2,6 @@ pipeline {
     agent any
     
     environment {
-        // Configurações do projeto
-        PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
-        GIT_REPO = 'https://github.com/cleidson-machado/aguide-api-quarkus.git'
-        GIT_BRANCH = 'main'  // ou 'master' - ajuste conforme necessário
-        //MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository' // Usar no jenkins se desejar cache local do Maven
         MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
     }
     
@@ -26,7 +21,7 @@ pipeline {
                     echo "📝 Job Name: ${JOB_NAME}"
                     echo "🔗 Build URL: ${BUILD_URL}"
                     echo "👤 Iniciado por: ${userName}"
-                    echo "🌿 Branch Git: ${env.GIT_BRANCH}"
+                    echo "🌿 Branch Git: ${env.GIT_BRANCH ?: 'N/A'}"
                     echo "📂 Workspace: ${WORKSPACE}"
                     echo "🏠 Jenkins Home: ${JENKINS_HOME}"
                     echo "🖥️  Node Name: ${NODE_NAME}"
@@ -36,45 +31,10 @@ pipeline {
             }
         }
         
-        stage('Checkout') {
-            steps {
-                echo '📥 Atualizando código do repositório...'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    git fetch origin
-                    git checkout ${GIT_BRANCH}
-                    git pull origin ${GIT_BRANCH}
-                '''
-                    
-                // Captura informações do commit
-                script {
-                    env.GIT_COMMIT_SHORT = sh(
-                        script: "cd /opt/apps/aguide-api-quarkus && git rev-parse --short HEAD",
-                        returnStdout: true
-                    ).trim()
-                    env.GIT_COMMIT_MSG = sh(
-                        script: "cd /opt/apps/aguide-api-quarkus && git log -1 --pretty=%B",
-                        returnStdout: true
-                    ).trim()
-                    env.GIT_AUTHOR = sh(
-                        script: "cd /opt/apps/aguide-api-quarkus && git log -1 --pretty=%an",
-                        returnStdout: true
-                    ).trim()
-                }
-                
-                echo "📌 Commit: ${env.GIT_COMMIT_SHORT}"
-                echo "💬 Mensagem: ${env.GIT_COMMIT_MSG}"
-                echo "👨‍💻 Autor: ${env.GIT_AUTHOR}"
-            }
-        }
-        
         stage('Build Maven') {
             steps {
                 echo '🔨 Compilando projeto com Maven (SEM testes)...'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    ./mvnw clean package -DskipTests
-                '''
+                sh './mvnw clean package -DskipTests'
             }
         }
         
@@ -88,7 +48,6 @@ pipeline {
                     // Executa a análise do SonarQube
                     withSonarQubeEnv() {
                         sh """
-                            cd /opt/apps/aguide-api-quarkus
                             ${mvn}/bin/mvn clean verify sonar:sonar \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
@@ -103,7 +62,6 @@ pipeline {
             steps {
                 echo '📋 Verificando artefatos gerados...'
                 sh '''
-                    cd /opt/apps/aguide-api-quarkus
                     ls -lh target/
                     ls -lh target/quarkus-app/ || echo "Pasta quarkus-app não encontrada"
                 '''
@@ -113,10 +71,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Construindo imagem Docker...'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    docker compose -f docker-compose.yml build --no-cache
-                '''
+                sh 'docker compose -f docker-compose.yml build --no-cache'
             }
         }
         
@@ -124,7 +79,6 @@ pipeline {
             steps {
                 echo '🚀 Fazendo deploy do container...'
                 sh '''
-                    cd /opt/apps/aguide-api-quarkus
                     docker compose -f docker-compose.yml down
                     docker compose -f docker-compose.yml up -d
                 '''
@@ -177,9 +131,9 @@ pipeline {
                 echo "📝 Job: ${JOB_NAME}"
                 echo "🎯 Status: ${currentBuild.currentResult}"
                 echo "⏱️  Duração: ${duration}"
-                echo "🌿 Branch: ${env.GIT_BRANCH}"
-                echo "📌 Commit: ${env.GIT_COMMIT_SHORT ?: 'N/A'}"
-                echo "👨‍💻 Autor: ${env.GIT_AUTHOR ?: 'N/A'}"
+                echo "🌿 Branch: ${env.GIT_BRANCH ?: 'N/A'}"
+                echo "📌 Commit: ${env.GIT_COMMIT?.take(7) ?: 'N/A'}"
+                echo "👨‍💻 Autor: N/A"
                 echo "⏰ Finalizado: ${new Date()}"
                 echo '================================================'
             }
