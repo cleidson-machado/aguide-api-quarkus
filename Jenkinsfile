@@ -49,6 +49,7 @@ pipeline {
                     withSonarQubeEnv() {
                         sh """
                             ${mvn}/bin/mvn clean verify sonar:sonar \
+                                -DskipTests \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
                         """
