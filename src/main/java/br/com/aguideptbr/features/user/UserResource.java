@@ -1,5 +1,7 @@
 package br.com.aguideptbr.features.user;
 
+import br.com.aguideptbr.util.PaginatedResponse;
+import io.quarkus.panache.common.Page;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -19,6 +21,32 @@ public class UserResource {
     @GET
     public List<UserModel> list(){
         return UserModel.listAll();
+    }
+
+    @GET
+    @Path("/paginated")
+    public PaginatedResponse<UserModel> listPaginated(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("10") int size) {
+        
+        long totalItems = UserModel.count();
+        int totalPages = (int) Math.ceil((double) totalItems / size);
+        
+        List<UserModel> users = UserModel.findAll()
+                .page(Page.of(page, size))
+                .list();
+        
+        return new PaginatedResponse<>(users, totalItems, totalPages, page);
+    }
+
+    @GET
+    @Path("/{id}")
+    public Response getUserById(@PathParam("id") UUID id) {
+        UserModel user = UserModel.findById(id);
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(user).build();
     }
   
     @POST
