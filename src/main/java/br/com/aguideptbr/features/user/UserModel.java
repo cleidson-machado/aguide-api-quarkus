@@ -1,4 +1,5 @@
 package br.com.aguideptbr.features.user;
+import com.fasterxml.jackson.annotation.JsonIgnore; //JENKIS TEST ONLY
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
