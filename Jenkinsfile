@@ -171,16 +171,16 @@ pipeline {
             script {
                 def duration = currentBuild.durationString.replace(' and counting', '')
                 echo '================================================'
-                echo '📊 RESUMO DA EXECUÇÃO'}"
-                echo "📌 Commit: ${env.GIT_COMMIT_SHORT ?: 'N/A'}"
-                echo "👨‍💻 Autor: ${env.GIT_AUTHOR ?: 'N/A'}UILD_ID}"
+                echo '📊 RESUMO DA EXECUÇÃO'
+                echo '================================================'
+                echo "🆔 Build ID: ${BUILD_ID}"
                 echo "🔢 Build Number: ${BUILD_NUMBER}"
                 echo "📝 Job: ${JOB_NAME}"
                 echo "🎯 Status: ${currentBuild.currentResult}"
                 echo "⏱️  Duração: ${duration}"
-                echo "🌿 Branch: ${env.GIT_BRANCH ?: 'N/A'}"
-                echo "📌 Commit: ${env.GIT_COMMIT?.take(7) ?: 'N/A'}"
-                echo "👨‍💻 Autor: N/A"
+                echo "🌿 Branch: ${env.GIT_BRANCH}"
+                echo "📌 Commit: ${env.GIT_COMMIT_SHORT ?: 'N/A'}"
+                echo "👨‍💻 Autor: ${env.GIT_AUTHOR ?: 'N/A'}"
                 echo "⏰ Finalizado: ${new Date()}"
                 echo '================================================'
             }
