@@ -9,9 +9,12 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 @QuarkusTest
 class UserResourceTest {
 
+    private static final String AUTH_TOKEN = "Bearer my-token-super-recur-12345";
+
     @Test
     void testGetAllUsersEndpoint() {
         given()
+            .header("Authorization", AUTH_TOKEN)
             .when().get("/users")
             .then()
             .statusCode(200)
@@ -21,6 +24,7 @@ class UserResourceTest {
     @Test
     void testGetUsersPaginatedEndpoint() {
         given()
+            .header("Authorization", AUTH_TOKEN)
             .queryParam("page", 0)
             .queryParam("size", 10)
             .when().get("/users/paginated")
@@ -34,6 +38,7 @@ class UserResourceTest {
     @Test
     void testGetUserByIdNotFound() {
         given()
+            .header("Authorization", AUTH_TOKEN)
             .pathParam("id", 99999L)
             .when().get("/users/{id}")
             .then()
