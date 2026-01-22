@@ -41,8 +41,8 @@ pipeline {
                 sh '''
                     cd /opt/apps/aguide-api-quarkus
                     git fetch origin
-                    git checkout ${GIT_BRANCH}
-                    git pull origin ${GIT_BRANCH}
+                    git reset --hard origin/${GIT_BRANCH}
+                    git clean -fd
                 '''
                     
                 // Captura informações do commit
