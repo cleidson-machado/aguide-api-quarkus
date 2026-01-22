@@ -21,7 +21,20 @@ public class UserModel extends PanacheEntityBase {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String passwd;
 
+    /**
+     * Busca um usuário pelo email.
+     * @param email Email do usuário
+     * @return UserModel encontrado ou null
+     */
     public static UserModel findByEmail(String email) {
         return find("email", email).firstResult();
+    }
+    
+    /**
+     * Retorna o nome completo do usuário.
+     * @return Nome completo (nome + sobrenome)
+     */
+    public String getFullName() {
+        return name + " " + surname;
     }
 }

@@ -78,6 +78,27 @@ pipeline {
             }
         }
         
+        stage('SonarQube Analysis') {
+            steps {
+                echo '🔍 Executando análise do SonarQube...'
+                script {
+                    // Configura o Maven tool (certifique-se que 'Default Maven' está configurado no Jenkins)
+                    def mvn = tool 'Default Maven'
+                    
+                    // Executa a análise do SonarQube
+                    withSonarQubeEnv() {
+                        sh """
+                            cd /opt/apps/aguide-api-quarkus
+                            ${mvn}/bin/mvn clean verify sonar:sonar \
+                                -Dsonar.projectKey=aguide-api-quarkus \
+                                -Dsonar.projectName='Aguide API Quarkus'
+                        """
+                    }
+                }
+                echo '✅ Análise do SonarQube concluída!'
+            }
+        }
+        
         stage('Verificar Artefatos') {
             steps {
                 echo '📋 Verificando artefatos gerados...'
