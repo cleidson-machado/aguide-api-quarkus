@@ -31,8 +31,9 @@ class UserResourceTest {
             .then()
             .statusCode(200)
             .body("content", notNullValue())
-            .body("totalElements", notNullValue())
-            .body("totalPages", notNullValue());
+            .body("totalItems", notNullValue())
+            .body("totalPages", notNullValue())
+            .body("currentPage", notNullValue());
     }
 
     @Test
