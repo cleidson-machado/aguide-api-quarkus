@@ -48,8 +48,8 @@ pipeline {
                     // Executa a análise do SonarQube
                     withSonarQubeEnv() {
                         sh """
+                            export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_db
                             ${mvn}/bin/mvn clean verify sonar:sonar \
-                                -DskipTests \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
                         """
