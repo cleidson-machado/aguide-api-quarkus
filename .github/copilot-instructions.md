@@ -130,6 +130,16 @@ public class User extends PanacheEntity {
 - Usar `RestAssured` para testar endpoints
 - Cobertura mínima desejada: 80%
 
+### Dependência Obrigatória para Testes
+**Adicionar H2 no pom.xml:**
+```xml
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-h2</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
 ### Configuração de Testes (CRÍTICO)
 **SEMPRE criar `src/test/resources/application.properties` com:**
 ```properties
