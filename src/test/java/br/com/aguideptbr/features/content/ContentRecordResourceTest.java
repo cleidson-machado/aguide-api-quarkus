@@ -10,9 +10,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.junit.jupiter.api.Test;
 
-import br.com.aguideptbr.NoAuthTestProfile;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import io.restassured.http.ContentType;
 
 /**
@@ -24,7 +22,6 @@ import io.restassured.http.ContentType;
  * Isso permite que os testes executem sem necessidade de token Bearer.
  */
 @QuarkusTest
-@TestProfile(NoAuthTestProfile.class)
 class ContentRecordResourceTest {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
