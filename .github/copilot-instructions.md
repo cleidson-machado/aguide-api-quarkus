@@ -123,6 +123,7 @@ public class User extends PanacheEntity {
 - Nomenclatura: `V[major].[minor].[patch]__[Description].sql`
 - Exemplo: `V1.0.3__Add_user_role_column.sql`
 - **NUNCA modificar migrations já aplicadas**
+- **H2 vs PostgreSQL**: Migrations para testes ficam em `db/migration/h2/` (sintaxe compatível)
 
 ## Testes
 - Localização: `src/test/java/br/com/aguideptbr/features/[feature]/`
@@ -152,10 +153,17 @@ quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
 quarkus.datasource.username=sa
 quarkus.datasource.password=
 
-# Flyway em testes
+# Flyway em testes - USA MIGRATIONS ESPECÍFICAS DO H2
 quarkus.flyway.clean-at-start=true
 quarkus.flyway.migrate-at-start=true
+quarkus.flyway.locations=classpath:db/migration/h2
 ```
+
+**Diferenças H2 vs PostgreSQL nas Migrations:**
+- PostgreSQL: `DEFAULT gen_random_uuid()` → H2: `DEFAULT RANDOM_UUID()`
+- PostgreSQL: `ADD COLUMN x, ADD COLUMN y` → H2: Separar em múltiplos `ALTER TABLE`
+- PostgreSQL: `COMMENT ON COLUMN` → H2: Não suportado (remover)
+- PostgreSQL: `USING gin(to_tsvector(...))` → H2: Índice simples sem gin
 
 ### Regras de Testes
 ✅ **PERMITIDO:**
