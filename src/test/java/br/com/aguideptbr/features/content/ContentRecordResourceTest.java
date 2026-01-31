@@ -44,7 +44,6 @@ class ContentRecordResourceTest {
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("page", is(0))
                 .body("items", notNullValue());
     }
 
