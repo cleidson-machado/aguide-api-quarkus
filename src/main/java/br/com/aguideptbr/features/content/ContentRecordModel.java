@@ -26,7 +26,7 @@ import jakarta.persistence.TemporalType;
 @Table(name = "content_record")
 public class ContentRecordModel extends PanacheEntityBase {
 
-    // ========== IDENTIFICAÇÃO ==========
+    // ========== IDENTIFICAÇÃO ============
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public UUID id;
