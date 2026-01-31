@@ -7,7 +7,7 @@
 
 -- ========== TABELA: app_user ==========
 CREATE TABLE app_user (
-    id UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     surname VARCHAR(255),
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -20,7 +20,7 @@ CREATE INDEX idx_app_user_email ON app_user(email);
 -- ========== TABELA: content_record ==========
 CREATE TABLE content_record (
     -- ========== IDENTIFICAÇÃO ==========
-    id UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
 
     -- ========== INFORMAÇÕES BÁSICAS ==========
     title VARCHAR(1000) NOT NULL,
