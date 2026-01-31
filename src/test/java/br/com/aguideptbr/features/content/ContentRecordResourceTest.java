@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.junit.jupiter.api.Test;
 
+import br.com.aguideptbr.TestProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
@@ -17,11 +18,12 @@ import io.restassured.http.ContentType;
  * Testes de integração para ContentRecordResource.
  * Valida operações CRUD e funcionalidades de busca/ordenação.
  *
- * IMPORTANTE: O AuthenticationFilter é desabilitado durante testes via
- * src/test/resources/application.properties (quarkus.arc.exclude-types)
+ * IMPORTANTE: O AuthenticationFilter é desabilitado via TestProfile
+ * que configura quarkus.arc.exclude-types programaticamente.
  * Isso permite que os testes executem sem necessidade de token Bearer.
  */
 @QuarkusTest
+@io.quarkus.test.junit.TestProfile(TestProfile.class)
 class ContentRecordResourceTest {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
