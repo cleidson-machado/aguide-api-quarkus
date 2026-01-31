@@ -1,0 +1,717 @@
+Started by GitHub push by cleidson-machado
+Obtained Jenkinsfile from git https://github.com/cleidson-machado/aguide-api-quarkus.git/
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins
+ in /var/jenkins_home/workspace/api_aguide_quarkus_build_3
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/api_aguide_quarkus_build_3/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/cleidson-machado/aguide-api-quarkus.git/ # timeout=10
+Fetching upstream changes from https://github.com/cleidson-machado/aguide-api-quarkus.git/
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- https://github.com/cleidson-machado/aguide-api-quarkus.git/ +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/develop-data-objects^{commit} # timeout=10
+Checking out Revision 8cc4a65ccaa9c3001289f3c0d828fe976347d153 (refs/remotes/origin/develop-data-objects)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 8cc4a65ccaa9c3001289f3c0d828fe976347d153 # timeout=10
+Commit message: "fix: corrige ordem PRIMARY KEY e DEFAULT no H2"
+ > git rev-list --no-walk 706ebb9ea739fb7fa22ff579a7a9308abf475eb8 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Pipeline Info)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+================================================
+[Pipeline] echo
+📊 INFORMAÇÕES DO JENKINS PIPELINE
+[Pipeline] echo
+================================================
+[Pipeline] echo
+🆔 Build ID: 31
+[Pipeline] echo
+🔢 Build Number: 31
+[Pipeline] echo
+📝 Job Name: api_aguide_quarkus_build_3
+[Pipeline] echo
+🔗 Build URL: https://nauto.aguide-ptbr.com.br/job/api_aguide_quarkus_build_3/31/
+[Pipeline] echo
+👤 Iniciado por: Trigger Automático
+[Pipeline] echo
+🌿 Branch Git: develop-data-objects
+[Pipeline] echo
+📂 Workspace: /var/jenkins_home/workspace/api_aguide_quarkus_build_3
+[Pipeline] echo
+🏠 Jenkins Home: /var/jenkins_home
+[Pipeline] echo
+🖥️  Node Name: built-in
+[Pipeline] echo
+⏰ Timestamp: Sat Jan 31 12:42:08 UTC 2026
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] echo
+📥 Atualizando código do repositório...
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git fetch origin
+From https://github.com/cleidson-machado/aguide-api-quarkus
+   706ebb9..8cc4a65  develop-data-objects -> origin/develop-data-objects
++ git reset --hard origin/develop-data-objects
+HEAD is now at 8cc4a65 fix: corrige ordem PRIMARY KEY e DEFAULT no H2
++ git clean -fd
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git rev-parse --short HEAD
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git log -1 --pretty=%B
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git log -1 --pretty=%an
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+📌 Commit: 8cc4a65
+[Pipeline] echo
+💬 Mensagem: fix: corrige ordem PRIMARY KEY e DEFAULT no H2
+[Pipeline] echo
+👨‍💻 Autor: Cleidson
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Maven)
+[Pipeline] echo
+🔨 Compilando projeto com Maven (SEM testes)...
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ ./mvnw clean package -DskipTests
+[INFO] Scanning for projects...
+[INFO]
+[INFO] -----------------< br.com.aguideptbr:mobile-rest-api >------------------
+[INFO] Building mobile-rest-api 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- clean:3.2.0:clean (default-clean) @ mobile-rest-api ---
+[INFO] Deleting /opt/apps/aguide-api-quarkus/target
+[INFO]
+[INFO] --- resources:3.3.1:resources (default-resources) @ mobile-rest-api ---
+[INFO] Copying 12 resources from src/main/resources to target/classes
+[INFO]
+[INFO] --- quarkus:3.23.3:generate-code (default) @ mobile-rest-api ---
+[INFO]
+[INFO] --- compiler:3.14.0:compile (default-compile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 8 source files with javac [debug parameters release 17] to target/classes
+[INFO]
+[INFO] --- quarkus:3.23.3:generate-code-tests (default) @ mobile-rest-api ---
+[INFO]
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ mobile-rest-api ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO]
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 17] to target/test-classes
+[INFO]
+[INFO] --- surefire:3.5.3:test (default-test) @ mobile-rest-api ---
+[INFO] Tests are skipped.
+[INFO]
+[INFO] --- jar:3.4.1:jar (default-jar) @ mobile-rest-api ---
+[INFO] Building jar: /opt/apps/aguide-api-quarkus/target/mobile-rest-api-1.0.0-SNAPSHOT.jar
+[INFO]
+[INFO] --- quarkus:3.23.3:build (default) @ mobile-rest-api ---
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 4490ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  12.907 s
+[INFO] Finished at: 2026-01-31T12:42:24Z
+[INFO] ------------------------------------------------------------------------
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (SonarQube Analysis)
+[Pipeline] echo
+🔍 Executando análise do SonarQube COM testes (barreira de qualidade)...
+[Pipeline] script
+[Pipeline] {
+[Pipeline] tool
+[Pipeline] withSonarQubeEnv
+Injecting SonarQube environment variables using the configuration: SonarQube
+[Pipeline] {
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ /var/jenkins_home/tools/hudson.tasks.Maven_MavenInstallation/Default_Maven/bin/mvn verify sonar:sonar -Dsonar.projectKey=aguide-api-quarkus -Dsonar.projectName=Aguide API Quarkus
+[INFO] Scanning for projects...
+[WARNING] The artifact org.codehaus.mojo:sonar-maven-plugin:jar:4.0.0.4121 has been relocated to org.sonarsource.scanner.maven:sonar-maven-plugin:jar:4.0.0.4121: SonarQube plugin was moved to SonarSource organisation
+[INFO]
+[INFO] -----------------< br.com.aguideptbr:mobile-rest-api >------------------
+[INFO] Building mobile-rest-api 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ mobile-rest-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 12 resources
+[INFO]
+[INFO] --- quarkus-maven-plugin:3.23.3:generate-code (default) @ mobile-rest-api ---
+[INFO]
+[INFO] --- maven-compiler-plugin:3.14.0:compile (default-compile) @ mobile-rest-api ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO]
+[INFO] --- quarkus-maven-plugin:3.23.3:generate-code-tests (default) @ mobile-rest-api ---
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ mobile-rest-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO]
+[INFO] --- maven-compiler-plugin:3.14.0:testCompile (default-testCompile) @ mobile-rest-api ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO]
+[INFO] --- maven-surefire-plugin:3.5.3:test (default-test) @ mobile-rest-api ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running br.com.aguideptbr.features.content.ContentRecordResourceTest
+12:42:44 INFO  [or.hi.jp.in.ut.LogHelper] (main) HHH000204: Processing PersistenceUnitInfo [name: <default>]
+12:42:44 INFO  [or.hi.Version] (main) HHH000412: Hibernate ORM core version 6.6.17.Final
+12:42:44 INFO  [or.hi.or.co.pooling] (main) HHH10001005: Database info:
+	Database JDBC URL [undefined/unknown]
+	Database driver: undefined/unknown
+	Database version: 2.3.230
+	Autocommit mode: undefined/unknown
+	Isolation level: <unknown>
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+12:42:46 INFO  [or.fl.co.FlywayExecutor] (main) Database: jdbc:h2:mem:testdb (H2 2.3)
+12:42:46 INFO  [or.fl.co.in.sc.JdbcTableSchemaHistory] (main) Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+12:42:46 INFO  [or.fl.co.in.co.cl.CleanExecutor] (main) Successfully dropped pre-schema database level objects (execution time 00:00.000s)
+12:42:46 INFO  [or.fl.co.in.co.cl.CleanExecutor] (main) Successfully cleaned schema "PUBLIC" (execution time 00:00.006s)
+12:42:46 INFO  [or.fl.co.in.co.cl.CleanExecutor] (main) Successfully cleaned schema "PUBLIC" (execution time 00:00.001s)
+12:42:46 INFO  [or.fl.co.in.co.cl.CleanExecutor] (main) Successfully dropped post-schema database level objects (execution time 00:00.000s)
+12:42:46 INFO  [or.fl.co.in.sc.JdbcTableSchemaHistory] (main) Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+12:42:46 INFO  [or.fl.co.in.co.DbValidate] (main) Successfully validated 4 migrations (execution time 00:00.011s)
+12:42:46 INFO  [or.fl.co.Flyway] (main) All configured schemas are empty; baseline operation skipped. A baseline or migration script with a lower version than the baseline version may execute if available. Check the Schemas parameter if this is not intended.
+12:42:46 INFO  [or.fl.co.in.sc.JdbcTableSchemaHistory] (main) Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Current version of schema "PUBLIC": << Empty Schema >>
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Migrating schema "PUBLIC" to version "1.0.0 - Create tables"
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Migrating schema "PUBLIC" to version "1.0.1 - Insert test data"
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Migrating schema "PUBLIC" to version "1.0.2 - Add audit timestamps"
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Migrating schema "PUBLIC" to version "1.0.3 - Add published at column"
+12:42:46 INFO  [or.fl.co.in.co.DbMigrate] (main) Successfully applied 4 migrations to schema "PUBLIC", now at version v1.0.3 (execution time 00:00.046s)
+12:42:47 INFO  [io.quarkus] (main) mobile-rest-api 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.23.3) started in 11.469s. Listening on: http://localhost:8081
+12:42:47 INFO  [io.quarkus] (main) Profile test activated.
+12:42:47 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, compose, flyway, hibernate-orm, hibernate-orm-panache, jdbc-h2, jdbc-postgresql, narayana-jta, resteasy, resteasy-jackson, smallrye-context-propagation, smallrye-openapi, swagger-ui, vertx]
+[ERROR] Tests run: 10, Failures: 10, Errors: 0, Skipped: 0, Time elapsed: 5.970 s <<< FAILURE! -- in br.com.aguideptbr.features.content.ContentRecordResourceTest
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testUpdateContent_WithPublishedAt -- Time elapsed: 1.989 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <201> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallConstructor(CallSiteArray.java:57)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:263)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:45)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:125)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:139)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallCurrent(CallSiteArray.java:49)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:171)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallCurrent(CallSiteArray.java:49)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:171)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testUpdateContent_WithPublishedAt(ContentRecordResourceTest.java:101)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testDeleteContent -- Time elapsed: 0.028 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <201> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testDeleteContent(ContentRecordResourceTest.java:168)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testCreateContent_WithPublishedAt -- Time elapsed: 0.026 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <201> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testCreateContent_WithPublishedAt(ContentRecordResourceTest.java:80)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testGetContentById_NotFound -- Time elapsed: 0.034 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <404> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testGetContentById_NotFound(ContentRecordResourceTest.java:150)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testSearchByTitle -- Time elapsed: 0.032 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <200> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testSearchByTitle(ContentRecordResourceTest.java:130)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_WithDefaultParameters -- Time elapsed: 0.026 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <200> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_WithDefaultParameters(ContentRecordResourceTest.java:34)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_WithPagination -- Time elapsed: 0.023 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <200> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_WithPagination(ContentRecordResourceTest.java:45)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testGetContentById_InvalidId -- Time elapsed: 0.016 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <400> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testGetContentById_InvalidId(ContentRecordResourceTest.java:139)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_InvalidSortField -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <400> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_InvalidSortField(ContentRecordResourceTest.java:190)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[ERROR] br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_SortByPublishedAt -- Time elapsed: 0.032 s <<< FAILURE!
+java.lang.AssertionError:
+1 expectation failed.
+Expected status code <200> but was <401>.
+
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:73)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:108)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:277)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure.validate(ResponseSpecificationImpl.groovy:512)
+	at io.restassured.internal.ResponseSpecificationImpl$HamcrestAssertionClosure$validate$1.call(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.validateResponseIfRequired(ResponseSpecificationImpl.groovy:696)
+	at io.restassured.internal.ResponseSpecificationImpl.this$2$validateResponseIfRequired(ResponseSpecificationImpl.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:43)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite$PogoCachedMethodSiteNoUnwrapNoCoerce.invoke(PogoMetaMethodSite.java:198)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaMethodSite.callCurrent(PogoMetaMethodSite.java:62)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:185)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:135)
+	at io.restassured.specification.ResponseSpecification$statusCode$0.callCurrent(Unknown Source)
+	at io.restassured.internal.ResponseSpecificationImpl.statusCode(ResponseSpecificationImpl.groovy:143)
+	at io.restassured.internal.ValidatableResponseOptionsImpl.statusCode(ValidatableResponseOptionsImpl.java:89)
+	at br.com.aguideptbr.features.content.ContentRecordResourceTest.testListContents_SortByPublishedAt(ContentRecordResourceTest.java:58)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:999)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:847)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+
+[INFO] Running br.com.aguideptbr.features.user.UserResourceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.943 s -- in br.com.aguideptbr.features.user.UserResourceTest
+12:42:52 INFO  [io.quarkus] (main) mobile-rest-api stopped in 0.107s
+[INFO]
+[INFO] Results:
+[INFO]
+[ERROR] Failures:
+[ERROR]   ContentRecordResourceTest.testCreateContent_WithPublishedAt:80 1 expectation failed.
+Expected status code <201> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testDeleteContent:168 1 expectation failed.
+Expected status code <201> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testGetContentById_InvalidId:139 1 expectation failed.
+Expected status code <400> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testGetContentById_NotFound:150 1 expectation failed.
+Expected status code <404> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testListContents_InvalidSortField:190 1 expectation failed.
+Expected status code <400> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testListContents_SortByPublishedAt:58 1 expectation failed.
+Expected status code <200> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testListContents_WithDefaultParameters:34 1 expectation failed.
+Expected status code <200> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testListContents_WithPagination:45 1 expectation failed.
+Expected status code <200> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testSearchByTitle:130 1 expectation failed.
+Expected status code <200> but was <401>.
+
+[ERROR]   ContentRecordResourceTest.testUpdateContent_WithPublishedAt:101 1 expectation failed.
+Expected status code <201> but was <401>.
+
+[INFO]
+[ERROR] Tests run: 13, Failures: 10, Errors: 0, Skipped: 0
+[INFO]
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Skipping mobile-rest-api
+[INFO] This project has been banned from the build due to previous failures.
+[INFO] ------------------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  26.030 s
+[INFO] Finished at: 2026-01-31T12:42:52Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.3:test (default-test) on project mobile-rest-api: There are test failures.
+[ERROR]
+[ERROR] See /opt/apps/aguide-api-quarkus/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[Pipeline] }
+[Pipeline] // withSonarQubeEnv
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verificar Artefatos)
+Stage "Verificar Artefatos" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Docker Image)
+Stage "Build Docker Image" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Container)
+Stage "Deploy Container" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verificar Migrations)
+Stage "Verificar Migrations" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Cleanup Docker)
+Stage "Cleanup Docker" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verificar Status)
+Stage "Verificar Status" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+================================================
+[Pipeline] echo
+📊 RESUMO DA EXECUÇÃO
+[Pipeline] echo
+================================================
+[Pipeline] echo
+🆔 Build ID: 31
+[Pipeline] echo
+🔢 Build Number: 31
+[Pipeline] echo
+📝 Job: api_aguide_quarkus_build_3
+[Pipeline] echo
+🎯 Status: FAILURE
+[Pipeline] echo
+⏱️  Duração: 46 sec
+[Pipeline] echo
+🌿 Branch: develop-data-objects
+[Pipeline] echo
+📌 Commit: 8cc4a65
+[Pipeline] echo
+👨‍💻 Autor: Cleidson
+[Pipeline] echo
+⏰ Finalizado: Sat Jan 31 12:42:53 UTC 2026
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+================================================
+[Pipeline] echo
+❌ PIPELINE FALHOU!
+[Pipeline] echo
+================================================
+[Pipeline] echo
+🔢 Build #31 com erro
+[Pipeline] echo
+📋 Verificar logs: https://nauto.aguide-ptbr.com.br/job/api_aguide_quarkus_build_3/31/console
+[Pipeline] echo
+🔍 Status: FAILURE
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

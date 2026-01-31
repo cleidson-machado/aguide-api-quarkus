@@ -1,0 +1,475 @@
+Started by user Cleidson Pereira Machado
+
+Lightweight checkout support not available, falling back to full checkout.
+Checking out git https://github.com/cleidson-machado/aguide-api-quarkus.git/ into /var/jenkins_home/workspace/api_aguide_quarkus_build_3@script/130b9c0cd511448bfb36c6692e93bb109b6be010859e74a316b92aeac90cf9cb to read Jenkinsfile
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/api_aguide_quarkus_build_3@script/130b9c0cd511448bfb36c6692e93bb109b6be010859e74a316b92aeac90cf9cb/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/cleidson-machado/aguide-api-quarkus.git/ # timeout=10
+Fetching upstream changes from https://github.com/cleidson-machado/aguide-api-quarkus.git/
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- https://github.com/cleidson-machado/aguide-api-quarkus.git/ +refs/heads/*:refs/remotes/origin/* # timeout=10
+Seen branch in repository origin/develop-data-objects
+Seen branch in repository origin/main
+Seen 2 remote branches
+ > git show-ref --tags -d # timeout=10
+Checking out Revision 7218510e9b9e35bc4a9159fe1e3e5492f4a18d38 (refs/remotes/origin/develop-data-objects)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 7218510e9b9e35bc4a9159fe1e3e5492f4a18d38 # timeout=10
+Commit message: "fix: Remove unused JsonIgnore import from UserModel"
+ > git rev-list --no-walk 7218510e9b9e35bc4a9159fe1e3e5492f4a18d38 # timeout=10
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins
+ in /var/jenkins_home/workspace/api_aguide_quarkus_build_3
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/api_aguide_quarkus_build_3/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/cleidson-machado/aguide-api-quarkus.git/ # timeout=10
+Fetching upstream changes from https://github.com/cleidson-machado/aguide-api-quarkus.git/
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- https://github.com/cleidson-machado/aguide-api-quarkus.git/ +refs/heads/*:refs/remotes/origin/* # timeout=10
+Seen branch in repository origin/develop-data-objects
+Seen branch in repository origin/main
+Seen 2 remote branches
+ > git show-ref --tags -d # timeout=10
+Checking out Revision 7218510e9b9e35bc4a9159fe1e3e5492f4a18d38 (refs/remotes/origin/develop-data-objects)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 7218510e9b9e35bc4a9159fe1e3e5492f4a18d38 # timeout=10
+Commit message: "fix: Remove unused JsonIgnore import from UserModel"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Pipeline Info)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+================================================
+[Pipeline] echo
+📊 INFORMAÇÕES DO JENKINS PIPELINE
+[Pipeline] echo
+================================================
+[Pipeline] echo
+🆔 Build ID: 8
+[Pipeline] echo
+🔢 Build Number: 8
+[Pipeline] echo
+📝 Job Name: api_aguide_quarkus_build_3
+[Pipeline] echo
+🔗 Build URL: https://nauto.aguide-ptbr.com.br/job/api_aguide_quarkus_build_3/8/
+[Pipeline] echo
+👤 Iniciado por: Cleidson Pereira Machado
+[Pipeline] echo
+🌿 Branch Git: main
+[Pipeline] echo
+📂 Workspace: /var/jenkins_home/workspace/api_aguide_quarkus_build_3
+[Pipeline] echo
+🏠 Jenkins Home: /var/jenkins_home
+[Pipeline] echo
+🖥️  Node Name: built-in
+[Pipeline] echo
+⏰ Timestamp: Thu Jan 22 19:27:16 UTC 2026
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] echo
+📥 Atualizando código do repositório...
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git fetch origin
+From https://github.com/cleidson-machado/aguide-api-quarkus
+   100c25a..740e360  develop-data-objects -> origin/develop-data-objects
++ git checkout main
+Already on 'main'
+M	.dockerignore
+M	.github/workflows/deploy.yml
+M	.gitignore
+M	.mvn/wrapper/.gitignore
+M	.mvn/wrapper/MavenWrapperDownloader.java
+M	.mvn/wrapper/maven-wrapper.properties
+M	Jenkinsfile
+M	README.md
+M	docker-compose.yml
+M	pom.xml
+M	src/main/docker/Dockerfile.jvm
+M	src/main/docker/Dockerfile.legacy-jar
+M	src/main/docker/Dockerfile.native
+M	src/main/docker/Dockerfile.native-micro
+M	src/main/java/br/com/aguideptbr/auth/AuthenticationFilter.java
+M	src/main/java/br/com/aguideptbr/features/content/ContentRecordModel.java
+M	src/main/java/br/com/aguideptbr/features/content/ContentRecordResource.java
+M	src/main/java/br/com/aguideptbr/features/content/ContentService.java
+M	src/main/java/br/com/aguideptbr/features/content/ContentType.java
+M	src/main/java/br/com/aguideptbr/features/user/UserModel.java
+M	src/main/java/br/com/aguideptbr/features/user/UserResource.java
+M	src/main/java/br/com/aguideptbr/util/PaginatedResponse.java
+M	src/main/resources/application-dev.properties
+M	src/main/resources/application-prod.properties
+M	src/main/resources/application.properties
+M	src/main/resources/db/migration/V1.0.0__Create_tables.sql
+M	src/main/resources/db/migration/V1.0.1__Insert_test_data.sql
+M	src/main/resources/db/migration/V1.0.2__Add_audit_timestamps.sql
+M	src/main/resources/import.sql
+M	src/test/java/br/com/aguideptbr/GreetingResourceIT.java
+M	src/test/java/br/com/aguideptbr/GreetingResourceTest.java
++ git pull origin main
+From https://github.com/cleidson-machado/aguide-api-quarkus
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git rev-parse --short HEAD
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git log -1 --pretty=%B
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ git log -1 --pretty=%an
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+📌 Commit: 93aeea0
+[Pipeline] echo
+💬 Mensagem: Functionality: Add specific configuration files for each environment, both for development and production. Carefully read all comments in this project's application.properties files before making any changes in the near future. Also add a Jenkinsfile to test the CI/CD capabilities with Jenkins installed on the VPS server. (#8)
+
+feat: Add specific configuration files for each environment (#8)
+
+- Created application-dev.properties with dev settings
+- Created application-prod.properties with prod settings  
+- Updated docker-compose.yml to use QUARKUS_PROFILE=prod
+- Cleaned up application.properties removing environment-specific configs
+[Pipeline] echo
+👨‍💻 Autor: cleidson.mac
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Maven)
+[Pipeline] echo
+🔨 Compilando projeto com Maven (SEM testes)...
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ ./mvnw clean package -DskipTests
+[INFO] Scanning for projects...
+
+[INFO] 
+[INFO] -----------------< br.com.aguideptbr:mobile-rest-api >------------------
+[INFO] Building mobile-rest-api 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ mobile-rest-api ---
+[INFO] Deleting /opt/apps/aguide-api-quarkus/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ mobile-rest-api ---
+[INFO] Copying 7 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- quarkus:3.23.3:generate-code (default) @ mobile-rest-api ---
+
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 8 source files with javac [debug parameters release 17] to target/classes
+
+[INFO] 
+[INFO] --- quarkus:3.23.3:generate-code-tests (default) @ mobile-rest-api ---
+
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ mobile-rest-api ---
+[INFO] skip non existing resourceDirectory /opt/apps/aguide-api-quarkus/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ mobile-rest-api ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ mobile-rest-api ---
+
+[INFO] Building jar: /opt/apps/aguide-api-quarkus/target/mobile-rest-api-1.0.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- quarkus:3.23.3:build (default) @ mobile-rest-api ---
+
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 5775ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  16.672 s
+[INFO] Finished at: 2026-01-22T19:27:39Z
+[INFO] ------------------------------------------------------------------------
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (SonarQube Analysis)
+[Pipeline] echo
+🔍 Executando análise do SonarQube...
+[Pipeline] script
+[Pipeline] {
+[Pipeline] tool
+
+[Pipeline] withSonarQubeEnv
+Injecting SonarQube environment variables using the configuration: SonarQube
+[Pipeline] {
+[Pipeline] sh
++ cd /opt/apps/aguide-api-quarkus
++ /var/jenkins_home/tools/hudson.tasks.Maven_MavenInstallation/Default_Maven/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=aguide-api-quarkus -Dsonar.projectName=Aguide API Quarkus
+
+[INFO] Scanning for projects...
+
+[WARNING] The artifact org.codehaus.mojo:sonar-maven-plugin:jar:4.0.0.4121 has been relocated to org.sonarsource.scanner.maven:sonar-maven-plugin:jar:4.0.0.4121: SonarQube plugin was moved to SonarSource organisation
+[INFO] 
+[INFO] -----------------< br.com.aguideptbr:mobile-rest-api >------------------
+[INFO] Building mobile-rest-api 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+
+[INFO] 
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ mobile-rest-api ---
+[INFO] Deleting /opt/apps/aguide-api-quarkus/target
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ mobile-rest-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 7 resources
+[INFO] 
+[INFO] --- quarkus-maven-plugin:3.23.3:generate-code (default) @ mobile-rest-api ---
+
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.14.0:compile (default-compile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 8 source files with javac [debug parameters release 17] to target/classes
+
+[INFO] 
+[INFO] --- quarkus-maven-plugin:3.23.3:generate-code-tests (default) @ mobile-rest-api ---
+
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ mobile-rest-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /opt/apps/aguide-api-quarkus/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.14.0:testCompile (default-testCompile) @ mobile-rest-api ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 17] to target/test-classes
+[INFO] 
+[INFO] --- maven-surefire-plugin:3.5.3:test (default-test) @ mobile-rest-api ---
+
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+
+[INFO] Running br.com.aguideptbr.GreetingResourceTest
+2026-01-22 19:28:05,902 INFO  [org.hib.jpa.int.uti.LogHelper] (main) HHH000204: Processing PersistenceUnitInfo [name: <default>]
+2026-01-22 19:28:06,918 INFO  [org.hib.Version] (main) HHH000412: Hibernate ORM core version 6.6.17.Final
+2026-01-22 19:28:07,482 INFO  [org.hib.orm.con.pooling] (main) HHH10001005: Database info:
+	Database JDBC URL [undefined/unknown]
+	Database driver: undefined/unknown
+	Database version: 12.0
+	Autocommit mode: undefined/unknown
+	Isolation level: <unknown>
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+
+2026-01-22 19:28:09,591 WARN  [io.agr.pool] (agroal-11) Datasource '<default>': Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 4.385 s <<< FAILURE! -- in br.com.aguideptbr.GreetingResourceTest
+[ERROR] br.com.aguideptbr.GreetingResourceTest.testHelloEndpoint -- Time elapsed: 0.008 s <<< ERROR!
+java.lang.RuntimeException: java.lang.RuntimeException: Failed to start quarkus
+	at io.quarkus.test.junit.QuarkusTestExtension.throwBootFailureException(QuarkusTestExtension.java:667)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestClassConstructor(QuarkusTestExtension.java:762)
+	at java.base/java.util.Optional.orElseGet(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+	at java.base/java.util.ArrayList.forEach(Unknown Source)
+Caused by: java.lang.RuntimeException: Failed to start quarkus
+	at io.quarkus.runner.ApplicationImpl.doStart(Unknown Source)
+	at io.quarkus.runtime.Application.start(Application.java:101)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at io.quarkus.runner.bootstrap.StartupActionImpl.run(StartupActionImpl.java:310)
+	at io.quarkus.test.junit.QuarkusTestExtension.doJavaStart(QuarkusTestExtension.java:232)
+	at io.quarkus.test.junit.QuarkusTestExtension.ensureStarted(QuarkusTestExtension.java:641)
+	at io.quarkus.test.junit.QuarkusTestExtension.beforeAll(QuarkusTestExtension.java:686)
+	... 1 more
+Caused by: org.flywaydb.core.internal.exception.FlywaySqlException: Unable to obtain connection from database: Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SQL State  : 08001
+Error Code : 0
+Message    : Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+
+	at org.flywaydb.core.internal.jdbc.JdbcUtils.openConnection(JdbcUtils.java:71)
+	at org.flywaydb.core.internal.jdbc.JdbcConnectionFactory.<init>(JdbcConnectionFactory.java:76)
+	at org.flywaydb.core.FlywayExecutor.execute(FlywayExecutor.java:136)
+	at org.flywaydb.core.Flyway.migrate(Flyway.java:188)
+	at io.quarkus.flyway.runtime.FlywayRecorder.doStartActions(FlywayRecorder.java:150)
+	at io.quarkus.runner.recorded.FlywayProcessor$startActions2099152139.deploy_0(Unknown Source)
+	at io.quarkus.runner.recorded.FlywayProcessor$startActions2099152139.deploy(Unknown Source)
+	... 8 more
+Caused by: org.postgresql.util.PSQLException: Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+	at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:373)
+	at org.postgresql.core.ConnectionFactory.openConnection(ConnectionFactory.java:57)
+	at org.postgresql.jdbc.PgConnection.<init>(PgConnection.java:277)
+	at org.postgresql.Driver.makeConnection(Driver.java:448)
+	at org.postgresql.Driver.connect(Driver.java:298)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:585)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:566)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at java.base/sun.nio.ch.Net.pollConnectNow(Unknown Source)
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(Unknown Source)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(Unknown Source)
+	at java.base/java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.base/java.net.Socket.connect(Unknown Source)
+	at org.postgresql.core.PGStream.createSocket(PGStream.java:261)
+	at org.postgresql.core.PGStream.<init>(PGStream.java:122)
+	at org.postgresql.core.v3.ConnectionFactoryImpl.tryConnect(ConnectionFactoryImpl.java:146)
+	at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:289)
+	... 12 more
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   GreetingResourceTest.testHelloEndpoint » Runtime java.lang.RuntimeException: Failed to start quarkus
+[INFO] 
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Skipping mobile-rest-api
+[INFO] This project has been banned from the build due to previous failures.
+[INFO] ------------------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  27.764 s
+[INFO] Finished at: 2026-01-22T19:28:09Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.3:test (default-test) on project mobile-rest-api: 
+[ERROR] 
+[ERROR] See /opt/apps/aguide-api-quarkus/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[Pipeline] }
+WARN: Unable to locate 'report-task.txt' in the workspace. Did the SonarScanner succeed?
+[Pipeline] // withSonarQubeEnv
+[Pipeline] }
+[Pipeline] // script
+
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verificar Artefatos)
+Stage "Verificar Artefatos" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Docker Image)
+Stage "Build Docker Image" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Container)
+Stage "Deploy Container" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Cleanup Docker)
+Stage "Cleanup Docker" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verificar Status)
+Stage "Verificar Status" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+================================================
+[Pipeline] echo
+📊 RESUMO DA EXECUÇÃO
+[Pipeline] echo
+================================================
+[Pipeline] echo
+🆔 Build ID: 8
+[Pipeline] echo
+🔢 Build Number: 8
+[Pipeline] echo
+📝 Job: api_aguide_quarkus_build_3
+[Pipeline] echo
+🎯 Status: FAILURE
+[Pipeline] echo
+⏱️  Duração: 58 sec
+[Pipeline] echo
+🌿 Branch: main
+[Pipeline] echo
+📌 Commit: 93aeea0
+[Pipeline] echo
+👨‍💻 Autor: cleidson.mac
+[Pipeline] echo
+⏰ Finalizado: Thu Jan 22 19:28:11 UTC 2026
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+================================================
+[Pipeline] echo
+❌ PIPELINE FALHOU!
+[Pipeline] echo
+================================================
+[Pipeline] echo
+
+🔢 Build #8 com erro
+[Pipeline] echo
+📋 Verificar logs: https://nauto.aguide-ptbr.com.br/job/api_aguide_quarkus_build_3/8/console
+[Pipeline] echo
+🔍 Status: FAILURE
+[Pipeline] echo
+================================================
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

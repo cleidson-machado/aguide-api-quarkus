@@ -8,9 +8,9 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 /**
  * Perfil de teste que desabilita o AuthenticationFilter.
  * Aplicado em todos os testes de integração
- * com @TestProfile(TestProfile.class).
+ * com @TestProfile(NoAuthTestProfile.class).
  */
-public class TestProfile implements QuarkusTestProfile {
+public class NoAuthTestProfile implements QuarkusTestProfile {
 
     @Override
     public Set<Class<?>> getEnabledAlternatives() {
