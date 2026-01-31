@@ -5,11 +5,9 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 
 import org.junit.jupiter.api.Test;
 
-import br.com.aguideptbr.TestProfile;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@io.quarkus.test.junit.TestProfile(TestProfile.class)
 class UserResourceTest {
 
     private static final String AUTH_TOKEN = "Bearer my-token-super-recur-12345";
