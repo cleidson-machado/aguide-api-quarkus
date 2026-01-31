@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     environment {
         // Configurações do projeto
         PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
@@ -8,7 +8,7 @@ pipeline {
         GIT_BRANCH = 'develop-data-objects'  // Ajuste conforme a branch
         MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
     }
-    
+
     stages {
         stage('Pipeline Info') {
             steps {
@@ -16,7 +16,7 @@ pipeline {
                     // Captura quem iniciou o build de forma nativa
                     def causes = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
                     def userName = causes ? causes[0].userName : 'Trigger Automático'
-                    
+
                     echo '================================================'
                     echo '📊 INFORMAÇÕES DO JENKINS PIPELINE'
                     echo '================================================'
@@ -34,7 +34,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Checkout') {
             steps {
                 echo '📥 Atualizando código do repositório...'
@@ -44,7 +44,7 @@ pipeline {
                     git reset --hard origin/${GIT_BRANCH}
                     git clean -fd
                 '''
-                    
+
                 // Captura informações do commit
                 script {
                     env.GIT_COMMIT_SHORT = sh(
@@ -60,13 +60,13 @@ pipeline {
                         returnStdout: true
                     ).trim()
                 }
-                
+
                 echo "📌 Commit: ${env.GIT_COMMIT_SHORT}"
                 echo "💬 Mensagem: ${env.GIT_COMMIT_MSG}"
                 echo "👨‍💻 Autor: ${env.GIT_AUTHOR}"
             }
         }
-        
+
         stage('Build Maven') {
             steps {
                 echo '🔨 Compilando projeto com Maven (SEM testes)...'
@@ -76,14 +76,14 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('SonarQube Analysis') {
             steps {
                 echo '🔍 Executando análise do SonarQube...'
                 script {
                     // Configura o Maven tool
                     def mvn = tool 'Default Maven'
-                    
+
                     // Executa a análise do SonarQube
                     withSonarQubeEnv() {
                         sh """
@@ -98,7 +98,7 @@ pipeline {
                 echo '✅ Análise do SonarQube concluída!'
             }
         }
-        
+
         stage('Verificar Artefatos') {
             steps {
                 echo '📋 Verificando artefatos gerados...'
@@ -109,7 +109,7 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Construindo imagem Docker...'
@@ -119,34 +119,59 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Deploy Container') {
             steps {
                 echo '🚀 Fazendo deploy do container...'
+                echo '⚠️  IMPORTANTE: Flyway migrations serão executadas automaticamente ao iniciar o container'
                 sh '''
                     cd /opt/apps/aguide-api-quarkus
                     docker rm -f aguide-api || true
                     docker compose -f docker-compose.yml down --remove-orphans
                     docker compose -f docker-compose.yml up -d
                 '''
+                echo '⏳ Aguardando inicialização do container (30s)...'
+                sleep 30
             }
         }
-        
+
+        stage('Verificar Migrations') {
+            steps {
+                echo '🔍 Verificando se migrations Flyway foram executadas...'
+                sh '''
+                    echo "📋 Últimas linhas do log do container:"
+                    docker logs aguide-api --tail 50 | grep -i "flyway\|migration" || echo "⚠️  Flyway logs não encontrados (pode estar OK se já executou)"
+                '''
+            }
+        }
+
         stage('Cleanup Docker') {
             steps {
                 echo '🧹 Limpando recursos Docker não utilizados...'
                 sh 'docker system prune -f || true'
             }
         }
-        
+
         stage('Verificar Status') {
             steps {
-                echo '✅ Verificando status do container...'
-                sh 'docker ps --filter "name=aguide-api" --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"'
+                echo '✅ Verificando status do container e saúde da aplicação...'
+                sh '''
+                    echo "🐳 Status do container:"
+                    docker ps --filter "name=aguide-api" --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+
+                    echo ""
+                    echo "🏥 Verificando health check da aplicação (aguardando 10s)..."
+                    sleep 10
+                    curl -f http://localhost:8083/q/health 2>/dev/null && echo "✅ Aplicação está saudável!" || echo "⚠️  Health check falhou (verifique logs)"
+
+                    echo ""
+                    echo "📊 Últimas 20 linhas do log:"
+                    docker logs aguide-api --tail 20
+                '''
             }
         }
     }
-    
+
     post {
         success {
             echo '================================================'
