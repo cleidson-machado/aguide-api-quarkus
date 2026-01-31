@@ -32,7 +32,7 @@ br.com.aguideptbr/
 public class UserController {
     @Inject UserService userService;
     @Inject Logger log;
-    
+
     @GET
     public Response findAll() {
         log.info("GET /api/v1/users - Listing all users");
@@ -51,7 +51,7 @@ public class UserController {
 public class UserService {
     @Inject UserRepository userRepository;
     @Inject Logger log;
-    
+
     @Transactional
     public User create(User user) {
         // lógica de negócio
@@ -82,14 +82,14 @@ public class UserRepository implements PanacheRepository<User> {
 public class User extends PanacheEntity {
     @Column(nullable = false, length = 100)
     public String name;
-    
+
     @Column(unique = true, nullable = false)
     public String email;
-    
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     public LocalDateTime createdAt;
-    
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     public LocalDateTime updatedAt;
@@ -130,6 +130,35 @@ public class User extends PanacheEntity {
 - Usar `RestAssured` para testar endpoints
 - Cobertura mínima desejada: 80%
 
+### Configuração de Testes (CRÍTICO)
+**SEMPRE criar `src/test/resources/application.properties` com:**
+```properties
+# Desabilita AuthenticationFilter em testes
+quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter
+
+# Usa H2 em memória para testes rápidos
+quarkus.datasource.db-kind=h2
+quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+quarkus.datasource.username=sa
+quarkus.datasource.password=
+
+# Flyway em testes
+quarkus.flyway.clean-at-start=true
+quarkus.flyway.migrate-at-start=true
+```
+
+### Regras de Testes
+✅ **PERMITIDO:**
+- Desabilitar filtros de autenticação via `quarkus.arc.exclude-types`
+- Usar H2 em memória para testes
+- RestAssured sem headers de autenticação em testes
+
+❌ **PROIBIDO:**
+- Hardcoded tokens/senhas no código de teste
+- Usar `-DskipTests` no Jenkins/CI (testes são barreira de qualidade)
+- Pular testes para "resolver rápido" problemas de autenticação
+- Usar banco PostgreSQL real em testes (usar H2)
+
 ## Segurança
 - Autenticação implementada via `AuthenticationFilter`
 - Nunca comitar credenciais, tokens ou senhas
@@ -146,21 +175,24 @@ public class User extends PanacheEntity {
 - Build Maven: `./mvnw clean package`
 
 ## O QUE NÃO FAZER
-❌ Criar arquivos temporários na raiz do projeto  
-❌ Colocar lógica de negócio em Controllers ou Repositories  
-❌ Usar anotações do Spring (usar Quarkus CDI)  
-❌ Esquecer `@Transactional` em métodos que modificam dados  
-❌ Criar packages fora de `br.com.aguideptbr`  
-❌ Ignorar tratamento de exceções  
-❌ Logar informações sensíveis (senhas, tokens)  
+❌ Criar arquivos temporários na raiz do projeto
+❌ Colocar lógica de negócio em Controllers ou Repositories
+❌ Usar anotações do Spring (usar Quarkus CDI)
+❌ Esquecer `@Transactional` em métodos que modificam dados
+❌ Criar packages fora de `br.com.aguideptbr`
+❌ Ignorar tratamento de exceções
+❌ Logar informações sensíveis (senhas, tokens)
+❌ Hardcoded credenciais/tokens em testes
+❌ Pular testes no CI/CD com `-DskipTests`
+❌ Usar banco real (PostgreSQL) em testes unitários
 
 ## Recursos do Quarkus a Utilizar
-✅ Dev Mode: `./mvnw quarkus:dev` (hot reload automático)  
-✅ Dev Services: bancos de dados automaticamente em containers  
-✅ Panache: simplificação de JPA/Hibernate  
-✅ RESTEasy Reactive: performance melhorada  
-✅ SmallRye Health: endpoints `/q/health`  
-✅ OpenAPI/Swagger: `/q/swagger-ui`  
+✅ Dev Mode: `./mvnw quarkus:dev` (hot reload automático)
+✅ Dev Services: bancos de dados automaticamente em containers
+✅ Panache: simplificação de JPA/Hibernate
+✅ RESTEasy Reactive: performance melhorada
+✅ SmallRye Health: endpoints `/q/health`
+✅ OpenAPI/Swagger: `/q/swagger-ui`
 
 ---
 **Importante:** Ao gerar código, sempre verificar se está seguindo estas diretrizes. Em caso de dúvida, consultar o arquivo `DEVELOPMENT_GUIDE.md` na raiz do projeto.

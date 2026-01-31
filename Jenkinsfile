@@ -79,23 +79,23 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                echo '🔍 Executando análise do SonarQube...'
+                echo '🔍 Executando análise do SonarQube COM testes (barreira de qualidade)...'
                 script {
                     // Configura o Maven tool
                     def mvn = tool 'Default Maven'
 
-                    // Executa a análise do SonarQube
+                    // Executa a análise do SonarQube COM testes
                     withSonarQubeEnv() {
                         sh """
                             cd /opt/apps/aguide-api-quarkus
                             export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_db
-                            ${mvn}/bin/mvn clean verify sonar:sonar \
+                            ${mvn}/bin/mvn verify sonar:sonar \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
                         """
                     }
                 }
-                echo '✅ Análise do SonarQube concluída!'
+                echo '✅ Análise do SonarQube e testes concluídos!'
             }
         }
 

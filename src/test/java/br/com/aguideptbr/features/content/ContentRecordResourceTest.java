@@ -16,6 +16,10 @@ import io.restassured.http.ContentType;
 /**
  * Testes de integração para ContentRecordResource.
  * Valida operações CRUD e funcionalidades de busca/ordenação.
+ *
+ * IMPORTANTE: O AuthenticationFilter é desabilitado durante testes via
+ * src/test/resources/application.properties (quarkus.arc.exclude-types)
+ * Isso permite que os testes executem sem necessidade de token Bearer.
  */
 @QuarkusTest
 class ContentRecordResourceTest {
