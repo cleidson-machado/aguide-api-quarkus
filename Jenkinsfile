@@ -85,10 +85,11 @@ pipeline {
                     def mvn = tool 'Default Maven'
 
                     // Executa a análise do SonarQube COM testes
+                    // IMPORTANTE: NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui
+                    // Os testes usam H2 configurado em src/test/resources/application.properties
                     withSonarQubeEnv() {
                         sh """
                             cd /opt/apps/aguide-api-quarkus
-                            export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_db
                             ${mvn}/bin/mvn verify sonar:sonar \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
