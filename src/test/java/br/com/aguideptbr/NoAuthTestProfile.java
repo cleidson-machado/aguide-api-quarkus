@@ -3,6 +3,7 @@ package br.com.aguideptbr;
 import java.util.Collections;
 import java.util.Set;
 
+import br.com.aguideptbr.auth.NoOpAuthenticationFilter;
 import io.quarkus.test.junit.QuarkusTestProfile;
 
 /**
@@ -14,7 +15,8 @@ public class NoAuthTestProfile implements QuarkusTestProfile {
 
     @Override
     public Set<Class<?>> getEnabledAlternatives() {
-        return Collections.emptySet();
+        // Ativa o filtro NoOp que permite todas as requisições
+        return Collections.singleton(NoOpAuthenticationFilter.class);
     }
 
     @Override
