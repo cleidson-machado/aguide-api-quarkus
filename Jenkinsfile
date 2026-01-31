@@ -140,7 +140,7 @@ pipeline {
                 echo '🔍 Verificando se migrations Flyway foram executadas...'
                 sh '''
                     echo "📋 Últimas linhas do log do container:"
-                    docker logs aguide-api --tail 50 | grep -i "flyway\|migration" || echo "⚠️  Flyway logs não encontrados (pode estar OK se já executou)"
+                    docker logs aguide-api --tail 50 | grep -iE "flyway|migration" || echo "⚠️  Flyway logs não encontrados (pode estar OK se já executou)"
                 '''
             }
         }
