@@ -239,10 +239,10 @@ public class UserService {
         var user = new User();
         user.name = dto.name;
         user.email = dto.email;
-        
+
         userRepository.persist(user);
         log.infof("User created with ID: %d", user.id);
-        
+
         return user;
     }
 
@@ -251,10 +251,10 @@ public class UserService {
         var user = findById(id);
         user.name = dto.name;
         user.email = dto.email;
-        
+
         userRepository.persist(user);
         log.infof("User updated with ID: %d", user.id);
-        
+
         return user;
     }
 
@@ -603,7 +603,7 @@ services:
       DB_PASSWORD: postgres
     depends_on:
       - postgres
-  
+
   postgres:
     image: postgres:15
     environment:

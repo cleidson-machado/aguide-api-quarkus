@@ -224,5 +224,45 @@ quarkus.flyway.locations=classpath:db/migration/h2
 ✅ SmallRye Health: endpoints `/q/health`
 ✅ OpenAPI/Swagger: `/q/swagger-ui`
 
+## Comandos Git e Interação com o Usuário
+
+- Sempre que o agente for sugerir comandos Git que possam alterar o estado da branch local ou remota, como `git commit`, `git push`, `git reset`, `git rebase`, `git pull --rebase`, `git push --force` ou similares, ele deve **obrigatoriamente perguntar ao usuário desenvolvedor** se pode prosseguir com a execução desses comandos.
+- O agente deve alertar o usuário sobre o potencial risco de "bagunçar" a branch atual, explicando que esses comandos podem modificar o histórico ou o conteúdo da branch local e remota.
+- Somente após a confirmação explícita do usuário, o agente deve sugerir ou executar comandos Git que alterem a branch local ou remota.
+- Para comandos Git que não alterem o estado da branch (como `git status`, `git log`, `git diff`), o agente pode sugerir ou executar sem necessidade de confirmação.
+
+### Adição de Arquivos ao Stage (git add)
+
+- **Em hipótese alguma** o agente deve sugerir comandos de adição em lote como `git add .`, `git add -A`, ou `git add --all`.
+- Todos os arquivos devem ser adicionados individualmente usando `git add <caminho-do-arquivo>` após serem explicitamente listados e revisados com o usuário.
+- Isso evita a inclusão acidental de arquivos temporários, logs, credenciais ou outros artefatos indesejados no commit.
+
+Exemplo de comportamento esperado:
+
+Usuário: "Adicione minhas alterações e faça commit."
+
+Agente: "Vou adicionar os seguintes arquivos individualmente:
+- `src/main/java/br/com/aguideptbr/features/user/UserService.java`
+- `src/test/java/br/com/aguideptbr/features/user/UserServiceTest.java`
+
+Confirma a adição desses arquivos ao stage?"
+
+Usuário: "Sim."
+
+Agente:
+``bash
+git add src/main/java/br/com/aguideptbr/features/user/UserService.java
+git add src/test/java/br/com/aguideptbr/features/user/UserServiceTest.java
+``
+
+Agora vou fazer commit das suas alterações. Isso irá modificar o histórico da branch local. Deseja continuar?
+
+Usuário: "Sim."
+
+Agente:
+``bash
+git commit -m "feat(user): implementa nova funcionalidade X"
+``
+
 ---
 **Importante:** Ao gerar código, sempre verificar se está seguindo estas diretrizes. Em caso de dúvida, consultar o arquivo `DEVELOPMENT_GUIDE.md` na raiz do projeto.

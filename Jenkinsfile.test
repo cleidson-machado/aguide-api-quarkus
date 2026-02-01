@@ -1,0 +1,185 @@
+pipeline {
+    agent any
+
+    // ⭐ TRIGGER: Aceita webhooks do GitHub
+    triggers {
+        githubPush()
+    }
+
+    environment {
+        // Configurações do projeto
+        PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
+        GIT_REPO = 'https://github.com/cleidson-machado/aguide-api-quarkus.git'
+        GIT_BRANCH = 'develop-data-objects'  // Ajuste conforme a branch
+        MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
+    }
+
+    stages {
+        stage('Pipeline Info') {
+            steps {
+                script {
+                    // Captura quem iniciou o build de forma nativa
+                    def causes = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+                    def userName = causes ? causes[0].userName : 'Trigger Automático'
+
+                    echo '================================================'
+                    echo '📊 INFORMAÇÕES DO JENKINS PIPELINE'
+                    echo '================================================'
+                    echo "🆔 Build ID: ${BUILD_ID}"
+                    echo "🔢 Build Number: ${BUILD_NUMBER}"
+                    echo "📝 Job Name: ${JOB_NAME}"
+                    echo "🔗 Build URL: ${BUILD_URL}"
+                    echo "👤 Iniciado por: ${userName}"
+                    echo "🌿 Branch Git: ${env.GIT_BRANCH}"
+                    echo "📂 Workspace: ${WORKSPACE}"
+                    echo "🏠 Jenkins Home: ${JENKINS_HOME}"
+                    echo "🖥️  Node Name: ${NODE_NAME}"
+                    echo "⏰ Timestamp: ${new Date()}"
+                    echo '================================================'
+                }
+            }
+        }
+
+        stage('Validar Branch') {
+            steps {
+                script {
+                    echo '🔍 Validando branch para ambiente de TESTE...'
+
+                    // Captura a branch atual (pode vir do webhook ou da env)
+                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'develop-data-objects'
+
+                    echo "📌 Branch detectada: ${currentBranch}"
+
+                    // ⭐ SÓ EXECUTA EM BRANCHES DEVELOP-*
+                    if (!currentBranch.startsWith('develop-')) {
+                        echo "⚠️  Branch '${currentBranch}' NÃO é uma branch de desenvolvimento"
+                        echo "❌ Este job é EXCLUSIVO para branches 'develop-*'"
+                        echo "🚫 Build cancelado - use o job 'aguide-api-production' para branch main"
+                        currentBuild.result = 'NOT_BUILT'
+                        error("Branch ${currentBranch} não permitida neste job de TESTE")
+                    }
+
+                    echo "✅ Branch '${currentBranch}' VALIDADA - Prosseguindo com testes..."
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                echo '📥 Atualizando código do repositório...'
+                sh '''
+                    cd /opt/apps/aguide-api-quarkus
+                    git fetch origin
+                    git reset --hard origin/${GIT_BRANCH}
+                    git clean -fd
+                '''
+
+                // Captura informações do commit
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: "cd /opt/apps/aguide-api-quarkus && git rev-parse --short HEAD",
+                        returnStdout: true
+                    ).trim()
+                    env.GIT_COMMIT_MSG = sh(
+                        script: "cd /opt/apps/aguide-api-quarkus && git log -1 --pretty=%B",
+                        returnStdout: true
+                    ).trim()
+                    env.GIT_AUTHOR = sh(
+                        script: "cd /opt/apps/aguide-api-quarkus && git log -1 --pretty=%an",
+                        returnStdout: true
+                    ).trim()
+                }
+
+                echo "📌 Commit: ${env.GIT_COMMIT_SHORT}"
+                echo "💬 Mensagem: ${env.GIT_COMMIT_MSG}"
+                echo "👨‍💻 Autor: ${env.GIT_AUTHOR}"
+            }
+        }
+
+        stage('Build Maven') {
+            steps {
+                echo '🔨 Compilando projeto com Maven (SEM testes)...'
+                sh '''
+                    cd /opt/apps/aguide-api-quarkus
+                    ./mvnw clean package -DskipTests
+                '''
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo '🔍 Executando análise do SonarQube COM testes (barreira de qualidade)...'
+                script {
+                    // Configura o Maven tool
+                    def mvn = tool 'Default Maven'
+
+                    // Executa a análise do SonarQube COM testes
+                    // IMPORTANTE: NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui
+                    // Os testes usam PostgreSQL (quarkus_test) configurado em src/test/resources/application.properties
+                    withSonarQubeEnv() {
+                        sh """
+                            cd /opt/apps/aguide-api-quarkus
+                            ${mvn}/bin/mvn verify sonar:sonar \
+                                -Dsonar.projectKey=aguide-api-quarkus \
+                                -Dsonar.projectName='Aguide API Quarkus'
+                        """
+                    }
+                }
+                echo '✅ Análise do SonarQube e testes concluídos!'
+            }
+        }
+
+        stage('Verificar Artefatos') {
+            steps {
+                echo '📋 Verificando artefatos gerados...'
+                sh '''
+                    cd /opt/apps/aguide-api-quarkus
+                    ls -lh target/
+                    ls -lh target/quarkus-app/ || echo "Pasta quarkus-app não encontrada"
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '================================================'
+            echo '✅ PIPELINE DE TESTES EXECUTADO COM SUCESSO!'
+            echo '================================================'
+            echo "🎉 Build e testes concluídos com sucesso!"
+            echo "✅ Código validado para branch de desenvolvimento"
+            echo "🔢 Build #${BUILD_NUMBER} concluído"
+            echo "⏱️  Duração: ${currentBuild.durationString}"
+            echo "🔗 Console: ${BUILD_URL}console"
+            echo "⚠️  DEPLOY NÃO REALIZADO (use Jenkinsfile.production para deploy)"
+            echo '================================================'
+        }
+        failure {
+            echo '================================================'
+            echo '❌ PIPELINE FALHOU!'
+            echo '================================================'
+            echo "🔢 Build #${BUILD_NUMBER} com erro"
+            echo "📋 Verificar logs: ${BUILD_URL}console"
+            echo "🔍 Status: ${currentBuild.result}"
+            echo '================================================'
+        }
+        always {
+            script {
+                def duration = currentBuild.durationString.replace(' and counting', '')
+                echo '================================================'
+                echo '📊 RESUMO DA EXECUÇÃO'
+                echo '================================================'
+                echo "🆔 Build ID: ${BUILD_ID}"
+                echo "🔢 Build Number: ${BUILD_NUMBER}"
+                echo "📝 Job: ${JOB_NAME}"
+                echo "🎯 Status: ${currentBuild.currentResult}"
+                echo "⏱️  Duração: ${duration}"
+                echo "🌿 Branch: ${env.GIT_BRANCH}"
+                echo "📌 Commit: ${env.GIT_COMMIT_SHORT ?: 'N/A'}"
+                echo "👨‍💻 Autor: ${env.GIT_AUTHOR ?: 'N/A'}"
+                echo "⏰ Finalizado: ${new Date()}"
+                echo '================================================'
+            }
+        }
+    }
+}
