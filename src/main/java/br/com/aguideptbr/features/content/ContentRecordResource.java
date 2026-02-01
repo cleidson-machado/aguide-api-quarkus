@@ -3,6 +3,8 @@ package br.com.aguideptbr.features.content;
 import java.util.List;
 import java.util.UUID;
 
+import org.jboss.logging.Logger;
+
 import br.com.aguideptbr.util.PaginatedResponse;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -26,6 +28,9 @@ import jakarta.ws.rs.core.Response;
 public class ContentRecordResource {
 
     @Inject
+    Logger log;
+
+    @Inject
     ContentService contentService;
 
     // **
@@ -47,17 +52,30 @@ public class ContentRecordResource {
             @QueryParam("size") Integer size,
             @QueryParam("sort") @DefaultValue("title") String sortField,
             @QueryParam("order") @DefaultValue("asc") String sortOrder) {
+        log.info("GET /contents - Início da requisição (page=" + page + ", size=" + size + ", sort=" + sortField
+                + ", order=" + sortOrder + ")");
         try {
             if (page != null && size != null) {
+                log.debug("Chamando contentService.getPaginatedContents");
                 var pagedResponse = contentService.getPaginatedContents(page, size, sortField, sortOrder);
+                log.info("GET /contents - Retornando resposta paginada com " + pagedResponse.content.size()
+                        + " itens");
                 return Response.ok(pagedResponse).build();
             } else {
+                log.debug("Chamando contentService.getLimitedContents");
                 var limitedResponse = contentService.getLimitedContents(sortField, sortOrder);
+                log.info("GET /contents - Retornando resposta limitada");
                 return Response.ok(limitedResponse).build();
             }
         } catch (IllegalArgumentException err) {
+            log.error("GET /contents - IllegalArgumentException: " + err.getMessage(), err);
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(err.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("GET /contents - Erro inesperado: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Erro interno do servidor: " + e.getMessage())
                     .build();
         }
     }
