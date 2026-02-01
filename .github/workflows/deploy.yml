@@ -1,4 +1,12 @@
 name: CI/CD Pipeline - Aguide API
+# 🛡️ WORKFLOW PROTEGIDO CONTRA PERDA DE DADOS
+# Última atualização: 01/02/2026
+#
+# PROTEÇÕES IMPLEMENTADAS:
+# 1. Validação de application-prod.properties antes do deploy
+# 2. Verificação de migrations destrutivas
+# 3. Confirmação de QUARKUS_PROFILE=prod no VPS
+# 4. Deploy sem tocar no container PostgreSQL
 
 on:
   push:
@@ -9,29 +17,70 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout código
       uses: actions/checkout@v4
-    
+
     - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: 'maven'
-    
+
     - name: Build com Maven (SEM executar testes)
       run: ./mvnw clean package -DskipTests
-    
+
     - name: Verificar build
       run: ls -lh target/
 
-  deploy:
+  # ============================================================================
+  # 🛡️ JOB DE VALIDAÇÃO - BARREIRA DE SEGURANÇA
+  # ============================================================================
+  # Este job BLOQUEIA o deploy se detectar configurações perigosas
+  # Adicionado em: 01/02/2026
+  # Motivo: Prevenir perda de dados em produção
+  # ============================================================================
+  validate-config:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: ⚠️ Verificar application-prod.properties
+      run: |
+        echo "🔍 Verificando configurações de produção..."
+        # ❌ PROIBIDO: quarkus.flyway.clean-at-start=true (destrói dados)
+        grep -q "quarkus.flyway.clean-at-start=false" src/main/resources/application-prod.properties || (echo "❌ clean-at-start NÃO está false!" && exit 1)
+        # ❌ PROIBIDO: quarkus.hibernate-orm.database.generation != none (gera schema automaticamente)
+        grep -q "quarkus.hibernate-orm.database.generation=none" src/main/resources/application-prod.properties || (echo "❌ database.generation NÃO está none!" && exit 1)
+        echo "✅ Configurações de produção SEGURAS"
+
+    - name: ⚠️ Validar migrations (não-destrutivas)
+      run: |
+        echo "🔍 Verificando migrations por comandos destrutivos..."
+        # ❌ PROIBIDO: DROP TABLE, TRUNCATE, DROP SCHEMA, DROP DATABASE
+        if grep -r "DROP TABLE\|TRUNCATE\|DROP SCHEMA\|DROP DATABASE" src/main/resources/db/migration/*.sql 2>/dev/null; then
+          echo "❌ MIGRATION DESTRUTIVA ENCONTRADA!"
+          exit 1
+        fi
+        echo "✅ Migrations são seguras (apenas incrementais)"
+
+  # ============================================================================
+  # 🚀 JOB DE DEPLOY - MODO SEGURO
+  # ============================================================================
+  # Deploy PROTEGIDO que não toca no banco de dados
+  # Atualizado em: 01/02/2026
+  # ============================================================================
+  deploy:
+    needs: validate-config  # ✅ Só executa se validate-config passar
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
     steps:
     - name: Deploy para VPS via SSH
       uses: appleboy/ssh-action@v1.0.3
@@ -42,9 +91,53 @@ jobs:
         port: 22
         script: |
           cd /opt/apps/aguide-api-quarkus
+
+          # ============================================================================
+          # 🔍 VALIDAÇÃO 1: Verificar QUARKUS_PROFILE no docker-compose.yml
+          # ============================================================================
+          echo "🔍 Verificando docker-compose.yml no VPS..."
+          grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || (echo "❌ PROFILE NÃO É PROD!" && exit 1)
+          echo "✅ Profile de produção confirmado"
+
+          # ============================================================================
+          # 📥 ATUALIZAÇÃO DO CÓDIGO
+          # ============================================================================
+          echo "📥 Atualizando código..."
           git pull origin main
-          docker compose down
-          docker compose build --no-cache
-          docker compose up -d
+
+          # ============================================================================
+          # 🚀 DEPLOY SEGURO - APENAS APLICAÇÃO
+          # ============================================================================
+          # ❌ MÉTODO ANTIGO (PERIGOSO - COMENTADO):
+          # docker compose down              # ❌ Derruba TUDO (inclusive postgres)
+          # docker compose build --no-cache  # ❌ Reconstrói sem validação de profile
+          # docker compose up -d             # ❌ Sobe com profile desconhecido
+          #
+          # ✅ MÉTODO NOVO (SEGURO):
+          echo "🚀 Deploy SEGURO: Atualizando apenas aguide-api (sem tocar no postgres)..."
+          docker compose up -d --no-deps --build aguide-api
+          # --no-deps: Não recria containers de dependências (postgres fica intacto)
+          # --build: Reconstrói apenas a imagem aguide-api
+          # aguide-api: Nome específico do serviço (não afeta postgres)
+
+          # ============================================================================
+          # ⏳ AGUARDAR INICIALIZAÇÃO
+          # ============================================================================
+          echo "⏳ Aguardando aplicação inicializar..."
+          sleep 10
+
+          # ============================================================================
+          # 📋 VERIFICAR LOGS
+          # ============================================================================
+          echo "📋 Logs recentes:"
+          docker compose logs --tail=50 aguide-api
+
+          # ============================================================================
+          # 🧹 LIMPEZA SEGURA
+          # ============================================================================
+          echo "🧹 Limpando apenas imagens órfãs (não afeta containers ativos)..."
           docker system prune -f
-          echo "✅ Deploy concluído com sucesso!"
+
+          echo "✅ Deploy concluído com SEGURANÇA!"
+          echo "🛡️ Banco de dados PostgreSQL PRESERVADO"
+
