@@ -17,6 +17,28 @@ br.com.aguideptbr/
 └── util/              # Utilitários compartilhados
 ```
 
+---
+
+### 📂 Organização de Arquivos e Diretórios
+
+- **Arquivos de Produção e Estrutura:** O agente tem permissão total para criar e editar arquivos essenciais na raiz do projeto, como `Dockerfile`, `Jenkinsfile`, `pom.xml`, `.gitignore`, e arquivos de configuração.
+- **Código Fonte:** A pasta `src/main/java/` é o core do projeto. O agente deve manipular, criar ou refatorar módulos dentro desta pasta conforme as solicitações de desenvolvimento.
+- **Arquivos Temporários e de Rascunho (REGRA CRÍTICA):**
+  - **Local Obrigatório:** `a_error_log_temp/`
+  - Os arquivos de testes devem seguir esse padrão (`src/test/java/br/com/aguideptbr/features/[NOME_DA_FEATURE]/[NOME_ARQUIVO_JAVA]Test.java`),
+  ou seja, salvar testes na estrutura correta dentro de `src/test/java/...`. respeitando a organização por features do projeto.
+  - Os rascunhos de documentação (`*.md`), arquivos de texto para manipulação de dados ou logs de debug gerados pelo agente **DEVEM** ser criados exclusivamente dentro de `a_error_log_temp/`.
+  - **Proibição:** Nunca criar arquivos de "suporte ao raciocínio" ou "testes rápidos" na raiz do projeto. Se não for um arquivo de configuração oficial ou código de produção, ele pertence à `a_error_log_temp/`.
+
+  ## 🤖 Comportamento do Agente na Criação de Arquivos
+
+1. **Identificação de Escopo:** Antes de criar um arquivo, o agente deve classificar:
+   - *É essencial para o funcionamento do pipeline ou deploy?* (Ex: `pom.xml`, `Dockerfile`, `Jenkinsfile`) -> **Raiz**.
+   - *É um teste, rascunho, dump de dados ou arquivo auxiliar?* -> **a_error_log_temp/**.
+2. **Limpeza Automática:** Ao sugerir novos scripts de teste, o agente deve nomeá-los como `a_error_log_temp/test_nome_do_recurso.sh` por padrão.
+
+---
+
 ## Convenções de Código
 
 ### 1. Controllers REST
@@ -130,16 +152,6 @@ public class User extends PanacheEntity {
 - Usar `@QuarkusTest` para testes de integração
 - Usar `RestAssured` para testar endpoints
 - Cobertura mínima desejada: 80%
-
-### Dependência Obrigatória para Testes
-**Adicionar H2 no pom.xml:**
-```xml
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-h2</artifactId>
-    <scope>test</scope>
-</dependency>
-```
 
 ### Configuração de Testes (CRÍTICO)
 **SEMPRE criar `src/test/resources/application.properties` com:**

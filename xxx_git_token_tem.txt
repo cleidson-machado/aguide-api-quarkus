@@ -1,1 +1,0 @@
-https://nauto.aguide-ptbr.com.br/job/api_aguide_quarkus_build_3/build?token=webhook2026
