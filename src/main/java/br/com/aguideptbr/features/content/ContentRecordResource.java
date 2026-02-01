@@ -22,6 +22,16 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+/**
+ * REST Controller para gerenciamento de conteúdos (vídeos, artigos, podcasts).
+ *
+ * Esta classe implementa endpoints REST para operações CRUD completas
+ * e busca paginada de conteúdos educacionais.
+ *
+ * @author Cleidson Machado
+ * @since 1.0
+ * @see ContentService
+ */
 @Path("/contents")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -45,7 +55,18 @@ public class ContentRecordResource {
     // with pagination
     // **
 
-    // ✅ Paginated list if page/size is specified, otherwise returns the last 50...
+    /**
+     * Lista conteúdos com suporte a paginação e ordenação.
+     *
+     * Se page/size forem especificados, retorna resposta paginada completa.
+     * Caso contrário, retorna os últimos 50 itens para melhor performance.
+     *
+     * @param page      Número da página (opcional, inicia em 0)
+     * @param size      Tamanho da página (opcional, recomendado 10-50)
+     * @param sortField Campo para ordenação (padrão: title)
+     * @param sortOrder Direção da ordenação: asc ou desc (padrão: asc)
+     * @return Response com lista de conteúdos ou mensagem de erro
+     */
     @GET
     public Response listContents(
             @QueryParam("page") Integer page,
