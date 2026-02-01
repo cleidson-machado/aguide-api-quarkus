@@ -8,11 +8,32 @@ import br.com.aguideptbr.util.PaginatedResponse;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
+/**
+ * Serviço de negócio para gerenciamento de conteúdos.
+ *
+ * Responsável por implementar a lógica de negócio relacionada aos conteúdos,
+ * incluindo paginação, ordenação e validações.
+ *
+ * @author Cleidson Machado
+ * @since 1.0
+ */
 @ApplicationScoped
 public class ContentService {
 
+    /** Limite padrão de itens retornados quando paginação não é especificada */
     private static final int DEFAULT_LIMIT = 50;
 
+    /**
+     * Retorna conteúdos paginados com ordenação customizada.
+     *
+     * @param page      Número da página (zero-based)
+     * @param size      Quantidade de itens por página
+     * @param sortField Campo para ordenação (title, channelName, publishedAt, etc)
+     * @param sortOrder Direção da ordenação (asc ou desc)
+     * @return PaginatedResponse contendo lista de conteúdos e metadados de
+     *         paginação
+     * @throws IllegalArgumentException se o sortField for inválido
+     */
     public PaginatedResponse<ContentRecordModel> getPaginatedContents(int page, int size, String sortField,
             String sortOrder) {
         validateSortField(sortField);
@@ -29,6 +50,17 @@ public class ContentService {
                 page);
     }
 
+    /**
+     * Retorna lista limitada de conteúdos (máximo 50 itens).
+     *
+     * Utilizado quando paginação não é especificada na requisição,
+     * evitando sobrecarga ao retornar muitos registros.
+     *
+     * @param sortField Campo para ordenação
+     * @param sortOrder Direção da ordenação (asc ou desc)
+     * @return Map contendo mensagem informativa e lista limitada de itens
+     * @throws IllegalArgumentException se o sortField for inválido
+     */
     public Map<String, Object> getLimitedContents(String sortField, String sortOrder) {
         validateSortField(sortField);
         Sort sortBy = buildSort(sortField, sortOrder);
