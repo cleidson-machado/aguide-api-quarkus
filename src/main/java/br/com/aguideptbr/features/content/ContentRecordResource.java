@@ -1,15 +1,24 @@
 package br.com.aguideptbr.features.content;
 
+import java.util.List;
+import java.util.UUID;
+
 import br.com.aguideptbr.util.PaginatedResponse;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import java.util.List;
-import java.util.UUID;
 
 @Path("/contents")
 @Produces(MediaType.APPLICATION_JSON)
@@ -19,13 +28,17 @@ public class ContentRecordResource {
     @Inject
     ContentService contentService;
 
-    //**
+    // **
     // Examples of usage:
     // GET /contents?sort=title&order=asc - Alphabetical order
     // GET /contents?sort=title&order=desc - Descending alphabetical order
-    // GET /contents?sort=channelName&order=asc - / By channel
-    // GET /contents?page=0&size=10&sort=title&order=asc - By page
-    //**
+    // GET /contents?sort=channelName&order=asc - By channel
+    // GET /contents?sort=publishedAt&order=desc - Most recent published content
+    // first
+    // GET /contents?page=0&size=10&sort=title&order=asc - Paginated by title
+    // GET /contents?page=0&size=10&sort=publishedAt&order=desc - Recent content
+    // with pagination
+    // **
 
     // ✅ Paginated list if page/size is specified, otherwise returns the last 50...
     @GET
@@ -33,8 +46,7 @@ public class ContentRecordResource {
             @QueryParam("page") Integer page,
             @QueryParam("size") Integer size,
             @QueryParam("sort") @DefaultValue("title") String sortField,
-            @QueryParam("order") @DefaultValue("asc") String sortOrder
-    ) {
+            @QueryParam("order") @DefaultValue("asc") String sortOrder) {
         try {
             if (page != null && size != null) {
                 var pagedResponse = contentService.getPaginatedContents(page, size, sortField, sortOrder);
@@ -50,19 +62,19 @@ public class ContentRecordResource {
         }
     }
 
-    //**
+    // **
     // This endpoint is redundant with the paginated option in listContents,
     // but is kept here for educational purposes
-    // This method don't list by order because it's redundant with the main listContents method
+    // This method don't list by order because it's redundant with the main
+    // listContents method
     // Example: GET /contents/paged?page=0&size=10
-    //**
+    // **
 
     @GET
     @Path("/paged")
     public PaginatedResponse<ContentRecordModel> listPaginatedWithMeta(
             @QueryParam("page") @DefaultValue("0") int page,
-            @QueryParam("size") @DefaultValue("10") int size
-    ) {
+            @QueryParam("size") @DefaultValue("10") int size) {
         var query = ContentRecordModel.findAll();
         long totalItems = query.count();
         int totalPages = (int) Math.ceil((double) totalItems / size);
@@ -119,6 +131,7 @@ public class ContentRecordResource {
         existing.channelName = dataFromRequest.channelName;
         existing.type = dataFromRequest.type;
         existing.thumbnailUrl = dataFromRequest.thumbnailUrl;
+        existing.setPublishedAt(dataFromRequest.getPublishedAt());
 
         return Response.ok(existing).build();
     }
@@ -129,7 +142,7 @@ public class ContentRecordResource {
     public Response delete(@PathParam("id") UUID id) {
         ContentRecordModel existing = ContentRecordModel.findById(id);
         if (existing == null) {
-            //Create a more detailed response for not found
+            // Create a more detailed response for not found
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("The Content with ID " + id + " was not found to DELETE!.")
                     .build();
@@ -175,5 +188,6 @@ public class ContentRecordResource {
     }
 
     // Internal record class to hold content and plusInfoMsg
-    public record ContentWithComment(ContentRecordModel content, String plusInfoMsg) {}
+    public record ContentWithComment(ContentRecordModel content, String plusInfoMsg) {
+    }
 }

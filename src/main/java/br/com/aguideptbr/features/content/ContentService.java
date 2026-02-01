@@ -1,19 +1,20 @@
 package br.com.aguideptbr.features.content;
 
-import br.com.aguideptbr.util.PaginatedResponse;
-import io.quarkus.panache.common.Sort;
-import jakarta.enterprise.context.ApplicationScoped;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import br.com.aguideptbr.util.PaginatedResponse;
+import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ContentService {
 
     private static final int DEFAULT_LIMIT = 50;
 
-    public PaginatedResponse<ContentRecordModel> getPaginatedContents(int page, int size, String sortField, String sortOrder) {
+    public PaginatedResponse<ContentRecordModel> getPaginatedContents(int page, int size, String sortField,
+            String sortOrder) {
         validateSortField(sortField);
         Sort sortBy = buildSort(sortField, sortOrder);
 
@@ -25,8 +26,7 @@ public class ContentService {
                 query.list(),
                 totalItems,
                 totalPages,
-                page
-        );
+                page);
     }
 
     public Map<String, Object> getLimitedContents(String sortField, String sortOrder) {
@@ -52,12 +52,10 @@ public class ContentService {
     }
 
     private boolean isValidSortField(String field) {
-        return List.of("title", "description", "channelName", "type", "createdAt").contains(field);
+        return List.of("title", "description", "channelName", "type", "publishedAt", "createdAt").contains(field);
     }
 
     private Sort buildSort(String sortField, String sortOrder) {
-        return "desc".equalsIgnoreCase(sortOrder) ?
-                Sort.by(sortField).descending() :
-                Sort.by(sortField).ascending();
+        return "desc".equalsIgnoreCase(sortOrder) ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
     }
 }

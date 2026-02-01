@@ -1,11 +1,22 @@
 package br.com.aguideptbr.features.content;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
 /**
  * Represents a content record (e.g., video, article, podcast) in the database.
@@ -15,7 +26,7 @@ import java.util.UUID;
 @Table(name = "content_record")
 public class ContentRecordModel extends PanacheEntityBase {
 
-    // ========== IDENTIFICAÇÃO ==========
+    // ========== IDENTIFICAÇÃO ============
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public UUID id;
@@ -32,6 +43,10 @@ public class ContentRecordModel extends PanacheEntityBase {
 
     @Column(name = "thumbnail_url")
     public String thumbnailUrl;
+
+    @Column(name = "published_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime publishedAt;
 
     // ========== CANAL E TIPO ==========
     @Column(name = "channel_name")
@@ -109,7 +124,18 @@ public class ContentRecordModel extends PanacheEntityBase {
         updatedAt = LocalDateTime.now();
     }
 
-    // ========== GETTERS E SETTERS PARA AUDITORIA ==========
+    // ========== GETTERS E SETTERS para interagir com a data de publicação do vídeo
+    // no youtube ==========
+
+    public LocalDateTime getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(LocalDateTime publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    // ========== GETTERS E SETTERS PARA AUDITORIA E PUBLICAÇÃO ==========
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -126,8 +152,10 @@ public class ContentRecordModel extends PanacheEntityBase {
      * This search is case-insensitive and returns a list of results.
      * It is ideal for implementing autocomplete or dynamic search features.
      *
-     * @param searchTerm The partial term to search for at the beginning of the title.
-     * @return A list of ContentRecordModel matching the criteria. The list will be empty if no matches are found.
+     * @param searchTerm The partial term to search for at the beginning of the
+     *                   title.
+     * @return A list of ContentRecordModel matching the criteria. The list will be
+     *         empty if no matches are found.
      */
     public static List<ContentRecordModel> searchByTitle(String searchTerm) {
         return list("lower(title) like ?1", searchTerm.toLowerCase() + "%");
@@ -138,7 +166,8 @@ public class ContentRecordModel extends PanacheEntityBase {
      * This method is case-sensitive by default and expects the title to be unique.
      *
      * @param title_txt The exact title to search for.
-     * @return The found ContentRecordModel object, or {@code null} if no content matches the exact title.
+     * @return The found ContentRecordModel object, or {@code null} if no content
+     *         matches the exact title.
      * @see br.com.aguideptbr.features.content.ContentRecordResource#findByTitle(String)
      */
     public static ContentRecordModel findByTitle(String title_txt) {

@@ -1,11 +1,16 @@
 pipeline {
     agent any
 
+    // ⭐ TRIGGER: Aceita webhooks do GitHub (push e merge em main)
+    triggers {
+        githubPush()
+    }
+
     environment {
         // Configurações do projeto
         PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
         GIT_REPO = 'https://github.com/cleidson-machado/aguide-api-quarkus.git'
-        GIT_BRANCH = 'develop-data-objects'  // Ajuste conforme a branch
+        GIT_BRANCH = 'main'  // Branch de produção
         MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
     }
 
@@ -31,6 +36,30 @@ pipeline {
                     echo "🖥️  Node Name: ${NODE_NAME}"
                     echo "⏰ Timestamp: ${new Date()}"
                     echo '================================================'
+                }
+            }
+        }
+
+        stage('Validar Branch') {
+            steps {
+                script {
+                    echo '🔍 Validando branch para ambiente de PRODUÇÃO...'
+
+                    // Captura a branch atual (pode vir do webhook ou da env)
+                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'main'
+
+                    echo "📌 Branch detectada: ${currentBranch}"
+
+                    // ⭐ SÓ EXECUTA EM BRANCH MAIN
+                    if (currentBranch != 'main' && !currentBranch.endsWith('/main')) {
+                        echo "⚠️  Branch '${currentBranch}' NÃO é a branch main"
+                        echo "❌ Este job é EXCLUSIVO para branch 'main'"
+                        echo "🚫 Build cancelado - use o job 'aguide-api-test' para branches develop-*"
+                        currentBuild.result = 'NOT_BUILT'
+                        error("Branch ${currentBranch} não permitida neste job de PRODUÇÃO")
+                    }
+
+                    echo "✅ Branch 'main' VALIDADA - Prosseguindo com deploy em PRODUÇÃO..."
                 }
             }
         }
@@ -86,7 +115,7 @@ pipeline {
 
                     // Executa a análise do SonarQube COM testes
                     // IMPORTANTE: NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui
-                    // Os testes usam H2 configurado em src/test/resources/application.properties
+                    // Os testes usam PostgreSQL (quarkus_test) configurado em src/test/resources/application.properties
                     withSonarQubeEnv() {
                         sh """
                             cd /opt/apps/aguide-api-quarkus
@@ -176,21 +205,25 @@ pipeline {
     post {
         success {
             echo '================================================'
-            echo '✅ PIPELINE EXECUTADO COM SUCESSO!'
+            echo '✅ PIPELINE DE PRODUÇÃO EXECUTADO COM SUCESSO!'
             echo '================================================'
-            echo "🎉 Aplicação aguide-api está rodando!"
+            echo "🎉 Aplicação aguide-api está rodando em PRODUÇÃO!"
+            echo "🚀 Deploy realizado na branch main"
             echo "🔢 Build #${BUILD_NUMBER} concluído"
             echo "⏱️  Duração: ${currentBuild.durationString}"
             echo "🔗 Console: ${BUILD_URL}console"
+            echo "🌐 Health Check: http://localhost:8083/q/health"
             echo '================================================'
         }
         failure {
             echo '================================================'
-            echo '❌ PIPELINE FALHOU!'
+            echo '❌ PIPELINE DE PRODUÇÃO FALHOU!'
             echo '================================================'
+            echo "🚨 ATENÇÃO: Deploy em produção não foi concluído!"
             echo "🔢 Build #${BUILD_NUMBER} com erro"
             echo "📋 Verificar logs: ${BUILD_URL}console"
             echo "🔍 Status: ${currentBuild.result}"
+            echo "⚠️  Aplicação pode estar indisponível - verificar container manualmente"
             echo '================================================'
         }
         always {

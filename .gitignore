@@ -47,3 +47,9 @@ nb-configuration.xml
 
 # Maven local repository (Jenkins cache)
 .m2/repository/
+
+# Local Log Folder for Development purposes only
+a_error_log_temp/
+
+# Local for storage of old markdown files for Study purposes only
+a_old_md_files/

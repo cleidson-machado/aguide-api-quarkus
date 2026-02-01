@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // ⭐ TRIGGER: Aceita webhooks do GitHub
+    triggers {
+        githubPush()
+    }
+
     environment {
         // Configurações do projeto
         PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
@@ -31,6 +36,30 @@ pipeline {
                     echo "🖥️  Node Name: ${NODE_NAME}"
                     echo "⏰ Timestamp: ${new Date()}"
                     echo '================================================'
+                }
+            }
+        }
+
+        stage('Validar Branch') {
+            steps {
+                script {
+                    echo '🔍 Validando branch para ambiente de TESTE...'
+
+                    // Captura a branch atual (pode vir do webhook ou da env)
+                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'develop-data-objects'
+
+                    echo "📌 Branch detectada: ${currentBranch}"
+
+                    // ⭐ SÓ EXECUTA EM BRANCHES DEVELOP-*
+                    if (!currentBranch.startsWith('develop-')) {
+                        echo "⚠️  Branch '${currentBranch}' NÃO é uma branch de desenvolvimento"
+                        echo "❌ Este job é EXCLUSIVO para branches 'develop-*'"
+                        echo "🚫 Build cancelado - use o job 'aguide-api-production' para branch main"
+                        currentBuild.result = 'NOT_BUILT'
+                        error("Branch ${currentBranch} não permitida neste job de TESTE")
+                    }
+
+                    echo "✅ Branch '${currentBranch}' VALIDADA - Prosseguindo com testes..."
                 }
             }
         }
@@ -86,7 +115,7 @@ pipeline {
 
                     // Executa a análise do SonarQube COM testes
                     // IMPORTANTE: NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui
-                    // Os testes usam H2 configurado em src/test/resources/application.properties
+                    // Os testes usam PostgreSQL (quarkus_test) configurado em src/test/resources/application.properties
                     withSonarQubeEnv() {
                         sh """
                             cd /opt/apps/aguide-api-quarkus
@@ -110,78 +139,19 @@ pipeline {
                 '''
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                echo '🐳 Construindo imagem Docker...'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    docker compose -f docker-compose.yml build --no-cache
-                '''
-            }
-        }
-
-        stage('Deploy Container') {
-            steps {
-                echo '🚀 Fazendo deploy do container...'
-                echo '⚠️  IMPORTANTE: Flyway migrations serão executadas automaticamente ao iniciar o container'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    docker rm -f aguide-api || true
-                    docker compose -f docker-compose.yml down --remove-orphans
-                    docker compose -f docker-compose.yml up -d
-                '''
-                echo '⏳ Aguardando inicialização do container (30s)...'
-                sleep 30
-            }
-        }
-
-        stage('Verificar Migrations') {
-            steps {
-                echo '🔍 Verificando se migrations Flyway foram executadas...'
-                sh '''
-                    echo "📋 Últimas linhas do log do container:"
-                    docker logs aguide-api --tail 50 | grep -iE "flyway|migration" || echo "⚠️  Flyway logs não encontrados (pode estar OK se já executou)"
-                '''
-            }
-        }
-
-        stage('Cleanup Docker') {
-            steps {
-                echo '🧹 Limpando recursos Docker não utilizados...'
-                sh 'docker system prune -f || true'
-            }
-        }
-
-        stage('Verificar Status') {
-            steps {
-                echo '✅ Verificando status do container e saúde da aplicação...'
-                sh '''
-                    echo "🐳 Status do container:"
-                    docker ps --filter "name=aguide-api" --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
-
-                    echo ""
-                    echo "🏥 Verificando health check da aplicação (aguardando 10s)..."
-                    sleep 10
-                    curl -f http://localhost:8083/q/health 2>/dev/null && echo "✅ Aplicação está saudável!" || echo "⚠️  Health check falhou (verifique logs)"
-
-                    echo ""
-                    echo "📊 Últimas 20 linhas do log:"
-                    docker logs aguide-api --tail 20
-                '''
-            }
-        }
     }
 
     post {
         success {
             echo '================================================'
-            echo '✅ PIPELINE EXECUTADO COM SUCESSO!'
+            echo '✅ PIPELINE DE TESTES EXECUTADO COM SUCESSO!'
             echo '================================================'
-            echo "🎉 Aplicação aguide-api está rodando!"
+            echo "🎉 Build e testes concluídos com sucesso!"
+            echo "✅ Código validado para branch de desenvolvimento"
             echo "🔢 Build #${BUILD_NUMBER} concluído"
             echo "⏱️  Duração: ${currentBuild.durationString}"
             echo "🔗 Console: ${BUILD_URL}console"
+            echo "⚠️  DEPLOY NÃO REALIZADO (use Jenkinsfile.production para deploy)"
             echo '================================================'
         }
         failure {

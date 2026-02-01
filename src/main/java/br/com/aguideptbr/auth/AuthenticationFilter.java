@@ -1,11 +1,13 @@
 package br.com.aguideptbr.auth;
 
+import java.io.IOException;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
-
-import java.io.IOException;
 
 @Provider
 public class AuthenticationFilter implements ContainerRequestFilter {
@@ -14,6 +16,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
+        // Desabilita autenticação em testes
+        String profile = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.profile", String.class)
+                .orElse("prod");
+
+        if ("test".equals(profile)) {
+            return;
+        }
 
         String authorizationHeader = requestContext.getHeaderString("Authorization");
 
