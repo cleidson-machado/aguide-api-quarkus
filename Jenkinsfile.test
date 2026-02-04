@@ -159,6 +159,17 @@ pipeline {
                         echo '✅ Flyway configurado para limpar banco antes dos testes'
                     }
 
+                    // Verifica se JWT está desabilitado em testes
+                    def jwtDisabled = sh(
+                        script: "grep -q 'mp.jwt.verify.publickey.location=none' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        returnStatus: true
+                    )
+                    if (jwtDisabled != 0) {
+                        echo '⚠️  AVISO: JWT pode não estar desabilitado em testes (pode causar erro ao carregar chaves)'
+                    } else {
+                        echo '✅ JWT desabilitado para testes (evita erro de chave pública)'
+                    }
+
                     echo '================================================'
                     echo '✅ CONFIGURAÇÕES DE TESTE VALIDADAS:'
                     echo '   📁 application.properties: OK'
