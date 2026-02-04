@@ -195,22 +195,24 @@ pipeline {
                     // Configura o Maven tool
                     def mvn = tool 'Default Maven'
 
-                    // ⚠️ IMPORTANTE: Configurações de teste são carregadas automaticamente
-                    // de src/test/resources/application.properties
-                    // - Database: jdbc:postgresql://quarkus_postgres:5432/quarkus_test
-                    // - AuthenticationFilter: DESABILITADO (testes sem token)
-                    // - Flyway: clean-at-start=true (recria banco limpo)
-                    //
-                    // 🚫 NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui!
-                    // Isso sobrescreveria as configurações de teste.
-                    withSonarQubeEnv() {
-                        sh """
-                            cd /opt/apps/aguide-api-quarkus
-                            echo '▶️  Iniciando execução de testes...'
-                            ${mvn}/bin/mvn verify sonar:sonar \
-                                -Dsonar.projectKey=aguide-api-quarkus \
-                                -Dsonar.projectName='Aguide API Quarkus'
-                        """
+                    // ✅ CONFIGURAÇÃO CRÍTICA: No Jenkins (Docker), usar hostname Docker
+                    // O application.properties tem fallback para localhost (testes locais)
+                    // Mas Jenkins PRECISA usar quarkus_postgres (hostname do container)
+                    withEnv([
+                        'QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_test',
+                        'QUARKUS_DATASOURCE_USERNAME=quarkus',
+                        'QUARKUS_DATASOURCE_PASSWORD=quarkus123'
+                    ]) {
+                        withSonarQubeEnv() {
+                            sh """
+                                cd /opt/apps/aguide-api-quarkus
+                                echo '▶️  Iniciando execução de testes...'
+                                echo '🔗 Database URL: \${QUARKUS_DATASOURCE_JDBC_URL}'
+                                ${mvn}/bin/mvn verify sonar:sonar \
+                                    -Dsonar.projectKey=aguide-api-quarkus \
+                                    -Dsonar.projectName='Aguide API Quarkus'
+                            """
+                        }
                     }
                 }
                 echo '================================================'
