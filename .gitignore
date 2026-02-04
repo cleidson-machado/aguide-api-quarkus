@@ -11,7 +11,15 @@ release.properties
 .classpath
 .settings/
 bin/
+
+# ========== SECURITY - CHAVES PRIVADAS (CRÍTICO!) ==========
+# NUNCA comite chaves privadas no Git!
 security/
+*.pem
+*.key
+*.p12
+*.jks
+# ============================================================
 
 # IntelliJ
 .idea

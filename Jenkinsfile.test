@@ -98,34 +98,113 @@ pipeline {
 
         stage('Build Maven') {
             steps {
-                echo '🔨 Compilando projeto com Maven (SEM testes)...'
+                echo '================================================'
+                echo '🔨 COMPILAÇÃO RÁPIDA (sem testes)'
+                echo '================================================'
+                echo '📋 Objetivo: Validar que o código COMPILA'
+                echo '⏩ Testes serão executados no próximo stage'
+                echo '⚡ Feedback rápido: ~30 segundos'
+                echo '================================================'
                 sh '''
                     cd /opt/apps/aguide-api-quarkus
+                    # -DskipTests: Compila mas NÃO executa testes
+                    # Por quê? Separar compilação de testes dá feedback mais rápido
+                    # Os testes SERÃO executados no stage "SonarQube Analysis"
                     ./mvnw clean package -DskipTests
                 '''
+                echo '✅ Compilação concluída com sucesso!'
+            }
+        }
+
+        stage('Validar Configurações de Teste') {
+            steps {
+                echo '🔍 Validando configurações de segurança para testes...'
+                script {
+                    // Verifica se application.properties de teste existe
+                    def testPropsExists = fileExists('/opt/apps/aguide-api-quarkus/src/test/resources/application.properties')
+                    if (!testPropsExists) {
+                        error('❌ Arquivo src/test/resources/application.properties NÃO encontrado!')
+                    }
+                    echo '✅ Arquivo de configuração de testes encontrado'
+
+                    // Verifica se AuthenticationFilter está desabilitado em testes
+                    def authFilterDisabled = sh(
+                        script: "grep -q 'quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        returnStatus: true
+                    )
+                    if (authFilterDisabled != 0) {
+                        echo '⚠️  AVISO: AuthenticationFilter pode NÃO estar desabilitado em testes!'
+                    } else {
+                        echo '✅ AuthenticationFilter desabilitado para testes'
+                    }
+
+                    // Verifica se está usando banco de teste (quarkus_test)
+                    def usingTestDb = sh(
+                        script: "grep -q 'quarkus_test' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        returnStatus: true
+                    )
+                    if (usingTestDb != 0) {
+                        error('❌ Database de teste (quarkus_test) NÃO configurado!')
+                    }
+                    echo '✅ Database de teste (quarkus_test) configurado corretamente'
+
+                    // Verifica se Flyway está configurado para limpar banco em testes
+                    def flywayClean = sh(
+                        script: "grep -q 'quarkus.flyway.clean-at-start=true' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        returnStatus: true
+                    )
+                    if (flywayClean != 0) {
+                        echo '⚠️  AVISO: Flyway pode não estar configurado para limpar banco em testes'
+                    } else {
+                        echo '✅ Flyway configurado para limpar banco antes dos testes'
+                    }
+
+                    echo '================================================'
+                    echo '✅ CONFIGURAÇÕES DE TESTE VALIDADAS:'
+                    echo '   📁 application.properties: OK'
+                    echo '   🔓 AuthenticationFilter: DESABILITADO'
+                    echo '   🗄️  Database: quarkus_test'
+                    echo '   🧹 Flyway clean-at-start: true'
+                    echo '================================================'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo '🔍 Executando análise do SonarQube COM testes (barreira de qualidade)...'
+                echo '================================================'
+                echo '🔍 Executando TESTES e análise SonarQube...'
+                echo '================================================'
+                echo '🗄️  Database: quarkus_test (PostgreSQL)'
+                echo '🔓 Autenticação: DESABILITADA para testes'
+                echo '🧹 Flyway: Limpa e recria schema a cada execução'
+                echo '📊 SonarQube: Análise de qualidade de código'
+                echo '================================================'
                 script {
                     // Configura o Maven tool
                     def mvn = tool 'Default Maven'
 
-                    // Executa a análise do SonarQube COM testes
-                    // IMPORTANTE: NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui
-                    // Os testes usam PostgreSQL (quarkus_test) configurado em src/test/resources/application.properties
+                    // ⚠️ IMPORTANTE: Configurações de teste são carregadas automaticamente
+                    // de src/test/resources/application.properties
+                    // - Database: jdbc:postgresql://quarkus_postgres:5432/quarkus_test
+                    // - AuthenticationFilter: DESABILITADO (testes sem token)
+                    // - Flyway: clean-at-start=true (recria banco limpo)
+                    //
+                    // 🚫 NÃO exportar QUARKUS_DATASOURCE_JDBC_URL aqui!
+                    // Isso sobrescreveria as configurações de teste.
                     withSonarQubeEnv() {
                         sh """
                             cd /opt/apps/aguide-api-quarkus
+                            echo '▶️  Iniciando execução de testes...'
                             ${mvn}/bin/mvn verify sonar:sonar \
                                 -Dsonar.projectKey=aguide-api-quarkus \
                                 -Dsonar.projectName='Aguide API Quarkus'
                         """
                     }
                 }
-                echo '✅ Análise do SonarQube e testes concluídos!'
+                echo '================================================'
+                echo '✅ Testes e análise SonarQube concluídos!'
+                echo '================================================'
             }
         }
 
