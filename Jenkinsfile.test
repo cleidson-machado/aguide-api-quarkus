@@ -161,7 +161,7 @@ pipeline {
 
                     // Verifica se JWT está desabilitado em testes
                     def jwtDisabled = sh(
-                        script: "grep -q 'mp.jwt.verify.publickey.location=none' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        script: "grep -q 'quarkus.smallrye-jwt.enabled=false' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
                         returnStatus: true
                     )
                     if (jwtDisabled != 0) {

@@ -417,9 +417,7 @@ ON CONFLICT (email) DO NOTHING; -- Não duplica em re-execuções
 quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter
 
 # Desabilita JWT em testes (evita erro de chave pública não encontrada)
-mp.jwt.verify.publickey.location=none
-smallrye.jwt.sign.key.location=none
-mp.jwt.verify.issuer=none
+quarkus.smallrye-jwt.enabled=false
 
 # Usa PostgreSQL com banco dedicado para testes (quarkus_test)
 quarkus.datasource.db-kind=postgresql
@@ -440,8 +438,8 @@ quarkus.flyway.migrate-at-start=true
 - Não é necessário criar migrations separadas ou adaptar sintaxe
 
 **Importante sobre JWT em Testes:**
-- **SEMPRE** configurar `mp.jwt.verify.publickey.location=none` em testes
-- Isso evita que o SmallRye JWT tente carregar as chaves JWT durante inicialização de testes
+- **SEMPRE** configurar `quarkus.smallrye-jwt.enabled=false` em testes
+- Isso desabilita completamente a extensão SmallRye JWT, evitando tentativas de carregar chaves
 - Combinado com `quarkus.arc.exclude-types` do AuthFilter, garante que testes rodem sem autenticação
 
 ### Regras de Testes
