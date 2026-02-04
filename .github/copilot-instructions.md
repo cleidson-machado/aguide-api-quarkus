@@ -401,7 +401,7 @@ ON CONFLICT (email) DO NOTHING; -- Não duplica em re-execuções
 - Nomenclatura: `V[major].[minor].[patch]__[Description].sql`
 - Exemplo: `V1.0.3__Add_user_role_column.sql`
 - **NUNCA modificar migrations já aplicadas**
-- **H2 vs PostgreSQL**: Migrations para testes ficam em `db/migration/h2/` (sintaxe compatível)
+- **PostgreSQL em Produção e Testes**: Mesmas migrations são usadas em ambos ambientes (quarkus_db e quarkus_test)
 - **SEMPRE usar `ON CONFLICT DO NOTHING`** para INSERTs de dados iniciais (idempotência)
 
 ## Testes
@@ -416,35 +416,37 @@ ON CONFLICT (email) DO NOTHING; -- Não duplica em re-execuções
 # Desabilita AuthenticationFilter em testes
 quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter
 
-# Usa H2 em memória para testes rápidos
-quarkus.datasource.db-kind=h2
-quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
-quarkus.datasource.username=sa
-quarkus.datasource.password=
+# Usa PostgreSQL com banco dedicado para testes (quarkus_test)
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=${QUARKUS_DATASOURCE_JDBC_URL:jdbc:postgresql://quarkus_postgres:5432/quarkus_test}
+quarkus.datasource.username=${QUARKUS_DATASOURCE_USERNAME:quarkus}
+quarkus.datasource.password=${QUARKUS_DATASOURCE_PASSWORD:quarkus123}
 
-# Flyway em testes - USA MIGRATIONS ESPECÍFICAS DO H2
+# Flyway em testes - USA MESMAS MIGRATIONS DE PRODUÇÃO
 quarkus.flyway.clean-at-start=true
 quarkus.flyway.migrate-at-start=true
-quarkus.flyway.locations=classpath:db/migration/h2
+# Location padrão: classpath:db/migration (não precisa especificar)
 ```
 
-**Diferenças H2 vs PostgreSQL nas Migrations:**
-- PostgreSQL: `DEFAULT gen_random_uuid()` → H2: `DEFAULT RANDOM_UUID()`
-- PostgreSQL: `ADD COLUMN x, ADD COLUMN y` → H2: Separar em múltiplos `ALTER TABLE`
-- PostgreSQL: `COMMENT ON COLUMN` → H2: Não suportado (remover)
-- PostgreSQL: `USING gin(to_tsvector(...))` → H2: Índice simples sem gin
+**Importante sobre Migrations:**
+- Produção e testes usam **PostgreSQL** (quarkus_db e quarkus_test)
+- **MESMAS migrations** são usadas em ambos ambientes
+- Flyway executa `clean-at-start=true` em testes para garantir ambiente limpo
+- Não é necessário criar migrations separadas ou adaptar sintaxe
 
 ### Regras de Testes
 ✅ **PERMITIDO:**
 - Desabilitar filtros de autenticação via `quarkus.arc.exclude-types`
-- Usar H2 em memória para testes
+- Usar PostgreSQL com banco dedicado `quarkus_test` (isolado de produção)
 - RestAssured sem headers de autenticação em testes
+- Flyway `clean-at-start=true` para garantir ambiente limpo a cada teste
 
 ❌ **PROIBIDO:**
 - Hardcoded tokens/senhas no código de teste
 - Usar `-DskipTests` no Jenkins/CI (testes são barreira de qualidade)
 - Pular testes para "resolver rápido" problemas de autenticação
-- Usar banco PostgreSQL real em testes (usar H2)
+- Conectar em `quarkus_db` (produção) durante testes - SEMPRE usar `quarkus_test`
+- Criar migrations separadas para testes (usar as mesmas de produção)
 
 ## Segurança
 - Autenticação implementada via `AuthenticationFilter`
