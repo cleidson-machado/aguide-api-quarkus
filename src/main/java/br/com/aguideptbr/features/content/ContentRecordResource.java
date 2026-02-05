@@ -79,7 +79,7 @@ public class ContentRecordResource {
             if (page != null && size != null) {
                 log.debug("Chamando contentService.getPaginatedContents");
                 var pagedResponse = contentService.getPaginatedContents(page, size, sortField, sortOrder);
-                log.info("GET /contents - Retornando resposta paginada com " + pagedResponse.content.size()
+                log.info("GET /contents - Retornando resposta paginada com " + pagedResponse.getContent().size()
                         + " itens");
                 return Response.ok(pagedResponse).build();
             } else {

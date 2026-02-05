@@ -6,8 +6,8 @@ Este é um projeto **Java 17+ com Quarkus 3.x** seguindo arquitetura de camadas 
 ## Estrutura de Pacotes OBRIGATÓRIA
 ```
 br.com.aguideptbr/
-├── auth/              # Autenticação e segurança
 ├── features/          # Funcionalidades de negócio (organizadas por domínio)
+│   ├── auth/          # Autenticação e segurança (feature)
 │   ├── user/
 │   │   ├── UserController.java
 │   │   ├── UserService.java
@@ -40,6 +40,15 @@ br.com.aguideptbr/
 ---
 
 ## Convenções de Código
+
+### ✅ Convenção de nomes (Sonar: java:S117)
+- **Variáveis locais e parâmetros** devem usar **camelCase** (ex.: `titleText`).
+- **Evite snake_case** em variáveis e parâmetros (ex.: `title_txt`).
+- **Constantes** podem usar **UPPER_SNAKE_CASE** (ex.: `TOKEN_TYPE`).
+
+### ✅ Encapsulamento de campos (Sonar: java:S1104)
+- **Evite campos `public`** em classes utilitárias/DTOs; use `private` + getters/setters.
+- **Exceção**: Entidades Panache podem expor campos `public` quando for padrão do Quarkus.
 
 ### 1. Controllers REST
 - Usar `@Path("/api/v1/recurso")` na classe
