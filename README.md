@@ -80,6 +80,45 @@ Easily start your RESTful Web Services
 
 ---
 
+## ✅ Cobertura de Testes (JaCoCo + SonarQube)
+
+Este projeto gera cobertura com **JaCoCo** e publica no **SonarQube**.
+
+### Como gerar o relatório local
+
+```bash
+./mvnw verify
+```
+
+Arquivos gerados:
+- **XML (para Sonar):** `target/site/jacoco/jacoco.xml`
+- **HTML (visualização local):** `target/site/jacoco/index.html`
+
+> O **HTML é opcional** e serve apenas para leitura local. O Sonar usa o XML.
+
+### Configuração no SonarQube (UI)
+
+Em **Project Settings → JaCoCo**, preencha:
+
+```
+target/site/jacoco/jacoco.xml
+```
+
+O segundo campo pode ficar em branco.
+
+### Configuração via pipeline (Jenkins)
+
+No pipeline, já enviamos o caminho do XML:
+
+```
+-Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+```
+
+> Se usar a configuração via Jenkins, a configuração na UI é opcional (evite duplicidade).
+
+
+---
+
 ## 🔧 Troubleshooting - Problemas Comuns no Ambiente Local
 
 Esta seção documenta problemas recorrentes no ambiente de desenvolvimento local e suas soluções.

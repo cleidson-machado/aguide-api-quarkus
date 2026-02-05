@@ -410,11 +410,25 @@ ON CONFLICT (email) DO NOTHING; -- Não duplica em re-execuções
 - Usar `RestAssured` para testar endpoints
 - Cobertura mínima desejada: 80%
 
+### Boas práticas de testes unitários (FOCO)
+- **Foque na regra de negócio** (Service) e nos fluxos críticos.
+- **Isole dependências** com mocks (Repository, gateways externos).
+- **Testes negativos são obrigatórios**: validar erros/exceções esperadas.
+- **Evite testes fracos** (getters/setters sem lógica e duplicação da implementação).
+- **Determinismo**: sem dependência de data/hora real, rede, ordem de execução.
+- **Se o teste precisar de `@QuarkusTest`**, provavelmente é integração, não unitário.
+
+### Quando criar testes unitários
+- Regras com múltiplas ramificações (if/else, validações, autorização).
+- Cálculos, transformações e normalizações.
+- Bugs recorrentes (testes evitam regressão).
+- Casos de erro esperados (ex.: senha inválida, recurso inexistente).
+
 ### Configuração de Testes (CRÍTICO)
 **SEMPRE criar `src/test/resources/application.properties` com:**
 ```properties
 # Desabilita AuthenticationFilter em testes
-quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter
+quarkus.arc.exclude-types=br.com.aguideptbr.features.auth.AuthenticationFilter
 
 # Desabilita JWT em testes (evita erro de chave pública não encontrada)
 quarkus.smallrye-jwt.enabled=false

@@ -1,4 +1,4 @@
-package br.com.aguideptbr.auth;
+package br.com.aguideptbr.features.auth;
 
 import java.time.Instant;
 import java.util.HashSet;

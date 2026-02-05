@@ -129,7 +129,7 @@ pipeline {
 
                     // Verifica se AuthenticationFilter está desabilitado em testes
                     def authFilterDisabled = sh(
-                        script: "grep -q 'quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
+                        script: "grep -q 'quarkus.arc.exclude-types=br.com.aguideptbr.features.auth.AuthenticationFilter' /opt/apps/aguide-api-quarkus/src/test/resources/application.properties",
                         returnStatus: true
                     )
                     if (authFilterDisabled != 0) {
@@ -210,13 +210,74 @@ pipeline {
                                 echo '🔗 Database URL: \${QUARKUS_DATASOURCE_JDBC_URL}'
                                 ${mvn}/bin/mvn verify sonar:sonar \
                                     -Dsonar.projectKey=aguide-api-quarkus \
-                                    -Dsonar.projectName='Aguide API Quarkus'
+                                    -Dsonar.projectName='Aguide API Quarkus' \
+                                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                             """
                         }
                     }
                 }
                 echo '================================================'
                 echo '✅ Testes e análise SonarQube concluídos!'
+                echo '================================================'
+            }
+        }
+
+        stage('Verificar Testes Pulados (JWT)') {
+            steps {
+                echo '================================================'
+                echo '🧪 Verificando testes pulados relacionados a JWT...'
+                echo '================================================'
+                script {
+                    def skippedJwt = sh(
+                        script: '''
+                            if ls target/surefire-reports/*.txt >/dev/null 2>&1; then
+                              grep -R "JWTServiceTest" -l target/surefire-reports/*.txt 2>/dev/null \
+                                | xargs -r grep "Skipped:" \
+                                | awk -F 'Skipped: ' '{gsub(/[^0-9].*/, "", $2); sum+=$2} END{print sum+0}'
+                            else
+                              echo 0
+                            fi
+                        '''.trim(),
+                        returnStdout: true
+                    ).trim()
+
+                    if (skippedJwt.isInteger() && skippedJwt.toInteger() > 0) {
+                        echo "⚠️  JWTServiceTest teve ${skippedJwt} teste(s) pulado(s)."
+                        echo 'ℹ️  Isso é esperado quando quarkus.smallrye-jwt.enabled=false no profile de teste.'
+                    } else {
+                        echo '✅ Nenhum teste de JWT pulado.'
+                    }
+                }
+                echo '================================================'
+            }
+        }
+
+        stage('Resumo de Testes Pulados') {
+            steps {
+                echo '================================================'
+                echo '📊 Resumo geral de testes pulados (Surefire)...'
+                echo '================================================'
+                script {
+                    def skippedTotal = sh(
+                        script: '''
+                            if ls target/surefire-reports/*.txt >/dev/null 2>&1; then
+                              grep -R "Tests run:" -l target/surefire-reports/*.txt 2>/dev/null \
+                                | xargs -r grep "Tests run:" \
+                                | awk -F 'Skipped: ' '{gsub(/[^0-9].*/, "", $2); sum+=$2} END{print sum+0}'
+                            else
+                              echo 0
+                            fi
+                        '''.trim(),
+                        returnStdout: true
+                    ).trim()
+
+                    if (skippedTotal.isInteger() && skippedTotal.toInteger() > 0) {
+                        echo "⚠️  Total de testes pulados: ${skippedTotal}"
+                        echo 'ℹ️  Verifique se os pulos são esperados (ex.: JWT desabilitado em testes).'
+                    } else {
+                        echo '✅ Nenhum teste foi pulado.'
+                    }
+                }
                 echo '================================================'
             }
         }

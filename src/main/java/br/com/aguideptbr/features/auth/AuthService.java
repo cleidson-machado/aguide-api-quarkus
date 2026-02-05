@@ -1,10 +1,11 @@
-package br.com.aguideptbr.auth;
+package br.com.aguideptbr.features.auth;
 
 import org.jboss.logging.Logger;
 
-import br.com.aguideptbr.auth.dto.LoginRequest;
-import br.com.aguideptbr.auth.dto.LoginResponse;
-import br.com.aguideptbr.auth.dto.RegisterRequest;
+import br.com.aguideptbr.features.auth.dto.LoginRequest;
+import br.com.aguideptbr.features.auth.dto.LoginResponse;
+import br.com.aguideptbr.features.auth.dto.RegisterRequest;
+import br.com.aguideptbr.features.auth.dto.UserInfoDTO;
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -124,7 +125,7 @@ public class AuthService {
      * @return Resposta de login completa
      */
     private LoginResponse buildLoginResponse(String token, UserModel user) {
-        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
+        UserInfoDTO userInfo = new UserInfoDTO(
                 user.id,
                 user.name,
                 user.surname,

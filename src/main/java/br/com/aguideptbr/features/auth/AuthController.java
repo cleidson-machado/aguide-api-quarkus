@@ -1,4 +1,4 @@
-package br.com.aguideptbr.auth;
+package br.com.aguideptbr.features.auth;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,9 +7,9 @@ import java.util.UUID;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import br.com.aguideptbr.auth.dto.LoginRequest;
-import br.com.aguideptbr.auth.dto.LoginResponse;
-import br.com.aguideptbr.auth.dto.RegisterRequest;
+import br.com.aguideptbr.features.auth.dto.LoginRequest;
+import br.com.aguideptbr.features.auth.dto.LoginResponse;
+import br.com.aguideptbr.features.auth.dto.RegisterRequest;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;

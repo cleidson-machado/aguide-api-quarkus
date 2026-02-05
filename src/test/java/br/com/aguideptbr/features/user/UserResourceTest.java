@@ -24,7 +24,6 @@ class UserResourceTest {
     @Inject
     EntityManager entityManager;
 
-    @SuppressWarnings("null")
     @Test
     void testDatabaseConnection() {
         // Verifica que conseguimos fazer uma query simples no banco de dados
