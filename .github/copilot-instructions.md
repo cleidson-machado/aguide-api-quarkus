@@ -143,6 +143,7 @@ public class User extends PanacheEntity {
 - Injetar `Logger` do JBoss: `@Inject Logger log;`
 - Níveis: `log.info()` para operações normais, `log.error()` para erros, `log.debug()` para debug
 - Sempre logar: início de operações importantes, erros com stacktrace, dados sensíveis NÃO devem ser logados
+- **Proibido usar `System.out/err`** (Sonar: Replace this use of System.out by a logger)
 
 ## Configurações
 - Usar `application.properties` para configurações comuns

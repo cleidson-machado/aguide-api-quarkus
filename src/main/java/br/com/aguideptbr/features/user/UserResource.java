@@ -3,8 +3,11 @@ package br.com.aguideptbr.features.user;
 import java.util.List;
 import java.util.UUID;
 
+import org.jboss.logging.Logger;
+
 import br.com.aguideptbr.util.PaginatedResponse;
 import io.quarkus.panache.common.Page;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -26,6 +29,9 @@ import jakarta.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {
+
+    @Inject
+    Logger log;
 
     @GET
     public List<UserModel> list() {
@@ -61,10 +67,7 @@ public class UserResource {
     @POST
     @Transactional
     public Response createUser(UserModel userModel) {
-        System.out.println("THIS IS THE NAME: " + userModel.name);
-        System.out.println("THIS IS THE SURNAME: " + userModel.surname);
-        System.out.println("THIS IS THE EMAIL: " + userModel.email);
-        System.out.println("THIS IS THE PASSWORD HASH: " + userModel.passwordHash);
+        log.info("POST /users - Criando usuário");
         userModel.persist();
         return Response
                 .status(Response.Status.CREATED)
