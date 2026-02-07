@@ -403,134 +403,24 @@ O GitHub Actions pode causar perda de dados se não validar o profile antes do d
     cd /opt/apps/aguide-api-quarkus
     grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || (echo "❌ PROFILE INCORRETO!" && exit 1)
     echo "✅ Profile de produção confirmado"
-
-- name: 🔍 Executar script de validação
-  run: |
-    chmod +x ./validate-production-safety.sh
-    ./validate-production-safety.sh || exit 1
 ```
 
 **NUNCA no deploy de produção:**
-- ❌ `docker compose down` sem verificar volumes persistentes (PERDE TODOS OS DADOS!)
-- ❌ `docker compose down -v` (remove volumes do PostgreSQL - **CATASTRÓFICO**)
+- ❌ `docker compose down` sem verificar volumes persistentes
 - ❌ `docker compose build --no-cache` sem validar configurações
 - ❌ Deploy sem confirmar `QUARKUS_PROFILE=prod`
-- ❌ Rebuild de banco de dados (usar apenas migrations Flyway)
-- ❌ Executar `import.sql` em produção
+- ❌ Rebuild de banco de dados (usar apenas migrations)
 
 **Comando SEGURO para deploy:**
 ```bash
-# ✅ Deploy seguro - atualiza APENAS a aplicação, NÃO toca no PostgreSQL
 cd /opt/apps/aguide-api-quarkus
 git pull origin main
-
 # Verifica profile antes de qualquer operação
-grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || (echo "❌ ERRO: Profile incorreto!" && exit 1)
-
-# Apenas atualiza o serviço da aplicação (--no-deps ignora postgres)
+grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || exit 1
+# Apenas atualiza o serviço da aplicação (não toca no postgres)
 docker compose up -d --no-deps --build aguide-api
-
-# Limpeza segura (não remove volumes)
 docker system prune -f
 ```
-
-**Fluxo de Deploy Seguro:**
-```
-┌─────────────────────────┐
-│ git pull origin main    │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Validar QUARKUS_PROFILE │  ← Se falhar, PARAR!
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ docker compose up       │
-│ --no-deps --build       │  ← Apenas app, NÃO postgres
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Flyway executa          │
-│ migrations pendentes    │  ← Apenas V1.0.6 se necessário
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Aplicação online        │
-│ Dados preservados ✅    │
-└─────────────────────────┘
-```
-
----
-
-## 🗃️ Gerenciamento de Dados Iniciais (CRÍTICO)
-
-### ⚠️ ARQUIVO `import.sql` - DEPRECIADO E PROIBIDO
-
-**Status:** ❌ **OBSOLETO** - Não deve ser usado para dados de produção
-
-**Problema Histórico Identificado (04/02/2026):**
-O arquivo `src/main/resources/import.sql` era executado automaticamente pelo Hibernate **a cada reinicialização**, causando:
-- Criação de 20 usuários fake (João, Maria, Pedro com "senha123")
-- Inserção de 20 registros mock em `content_record`
-- **PERDA de dados de produção** em cada restart da aplicação
-
-**Solução Implementada:**
-1. ✅ Arquivo `import.sql` **TOTALMENTE COMENTADO** (mantido apenas como referência histórica)
-2. ✅ Header adicionado explicando obsolescência
-3. ✅ Todos os INSERTs substituídos por migrations Flyway versionadas
-4. ✅ Usuário administrador único criado via `V1.0.6__Insert_admin_user.sql`
-
-**Regra de Ouro:**
-```properties
-# ❌ NUNCA HABILITE ISSO:
-quarkus.hibernate-orm.sql-load-script=import.sql
-
-# ✅ Flyway gerencia TODOS os dados iniciais via migrations versionadas
-```
-
-### 👤 Usuário Administrador Padrão
-
-**Credenciais do Admin (Criado via V1.0.6):**
-- **Email:** `contato@aguide.space`
-- **Nome:** `protouser`
-- **Senha:** `Kabala1975` (BCrypt hash)
-- **Role:** `ADMIN`
-
-**Migration Responsável:** `V1.0.6__Insert_admin_user.sql`
-```sql
--- ✅ SEGURA: Idempotente com ON CONFLICT
-INSERT INTO app_user (id, name, email, password_hash, role, created_at, updated_at)
-VALUES (gen_random_uuid(), 'protouser', 'contato@aguide.space',
-        '$2a$10$XbKDPVvF8UJk5xJ6vN5YUe7bZqP1gKJhGj5gHLQzW8vF5Rn3GHmKW',
-        'ADMIN', NOW(), NOW())
-ON CONFLICT (email) DO NOTHING; -- Não duplica em re-execuções
-```
-
-### 🔍 Script de Validação de Segurança
-
-**Arquivo:** `validate-production-safety.sh` (raiz do projeto)
-
-**Uso:**
-```bash
-./validate-production-safety.sh
-```
-
-**Verificações Automáticas (6 passos):**
-1. ✅ `application-prod.properties` tem `clean-at-start=false` e `database.generation=none`
-2. ✅ Nenhuma migration contém `DROP TABLE`, `TRUNCATE` ou `DROP SCHEMA`
-3. ✅ `import.sql` está totalmente comentado (sem INSERTs ativos)
-4. ✅ Migration V1.0.6 existe e usa `ON CONFLICT` (idempotente)
-5. ✅ Projeto compila sem erros (`./mvnw clean compile`)
-6. ✅ Chaves JWT existem e tem permissões corretas (600 para privada)
-
-**Execute SEMPRE antes de:**
-- Merge de develop → main
-- Deploy em produção
-- Criar novas migrations
 
 ---
 
@@ -675,12 +565,6 @@ chmod 644 security/jwt-public.pem
 ❌ **JAMAIS** criar migrations destrutivas (`DROP TABLE`, `TRUNCATE`) para produção
 ❌ **JAMAIS** fazer merge develop→main sem verificar configurações de banco de dados
 ❌ **JAMAIS** assumir que o profile correto será usado automaticamente
-❌ **JAMAIS** usar `import.sql` para dados de produção (usar migrations Flyway versionadas)
-❌ **JAMAIS** executar `docker compose down -v` em produção (remove volumes do banco de dados)
-❌ **JAMAIS** fazer deploy sem executar `./validate-production-safety.sh`
-❌ **JAMAIS** criar INSERTs de dados sem `ON CONFLICT DO NOTHING` (não-idempotente)
-❌ **JAMAIS** usar `io.smallrye.jwt.build.Jwt` - tem problemas com parsing de chaves RSA (usar implementação manual em JWTService)
-❌ **JAMAIS** tentar usar `mp.jwt.sign.key.location` - preferir sempre `mp.jwt.sign.key-content` com chave inline
 
 ## Recursos do Quarkus a Utilizar
 ✅ Dev Mode: `./mvnw quarkus:dev` (hot reload automático)
