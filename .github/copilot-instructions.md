@@ -3,11 +3,29 @@
 ## Visão Geral
 Este é um projeto **Java 17+ com Quarkus 3.x** seguindo arquitetura de camadas (Controller → Service → Repository). Use sempre CDI do Quarkus (`@Inject`, `@ApplicationScoped`) e RESTEasy Reactive para APIs REST.
 
+## 🖥️ Ambiente de Desenvolvimento (CRÍTICO)
+
+### Ambiente LOCAL (macOS/Linux)
+- **NÃO usa Docker** para executar a aplicação Quarkus localmente
+- Aplicação roda via **terminal direto**: `./mvnw quarkus:dev`
+- PostgreSQL roda em **Docker** (container `quarkus_postgres`)
+- Aplicação conecta ao banco via `jdbc:postgresql://localhost:5432/quarkus_db`
+- Porta local: `https://localhost:8443` (HTTPS com certificado auto-assinado)
+
+### Ambiente PRODUÇÃO (VPS)
+- **Usa Docker Compose** (`docker-compose.yml`)
+- Aplicação e PostgreSQL em containers separados
+- Deploy via Jenkins pipeline automático
+- Network bridge para comunicação entre containers
+
+### ⚠️ REGRA IMPORTANTE
+**NUNCA assuma** que a aplicação está rodando em Docker localmente. Sempre pergunte ou verifique com `docker ps` e `ps aux | grep quarkus` para identificar o ambiente antes de sugerir comandos de restart ou debug.
+
 ## Estrutura de Pacotes OBRIGATÓRIA
 ```
 br.com.aguideptbr/
-├── auth/              # Autenticação e segurança
 ├── features/          # Funcionalidades de negócio (organizadas por domínio)
+│   ├── auth/          # Autenticação e segurança (feature)
 │   ├── user/
 │   │   ├── UserController.java
 │   │   ├── UserService.java
@@ -40,6 +58,125 @@ br.com.aguideptbr/
 ---
 
 ## Convenções de Código
+
+### ✅ Encapsulamento de Campos (Sonar: java:S1104) - CRÍTICO
+
+**REGRA FUNDAMENTAL:** Campos de classe **NUNCA** devem ser `public` (exceto em entidades Panache).
+
+#### ❌ PROIBIDO (viola java:S1104):
+```java
+public class ErrorResponse {
+    public String error;        // ❌ Campo público
+    public String message;      // ❌ Campo público
+    public LocalDateTime timestamp; // ❌ Campo público
+}
+
+public class LoginRequest {
+    public String email;        // ❌ Campo público
+    public String password;     // ❌ Campo público
+}
+```
+
+#### ✅ CORRETO (encapsulamento adequado):
+
+**Para DTOs e Classes Utilitárias:**
+```java
+public class ErrorResponse {
+    private String error;       // ✅ Privado
+    private String message;     // ✅ Privado
+    private LocalDateTime timestamp; // ✅ Privado
+
+    // Construtor
+    public ErrorResponse(String error, String message) {
+        this.error = error;
+        this.message = message;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    // Getters obrigatórios (Jackson precisa para serialização JSON)
+    public String getError() {
+        return error;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+}
+
+public class LoginRequest {
+    @NotBlank(message = "Email é obrigatório")
+    @Email(message = "Email inválido")
+    private String email;       // ✅ Privado
+
+    @NotBlank(message = "Senha é obrigatória")
+    private String password;    // ✅ Privado
+
+    // Getters e Setters (necessários para Bean Validation e Jackson)
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
+```
+
+**Para Constantes:**
+```java
+public class Constants {
+    // ✅ Constantes podem ser public static final
+    public static final String TOKEN_TYPE = "Bearer";
+    public static final int MAX_ATTEMPTS = 3;
+}
+```
+
+**Exceção - Entidades Panache:**
+```java
+@Entity
+@Table(name = "users")
+public class UserModel extends PanacheEntity {
+    // ✅ Panache permite campos public por convenção do framework
+    public String name;
+    public String email;
+
+    // Mas métodos com lógica devem existir
+    public boolean isActive() {
+        return deletedAt == null;
+    }
+}
+```
+
+#### 🎯 Benefícios do Encapsulamento:
+- **Controle de Acesso:** Define quem pode ler/escrever dados
+- **Validação:** Permite adicionar lógica nos setters
+- **Debugging:** Facilita rastreamento de mudanças via breakpoints
+- **Manutenibilidade:** Mudanças internas não afetam código externo
+- **Conformidade Sonar:** Atende java:S1104 e melhora qualidade do código
+
+#### 📋 Checklist ao Criar Classes:
+- [ ] Todos os campos são `private` (exceto constantes `static final` e entidades Panache)?
+- [ ] Getters estão presentes para todos os campos que precisam ser acessados externamente?
+- [ ] Setters estão presentes apenas para campos mutáveis?
+- [ ] Bean Validation funciona com getters/setters (`@NotBlank`, `@Email`, etc.)?
+- [ ] Jackson consegue serializar/desserializar com getters/setters?
+
+### ✅ Convenção de nomes (Sonar: java:S117)
+- **Variáveis locais e parâmetros** devem usar **camelCase** (ex.: `titleText`).
+- **Evite snake_case** em variáveis e parâmetros (ex.: `title_txt`).
+- **Constantes** podem usar **UPPER_SNAKE_CASE** (ex.: `TOKEN_TYPE`).
 
 ### 1. Controllers REST
 - Usar `@Path("/api/v1/recurso")` na classe
@@ -134,6 +271,7 @@ public class User extends PanacheEntity {
 - Injetar `Logger` do JBoss: `@Inject Logger log;`
 - Níveis: `log.info()` para operações normais, `log.error()` para erros, `log.debug()` para debug
 - Sempre logar: início de operações importantes, erros com stacktrace, dados sensíveis NÃO devem ser logados
+- **Proibido usar `System.out/err`** (Sonar: Replace this use of System.out by a logger)
 
 ## Configurações
 - Usar `application.properties` para configurações comuns
@@ -291,7 +429,8 @@ docker system prune -f
 - Nomenclatura: `V[major].[minor].[patch]__[Description].sql`
 - Exemplo: `V1.0.3__Add_user_role_column.sql`
 - **NUNCA modificar migrations já aplicadas**
-- **H2 vs PostgreSQL**: Migrations para testes ficam em `db/migration/h2/` (sintaxe compatível)
+- **PostgreSQL em Produção e Testes**: Mesmas migrations são usadas em ambos ambientes (quarkus_db e quarkus_test)
+- **SEMPRE usar `ON CONFLICT DO NOTHING`** para INSERTs de dados iniciais (idempotência)
 
 ## Testes
 - Localização: `src/test/java/br/com/aguideptbr/features/[feature]/`
@@ -299,46 +438,106 @@ docker system prune -f
 - Usar `RestAssured` para testar endpoints
 - Cobertura mínima desejada: 80%
 
+### Boas práticas de testes unitários (FOCO)
+- **Foque na regra de negócio** (Service) e nos fluxos críticos.
+- **Isole dependências** com mocks (Repository, gateways externos).
+- **Testes negativos são obrigatórios**: validar erros/exceções esperadas.
+- **Evite testes fracos** (getters/setters sem lógica e duplicação da implementação).
+- **Determinismo**: sem dependência de data/hora real, rede, ordem de execução.
+- **Se o teste precisar de `@QuarkusTest`**, provavelmente é integração, não unitário.
+
+### Quando criar testes unitários
+- Regras com múltiplas ramificações (if/else, validações, autorização).
+- Cálculos, transformações e normalizações.
+- Bugs recorrentes (testes evitam regressão).
+- Casos de erro esperados (ex.: senha inválida, recurso inexistente).
+
 ### Configuração de Testes (CRÍTICO)
 **SEMPRE criar `src/test/resources/application.properties` com:**
 ```properties
 # Desabilita AuthenticationFilter em testes
-quarkus.arc.exclude-types=br.com.aguideptbr.auth.AuthenticationFilter
+quarkus.arc.exclude-types=br.com.aguideptbr.features.auth.AuthenticationFilter
 
-# Usa H2 em memória para testes rápidos
-quarkus.datasource.db-kind=h2
-quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
-quarkus.datasource.username=sa
-quarkus.datasource.password=
+# Desabilita JWT em testes (evita erro de chave pública não encontrada)
+quarkus.smallrye-jwt.enabled=false
 
-# Flyway em testes - USA MIGRATIONS ESPECÍFICAS DO H2
+# Usa PostgreSQL com banco dedicado para testes (quarkus_test)
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=${QUARKUS_DATASOURCE_JDBC_URL:jdbc:postgresql://quarkus_postgres:5432/quarkus_test}
+quarkus.datasource.username=${QUARKUS_DATASOURCE_USERNAME:quarkus}
+quarkus.datasource.password=${QUARKUS_DATASOURCE_PASSWORD:quarkus123}
+
+# Flyway em testes - USA MESMAS MIGRATIONS DE PRODUÇÃO
 quarkus.flyway.clean-at-start=true
 quarkus.flyway.migrate-at-start=true
-quarkus.flyway.locations=classpath:db/migration/h2
+# Location padrão: classpath:db/migration (não precisa especificar)
 ```
 
-**Diferenças H2 vs PostgreSQL nas Migrations:**
-- PostgreSQL: `DEFAULT gen_random_uuid()` → H2: `DEFAULT RANDOM_UUID()`
-- PostgreSQL: `ADD COLUMN x, ADD COLUMN y` → H2: Separar em múltiplos `ALTER TABLE`
-- PostgreSQL: `COMMENT ON COLUMN` → H2: Não suportado (remover)
-- PostgreSQL: `USING gin(to_tsvector(...))` → H2: Índice simples sem gin
+**Importante sobre Migrations:**
+- Produção e testes usam **PostgreSQL** (quarkus_db e quarkus_test)
+- **MESMAS migrations** são usadas em ambos ambientes
+- Flyway executa `clean-at-start=true` em testes para garantir ambiente limpo
+- Não é necessário criar migrations separadas ou adaptar sintaxe
+
+**Importante sobre JWT em Testes:**
+- **SEMPRE** configurar `quarkus.smallrye-jwt.enabled=false` em testes
+- Isso desabilita completamente a extensão SmallRye JWT, evitando tentativas de carregar chaves
+- Combinado com `quarkus.arc.exclude-types` do AuthFilter, garante que testes rodem sem autenticação
 
 ### Regras de Testes
 ✅ **PERMITIDO:**
 - Desabilitar filtros de autenticação via `quarkus.arc.exclude-types`
-- Usar H2 em memória para testes
+- Usar PostgreSQL com banco dedicado `quarkus_test` (isolado de produção)
 - RestAssured sem headers de autenticação em testes
+- Flyway `clean-at-start=true` para garantir ambiente limpo a cada teste
 
 ❌ **PROIBIDO:**
 - Hardcoded tokens/senhas no código de teste
 - Usar `-DskipTests` no Jenkins/CI (testes são barreira de qualidade)
 - Pular testes para "resolver rápido" problemas de autenticação
-- Usar banco PostgreSQL real em testes (usar H2)
+- Conectar em `quarkus_db` (produção) durante testes - SEMPRE usar `quarkus_test`
+- Criar migrations separadas para testes (usar as mesmas de produção)
 
 ## Segurança
-- Autenticação implementada via `AuthenticationFilter`
-- Nunca comitar credenciais, tokens ou senhas
-- Usar `@RolesAllowed` para controle de acesso
+
+### Autenticação JWT (CRÍTICO - Lições Aprendidas)
+- **Implementação MANUAL de JWT**: Não usar SmallRye JWT Builder (`io.smallrye.jwt.build.Jwt`)
+- **Razão**: SmallRye JWT tem problemas de parsing com chaves RSA PKCS#8 geradas por OpenSSL
+- **Solução Atual**: Assinatura JWT manual usando `java.security.Signature` em `JWTService.java`
+- **Formato da Chave**: PKCS#8 inline no `application.properties` via `mp.jwt.sign.key-content`
+
+#### Geração de Chaves JWT (Comando Correto)
+```bash
+# Gera chave privada RSA 2048 bits em formato PKCS#8
+openssl genpkey -algorithm RSA -out security/jwt-private.pem -pkeyopt rsa_keygen_bits:2048
+
+# Extrai chave pública
+openssl rsa -pubout -in security/jwt-private.pem -out security/jwt-public.pem
+
+# Define permissões corretas
+chmod 600 security/jwt-private.pem
+chmod 644 security/jwt-public.pem
+```
+
+#### Estrutura do Token JWT
+- **Header:** `{"alg": "RS256", "typ": "JWT"}`
+- **Payload:** Claims (iss, sub, upn, email, name, surname, groups, iat, exp)
+- **Signature:** SHA256withRSA usando chave privada
+- **Formato Final:** `base64url(header).base64url(payload).base64url(signature)`
+
+#### Configuração de Segurança
+- `AuthenticationFilter` valida tokens JWT em requests
+- `@RolesAllowed` para controle de acesso baseado em roles
+- **Nunca comitar:** chaves privadas, credenciais, tokens
+- **Chaves em Produção:** Usar variáveis de ambiente ou secrets manager
+
+#### Credenciais de Teste (Desenvolvimento)
+- Email: `contato@aguide.space`
+- Senha: `admin123`
+- Role: `ADMIN`
+- Hash BCrypt: `$2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy`
+
+**Documentação Completa:** Ver `a_error_log_temp/SAGA_JWT_AUTHENTICATION_FIX.md`
 
 ## Docker
 - Dockerfiles em `src/main/docker/`

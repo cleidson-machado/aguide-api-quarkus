@@ -5,10 +5,17 @@
 -- ========================================
 
 -- ========== USUÁRIOS DE TESTE ==========
-INSERT INTO app_user (id, name, surname, email, passwd) VALUES
-(gen_random_uuid(), 'João', 'Silva', 'joao.silva@example.com', 'senha123'),
-(gen_random_uuid(), 'Maria', 'Santos', 'maria.santos@example.com', 'senha456'),
-(gen_random_uuid(), 'Pedro', 'Oliveira', 'pedro.oliveira@example.com', 'senha789');
+-- ⚠️ DEPRECIADO: Usuários de teste removidos
+-- Motivo: Dados fake desnecessários em produção
+-- Substituído por: V1.0.6__Insert_admin_user.sql (usuário "coringa" para testes)
+--
+-- Os INSERTs abaixo foram comentados para evitar poluir o banco com dados de teste.
+-- Para testes locais, use a migration V1.0.6 que cria apenas o usuário admin "protouser".
+--
+-- INSERT INTO app_user (id, name, surname, email, passwd) VALUES
+-- (gen_random_uuid(), 'João', 'Silva', 'joao.silva@example.com', 'senha123'),
+-- (gen_random_uuid(), 'Maria', 'Santos', 'maria.santos@example.com', 'senha456'),
+-- (gen_random_uuid(), 'Pedro', 'Oliveira', 'pedro.oliveira@example.com', 'senha789');
 
 -- ========== CONTEÚDOS DE TESTE ==========
 INSERT INTO content_record (id, title, description, url, channel_name, content_type, thumbnail_url, category_id, category_name, tags, duration_seconds, duration_iso, definition, caption, view_count, like_count, comment_count, default_language, default_audio_language) VALUES

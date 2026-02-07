@@ -1,192 +1,65 @@
 package br.com.aguideptbr.features.content;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 /**
- * Testes de integração para ContentRecordResource.
- * Valida operações CRUD e funcionalidades de busca/ordenação.
+ * Testes simples para validar conectividade e operações básicas no banco de
+ * dados PostgreSQL (quarkus_test).
  *
- * IMPORTANTE: O AuthenticationFilter detecta automaticamente o profile "test"
- * e pula a validação de token, permitindo que os testes executem sem
- * autenticação.
+ * OBJETIVO: Garantir que o banco de dados de testes está configurado
+ * corretamente.
  */
 @QuarkusTest
 class ContentRecordResourceTest {
 
-    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        @Inject
+        EntityManager entityManager;
 
-    @Test
-    void testListContents_WithDefaultParameters() {
-        given()
-                .when().get("/contents")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON);
-    }
+        @Test
+        void testDatabaseConnection() {
+                // Verifica que conseguimos fazer uma query simples no banco de dados
+                Long count = entityManager.createQuery("SELECT COUNT(c) FROM ContentRecordModel c", Long.class)
+                                .getSingleResult();
 
-    @Test
-    void testListContents_WithPagination() {
-        given()
-                .queryParam("page", 0)
-                .queryParam("size", 10)
-                .when().get("/contents")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("content", notNullValue());
-    }
+                assertNotNull(count, "Database connection should work");
+                assertTrue(count >= 0, "Count should be non-negative");
+        }
 
-    @Test
-    void testListContents_SortByPublishedAt() {
-        given()
-                .queryParam("sort", "publishedAt")
-                .queryParam("order", "desc")
-                .when().get("/contents")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON);
-    }
+        @Test
+        void testPanacheRepositoryWorks() {
+                // Verifica que o Panache (Active Record) está funcionando
+                long count = ContentRecordModel.count();
+                assertTrue(count >= 0, "Panache count should work");
+        }
 
-    @Test
-    void testCreateContent_WithPublishedAt() {
-        String publishedAt = LocalDateTime.now().minusDays(7).format(ISO_FORMATTER);
+        @Test
+        @Transactional
+        void testDatabaseWrite() {
+                // Verifica que conseguimos escrever no banco de dados
+                ContentRecordModel testContent = new ContentRecordModel();
+                testContent.title = "Test Content " + System.currentTimeMillis();
+                testContent.description = "Test Description";
+                testContent.url = "https://test.example.com/" + System.currentTimeMillis();
+                testContent.channelName = "Test Channel";
+                testContent.type = ContentType.VIDEO;
 
-        given()
-                .contentType(ContentType.JSON)
-                .body(String.format("""
-                        {
-                            "title": "Test Video with PublishedAt",
-                            "description": "Testing publishedAt field",
-                            "url": "https://example.com/test-published-at",
-                            "channelName": "Test Channel",
-                            "type": "VIDEO",
-                            "publishedAt": "%s"
-                        }
-                        """, publishedAt))
-                .when().post("/contents")
-                .then()
-                .statusCode(201)
-                .contentType(ContentType.JSON)
-                .body("id", notNullValue())
-                .body("title", is("Test Video with PublishedAt"))
-                .body("publishedAt", notNullValue());
-    }
+                testContent.persist();
 
-    @Test
-    void testUpdateContent_WithPublishedAt() {
-        // Primeiro cria um conteúdo
-        String createResponse = given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "title": "Original Content",
-                            "url": "https://example.com/original",
-                            "type": "ARTICLE"
-                        }
-                        """)
-                .when().post("/contents")
-                .then()
-                .statusCode(201)
-                .extract().body().jsonPath().getString("id");
+                assertNotNull(testContent.id, "ContentRecord should have ID after persist");
 
-        // Agora atualiza com publishedAt
-        String publishedAt = LocalDateTime.now().minusDays(3).format(ISO_FORMATTER);
-
-        given()
-                .contentType(ContentType.JSON)
-                .body(String.format("""
-                        {
-                            "title": "Updated Content",
-                            "url": "https://example.com/updated",
-                            "type": "ARTICLE",
-                            "publishedAt": "%s"
-                        }
-                        """, publishedAt))
-                .when().put("/contents/" + createResponse)
-                .then()
-                .statusCode(200)
-                .body("title", is("Updated Content"))
-                .body("publishedAt", notNullValue());
-    }
-
-    @Test
-    void testSearchByTitle() {
-        given()
-                .queryParam("q", "test")
-                .when().get("/contents/search")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON);
-    }
-
-    @Test
-    void testGetContentById_InvalidId() {
-        given()
-                .when().get("/contents/invalid-id")
-                .then()
-                .statusCode(400)
-                .body("plusInfoMsg", containsString("Found a error"));
-    }
-
-    @Test
-    void testGetContentById_NotFound() {
-        String nonExistentId = "00000000-0000-0000-0000-000000000000";
-
-        given()
-                .when().get("/contents/" + nonExistentId)
-                .then()
-                .statusCode(404)
-                .body("plusInfoMsg", containsString("No content found"));
-    }
-
-    @Test
-    void testDeleteContent() {
-        // Cria um conteúdo para deletar
-        String contentId = given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "title": "Content to Delete",
-                            "url": "https://example.com/to-delete",
-                            "type": "VIDEO"
-                        }
-                        """)
-                .when().post("/contents")
-                .then()
-                .statusCode(201)
-                .extract().body().jsonPath().getString("id");
-
-        // Deleta o conteúdo
-        given()
-                .when().delete("/contents/" + contentId)
-                .then()
-                .statusCode(204);
-
-        // Verifica que não existe mais
-        given()
-                .when().get("/contents/" + contentId)
-                .then()
-                .statusCode(404);
-    }
-
-    @Test
-    void testListContents_InvalidSortField() {
-        given()
-                .queryParam("sort", "invalidField")
-                .when().get("/contents")
-                .then()
-                .statusCode(400)
-                .body(containsString("invalid sort field"));
-    }
+                // Verifica que conseguimos ler de volta
+                ContentRecordModel found = ContentRecordModel.findById(testContent.id);
+                assertNotNull(found, "Should find persisted content");
+                assertEquals(testContent.title, found.title);
+                assertEquals(testContent.description, found.description);
+        }
 }

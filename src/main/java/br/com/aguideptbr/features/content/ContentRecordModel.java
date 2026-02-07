@@ -165,13 +165,13 @@ public class ContentRecordModel extends PanacheEntityBase {
      * Finds a single content record by an exact title match.
      * This method is case-sensitive by default and expects the title to be unique.
      *
-     * @param title_txt The exact title to search for.
+     * @param titleText The exact title to search for.
      * @return The found ContentRecordModel object, or {@code null} if no content
      *         matches the exact title.
      * @see br.com.aguideptbr.features.content.ContentRecordResource#findByTitle(String)
      */
-    public static ContentRecordModel findByTitle(String title_txt) {
-        return find("title", title_txt).firstResult();
+    public static ContentRecordModel findByTitle(String titleText) {
+        return find("title", titleText).firstResult();
     }
 
     /**
