@@ -21,6 +21,10 @@ services:
     ports:
       - "127.0.0.1:8083:8080"
     # - "8083:8083" # Se quiser expor para toda a rede local, mas bloqueado para impedir acesso externo
+    # Volume para chaves JWT (security/)
+    # A pasta security/ deve existir no host VPS com jwt-private.pem e jwt-public.pem
+    volumes:
+      - ./security:/deployments/security:ro
     # Conecta este container à rede que já existe
     networks:
       - proxy-network
