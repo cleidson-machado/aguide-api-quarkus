@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-    // ⭐ TRIGGER: Aceita webhooks do GitHub
+    // ⭐ TRIGGER: Aceita webhooks do GitHub ## Teste ##
     triggers {
         githubPush()
     }
@@ -181,6 +181,35 @@ pipeline {
             }
         }
 
+        stage('Limpar Banco de Testes') {
+            steps {
+                echo '================================================'
+                echo '🧹 LIMPANDO BANCO DE TESTES (quarkus_test)'
+                echo '================================================'
+                echo '⚠️  Flyway clean-at-start desabilitado (causa timeout)'
+                echo '✅ Limpeza manual do schema antes dos testes'
+                echo '================================================'
+                sh '''
+                    cd /opt/apps/aguide-api-quarkus
+
+                    # Termina conexões ativas
+                    docker exec quarkus_postgres psql -U quarkus -d quarkus_test -c \
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'quarkus_test' AND pid <> pg_backend_pid();" \
+                        2>/dev/null || echo "ℹ️  Nenhuma conexão ativa"
+
+                    # Drop e recria schema
+                    docker exec quarkus_postgres psql -U quarkus -d quarkus_test <<EOF
+                        DROP SCHEMA IF EXISTS public CASCADE;
+                        CREATE SCHEMA public;
+                        GRANT ALL ON SCHEMA public TO quarkus;
+                        GRANT ALL ON SCHEMA public TO public;
+EOF
+
+                    echo "✅ Banco limpo com sucesso!"
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 echo '================================================'
@@ -188,7 +217,7 @@ pipeline {
                 echo '================================================'
                 echo '🗄️  Database: quarkus_test (PostgreSQL)'
                 echo '🔓 Autenticação: DESABILITADA para testes'
-                echo '🧹 Flyway: Limpa e recria schema a cada execução'
+                echo '🧹 Banco limpo no stage anterior (Flyway apenas migra)'
                 echo '📊 SonarQube: Análise de qualidade de código'
                 echo '================================================'
                 script {
