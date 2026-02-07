@@ -45,9 +45,9 @@ public class AuthService {
         // Verifica se o email já está cadastrado
         UserModel existingUser = UserModel.findByEmail(request.email);
         if (existingUser != null) {
-            log.warnf("⚠️ Email já cadastrado: %s", request.email);
+            log.warnf("⚠️ Email already registered: %s", request.email);
             throw new WebApplicationException(
-                    "Email já cadastrado",
+                    "Email already registered",
                     Response.Status.CONFLICT);
         }
 
@@ -85,27 +85,31 @@ public class AuthService {
         UserModel user = UserModel.findByEmail(request.email.toLowerCase().trim());
 
         if (user == null) {
-            log.warnf("⚠️ Usuário não encontrado: %s", request.email);
+            log.warnf("⚠️ User not found: %s", request.email);
             throw new WebApplicationException(
-                    "Email ou senha inválidos",
+                    "Invalid email or password",
                     Response.Status.UNAUTHORIZED);
         }
 
         // Verifica se o usuário usa OAuth2 (não tem senha local)
         if (user.isOAuthUser()) {
-            log.warnf("⚠️ Usuário OAuth2 tentando login com senha: %s", request.email);
+            log.warnf("⚠️ OAuth2 user trying password login: %s", request.email);
             throw new WebApplicationException(
-                    "Este usuário está vinculado a uma conta social. Use o login social.",
+                    "This account is linked to a social provider. Please use social login.",
                     Response.Status.BAD_REQUEST);
         }
 
         // Verifica a senha
+        log.debugf("🔐 Verifying password for user: %s", request.email);
+        log.debugf("📝 Hash from DB: %s",
+                user.passwordHash != null ? user.passwordHash.substring(0, 20) + "..." : "NULL");
+
         boolean passwordValid = passwordEncoder.verifyPassword(request.password, user.passwordHash);
 
         if (!passwordValid) {
-            log.warnf("⚠️ Senha incorreta para usuário: %s", request.email);
+            log.warnf("⚠️ Invalid password for user: %s", request.email);
             throw new WebApplicationException(
-                    "Email ou senha inválidos",
+                    "Invalid email or password",
                     Response.Status.UNAUTHORIZED);
         }
 

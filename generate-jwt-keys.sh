@@ -12,9 +12,11 @@ echo "🔐 Gerando chaves RSA para JWT..."
 # Cria diretório se não existir
 mkdir -p $SECURITY_DIR
 
-# Gera chave privada RSA (2048 bits)
-echo "📝 Gerando chave privada..."
-openssl genrsa -out $SECURITY_DIR/jwt-private.pem 2048
+# Gera chave privada RSA (2048 bits) em formato PKCS#8
+echo "📝 Gerando chave privada (PKCS#8)..."
+openssl genrsa -out $SECURITY_DIR/jwt-private-temp.pem 2048
+openssl pkcs8 -topk8 -inform PEM -in $SECURITY_DIR/jwt-private-temp.pem -out $SECURITY_DIR/jwt-private.pem -nocrypt
+rm $SECURITY_DIR/jwt-private-temp.pem
 
 # Extrai chave pública
 echo "📝 Extraindo chave pública..."

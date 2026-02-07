@@ -39,12 +39,25 @@ public class PasswordEncoder {
      * @return true se a senha corresponde ao hash, false caso contrário
      */
     public boolean verifyPassword(String plainPassword, String hashedPassword) {
-        boolean valid = BcryptUtil.matches(plainPassword, hashedPassword);
-        if (valid) {
-            log.debug("✅ Senha verificada com sucesso");
-        } else {
-            log.debug("⚠️ Senha incorreta");
+        log.debugf("🔐 Verifying password...");
+        log.debugf("   Plain password length: %d", plainPassword != null ? plainPassword.length() : 0);
+        log.debugf("   Hash from DB: %s",
+                hashedPassword != null ? hashedPassword.substring(0, Math.min(20, hashedPassword.length())) + "..."
+                        : "NULL");
+
+        if (plainPassword == null || hashedPassword == null) {
+            log.warn("⚠️ Password or hash is null!");
+            return false;
         }
+
+        boolean valid = BcryptUtil.matches(plainPassword, hashedPassword);
+
+        if (valid) {
+            log.info("✅ Password verified successfully");
+        } else {
+            log.warn("⚠️ Password verification failed - credentials do not match");
+        }
+
         return valid;
     }
 }

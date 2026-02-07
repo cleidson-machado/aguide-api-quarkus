@@ -4,12 +4,15 @@
 -- Data: 2026-02-04
 -- =============================================
 --
--- Este script cria o usuário administrador principal
--- do sistema com as seguintes credenciais:
+-- ⭐ USUÁRIO "CORINGA" PARA TESTES PRÉ-PRODUÇÃO
 --
+-- Este script cria o único usuário de teste do sistema.
+-- Será mantido até o projeto ir definitivamente para produção.
+--
+-- Credenciais de Acesso:
 -- Email: contato@aguide.space
 -- Nome: protouser
--- Senha: Kabala1975 (hash BCrypt abaixo)
+-- Senha: admin123 (hash BCrypt abaixo)
 -- Role: ADMIN
 --
 -- ⚠️ IMPORTANTE:
@@ -17,10 +20,11 @@
 -- - Se o usuário já existir, não faz nada (idempotente)
 -- - Seguro para executar múltiplas vezes
 -- - A senha está com hash BCrypt (cost 10)
+-- - Substitui os usuários fake da V1.0.1 (João, Maria, Pedro)
 --
 -- 🔐 Hash gerado com BCrypt:
--- Senha: Kabala1975
--- Hash: $2a$10$XbKDPVvF8UJk5xJ6vN5YUe7bZqP1gKJhGj5gHLQzW8vF5Rn3GHmKW
+-- Senha: admin123
+-- Hash: $2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy
 -- =============================================
 
 -- Insere usuário administrador (idempotente)
@@ -41,7 +45,7 @@ INSERT INTO app_user (
     'protouser',
     'Admin',
     'contato@aguide.space',
-    '$2a$10$XbKDPVvF8UJk5xJ6vN5YUe7bZqP1gKJhGj5gHLQzW8vF5Rn3GHmKW', -- Kabala1975
+    '$2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy', -- admin123
     'ADMIN',
     NOW(),
     NOW(),

@@ -3,6 +3,24 @@
 ## Visão Geral
 Este é um projeto **Java 17+ com Quarkus 3.x** seguindo arquitetura de camadas (Controller → Service → Repository). Use sempre CDI do Quarkus (`@Inject`, `@ApplicationScoped`) e RESTEasy Reactive para APIs REST.
 
+## 🖥️ Ambiente de Desenvolvimento (CRÍTICO)
+
+### Ambiente LOCAL (macOS/Linux)
+- **NÃO usa Docker** para executar a aplicação Quarkus localmente
+- Aplicação roda via **terminal direto**: `./mvnw quarkus:dev`
+- PostgreSQL roda em **Docker** (container `quarkus_postgres`)
+- Aplicação conecta ao banco via `jdbc:postgresql://localhost:5432/quarkus_db`
+- Porta local: `https://localhost:8443` (HTTPS com certificado auto-assinado)
+
+### Ambiente PRODUÇÃO (VPS)
+- **Usa Docker Compose** (`docker-compose.yml`)
+- Aplicação e PostgreSQL em containers separados
+- Deploy via Jenkins pipeline automático
+- Network bridge para comunicação entre containers
+
+### ⚠️ REGRA IMPORTANTE
+**NUNCA assuma** que a aplicação está rodando em Docker localmente. Sempre pergunte ou verifique com `docker ps` e `ps aux | grep quarkus` para identificar o ambiente antes de sugerir comandos de restart ou debug.
+
 ## Estrutura de Pacotes OBRIGATÓRIA
 ```
 br.com.aguideptbr/
@@ -481,9 +499,45 @@ quarkus.flyway.migrate-at-start=true
 - Criar migrations separadas para testes (usar as mesmas de produção)
 
 ## Segurança
-- Autenticação implementada via `AuthenticationFilter`
-- Nunca comitar credenciais, tokens ou senhas
-- Usar `@RolesAllowed` para controle de acesso
+
+### Autenticação JWT (CRÍTICO - Lições Aprendidas)
+- **Implementação MANUAL de JWT**: Não usar SmallRye JWT Builder (`io.smallrye.jwt.build.Jwt`)
+- **Razão**: SmallRye JWT tem problemas de parsing com chaves RSA PKCS#8 geradas por OpenSSL
+- **Solução Atual**: Assinatura JWT manual usando `java.security.Signature` em `JWTService.java`
+- **Formato da Chave**: PKCS#8 inline no `application.properties` via `mp.jwt.sign.key-content`
+
+#### Geração de Chaves JWT (Comando Correto)
+```bash
+# Gera chave privada RSA 2048 bits em formato PKCS#8
+openssl genpkey -algorithm RSA -out security/jwt-private.pem -pkeyopt rsa_keygen_bits:2048
+
+# Extrai chave pública
+openssl rsa -pubout -in security/jwt-private.pem -out security/jwt-public.pem
+
+# Define permissões corretas
+chmod 600 security/jwt-private.pem
+chmod 644 security/jwt-public.pem
+```
+
+#### Estrutura do Token JWT
+- **Header:** `{"alg": "RS256", "typ": "JWT"}`
+- **Payload:** Claims (iss, sub, upn, email, name, surname, groups, iat, exp)
+- **Signature:** SHA256withRSA usando chave privada
+- **Formato Final:** `base64url(header).base64url(payload).base64url(signature)`
+
+#### Configuração de Segurança
+- `AuthenticationFilter` valida tokens JWT em requests
+- `@RolesAllowed` para controle de acesso baseado em roles
+- **Nunca comitar:** chaves privadas, credenciais, tokens
+- **Chaves em Produção:** Usar variáveis de ambiente ou secrets manager
+
+#### Credenciais de Teste (Desenvolvimento)
+- Email: `contato@aguide.space`
+- Senha: `admin123`
+- Role: `ADMIN`
+- Hash BCrypt: `$2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy`
+
+**Documentação Completa:** Ver `a_error_log_temp/SAGA_JWT_AUTHENTICATION_FIX.md`
 
 ## Docker
 - Dockerfiles em `src/main/docker/`
@@ -515,6 +569,8 @@ quarkus.flyway.migrate-at-start=true
 ❌ **JAMAIS** executar `docker compose down -v` em produção (remove volumes do banco de dados)
 ❌ **JAMAIS** fazer deploy sem executar `./validate-production-safety.sh`
 ❌ **JAMAIS** criar INSERTs de dados sem `ON CONFLICT DO NOTHING` (não-idempotente)
+❌ **JAMAIS** usar `io.smallrye.jwt.build.Jwt` - tem problemas com parsing de chaves RSA (usar implementação manual em JWTService)
+❌ **JAMAIS** tentar usar `mp.jwt.sign.key.location` - preferir sempre `mp.jwt.sign.key-content` com chave inline
 
 ## Recursos do Quarkus a Utilizar
 ✅ Dev Mode: `./mvnw quarkus:dev` (hot reload automático)
