@@ -1,6 +1,8 @@
 package br.com.aguideptbr.features.auth;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.Signature;
@@ -16,6 +18,7 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.aguideptbr.features.user.UserModel;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -34,10 +37,23 @@ public class JWTService {
     @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600")
     Long expirationTime; // Em segundos
 
-    @ConfigProperty(name = "mp.jwt.sign.key-content")
-    String privateKeyPem;
+    @ConfigProperty(name = "mp.jwt.sign.key.location")
+    String privateKeyLocation;
 
+    private String privateKeyPem;
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @PostConstruct
+    void loadPrivateKey() {
+        try {
+            // Lê o arquivo de chave privada
+            privateKeyPem = Files.readString(Paths.get(privateKeyLocation), StandardCharsets.UTF_8);
+            log.infof("✅ Chave privada JWT carregada de: %s", privateKeyLocation);
+        } catch (Exception e) {
+            log.errorf(e, "❌ Erro ao carregar chave privada de: %s", privateKeyLocation);
+            throw new RuntimeException("Falha ao carregar chave privada JWT", e);
+        }
+    }
 
     /**
      * Gera um token JWT para o usuário autenticado usando assinatura MANUAL.
