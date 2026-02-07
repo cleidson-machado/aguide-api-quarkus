@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-    // ⭐ TRIGGER: Aceita webhooks do GitHub
+    // ⭐ TRIGGER: Aceita webhooks do GitHub ## Teste ##
     triggers {
         githubPush()
     }
