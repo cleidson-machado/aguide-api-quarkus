@@ -59,14 +59,124 @@ br.com.aguideptbr/
 
 ## Convenções de Código
 
+### ✅ Encapsulamento de Campos (Sonar: java:S1104) - CRÍTICO
+
+**REGRA FUNDAMENTAL:** Campos de classe **NUNCA** devem ser `public` (exceto em entidades Panache).
+
+#### ❌ PROIBIDO (viola java:S1104):
+```java
+public class ErrorResponse {
+    public String error;        // ❌ Campo público
+    public String message;      // ❌ Campo público
+    public LocalDateTime timestamp; // ❌ Campo público
+}
+
+public class LoginRequest {
+    public String email;        // ❌ Campo público
+    public String password;     // ❌ Campo público
+}
+```
+
+#### ✅ CORRETO (encapsulamento adequado):
+
+**Para DTOs e Classes Utilitárias:**
+```java
+public class ErrorResponse {
+    private String error;       // ✅ Privado
+    private String message;     // ✅ Privado
+    private LocalDateTime timestamp; // ✅ Privado
+
+    // Construtor
+    public ErrorResponse(String error, String message) {
+        this.error = error;
+        this.message = message;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    // Getters obrigatórios (Jackson precisa para serialização JSON)
+    public String getError() {
+        return error;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+}
+
+public class LoginRequest {
+    @NotBlank(message = "Email é obrigatório")
+    @Email(message = "Email inválido")
+    private String email;       // ✅ Privado
+
+    @NotBlank(message = "Senha é obrigatória")
+    private String password;    // ✅ Privado
+
+    // Getters e Setters (necessários para Bean Validation e Jackson)
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
+```
+
+**Para Constantes:**
+```java
+public class Constants {
+    // ✅ Constantes podem ser public static final
+    public static final String TOKEN_TYPE = "Bearer";
+    public static final int MAX_ATTEMPTS = 3;
+}
+```
+
+**Exceção - Entidades Panache:**
+```java
+@Entity
+@Table(name = "users")
+public class UserModel extends PanacheEntity {
+    // ✅ Panache permite campos public por convenção do framework
+    public String name;
+    public String email;
+
+    // Mas métodos com lógica devem existir
+    public boolean isActive() {
+        return deletedAt == null;
+    }
+}
+```
+
+#### 🎯 Benefícios do Encapsulamento:
+- **Controle de Acesso:** Define quem pode ler/escrever dados
+- **Validação:** Permite adicionar lógica nos setters
+- **Debugging:** Facilita rastreamento de mudanças via breakpoints
+- **Manutenibilidade:** Mudanças internas não afetam código externo
+- **Conformidade Sonar:** Atende java:S1104 e melhora qualidade do código
+
+#### 📋 Checklist ao Criar Classes:
+- [ ] Todos os campos são `private` (exceto constantes `static final` e entidades Panache)?
+- [ ] Getters estão presentes para todos os campos que precisam ser acessados externamente?
+- [ ] Setters estão presentes apenas para campos mutáveis?
+- [ ] Bean Validation funciona com getters/setters (`@NotBlank`, `@Email`, etc.)?
+- [ ] Jackson consegue serializar/desserializar com getters/setters?
+
 ### ✅ Convenção de nomes (Sonar: java:S117)
 - **Variáveis locais e parâmetros** devem usar **camelCase** (ex.: `titleText`).
 - **Evite snake_case** em variáveis e parâmetros (ex.: `title_txt`).
 - **Constantes** podem usar **UPPER_SNAKE_CASE** (ex.: `TOKEN_TYPE`).
-
-### ✅ Encapsulamento de campos (Sonar: java:S1104)
-- **Evite campos `public`** em classes utilitárias/DTOs; use `private` + getters/setters.
-- **Exceção**: Entidades Panache podem expor campos `public` quando for padrão do Quarkus.
 
 ### 1. Controllers REST
 - Usar `@Path("/api/v1/recurso")` na classe

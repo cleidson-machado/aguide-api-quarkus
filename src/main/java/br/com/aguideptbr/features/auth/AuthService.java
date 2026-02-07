@@ -40,12 +40,12 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse register(RegisterRequest request) {
-        log.infof("📝 Tentativa de registro: %s", request.email);
+        log.infof("📝 Tentativa de registro: %s", request.getEmail());
 
         // Verifica se o email já está cadastrado
-        UserModel existingUser = UserModel.findByEmail(request.email);
+        UserModel existingUser = UserModel.findByEmail(request.getEmail());
         if (existingUser != null) {
-            log.warnf("⚠️ Email already registered: %s", request.email);
+            log.warnf("⚠️ Email already registered: %s", request.getEmail());
             throw new WebApplicationException(
                     "Email already registered",
                     Response.Status.CONFLICT);
@@ -53,10 +53,10 @@ public class AuthService {
 
         // Cria novo usuário
         UserModel newUser = new UserModel();
-        newUser.name = request.name;
-        newUser.surname = request.surname;
-        newUser.email = request.email.toLowerCase().trim();
-        newUser.passwordHash = passwordEncoder.hashPassword(request.password);
+        newUser.name = request.getName();
+        newUser.surname = request.getSurname();
+        newUser.email = request.getEmail().toLowerCase().trim();
+        newUser.passwordHash = passwordEncoder.hashPassword(request.getPassword());
         newUser.role = "USER"; // Role padrão
 
         // Persiste no banco
@@ -79,13 +79,13 @@ public class AuthService {
      * @throws WebApplicationException se as credenciais forem inválidas
      */
     public LoginResponse login(LoginRequest request) {
-        log.infof("🔐 Tentativa de login: %s", request.email);
+        log.infof("🔐 Tentativa de login: %s", request.getEmail());
 
         // Busca usuário pelo email
-        UserModel user = UserModel.findByEmail(request.email.toLowerCase().trim());
+        UserModel user = UserModel.findByEmail(request.getEmail().toLowerCase().trim());
 
         if (user == null) {
-            log.warnf("⚠️ User not found: %s", request.email);
+            log.warnf("⚠️ User not found: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
                     Response.Status.UNAUTHORIZED);
@@ -93,21 +93,21 @@ public class AuthService {
 
         // Verifica se o usuário usa OAuth2 (não tem senha local)
         if (user.isOAuthUser()) {
-            log.warnf("⚠️ OAuth2 user trying password login: %s", request.email);
+            log.warnf("⚠️ OAuth2 user trying password login: %s", request.getEmail());
             throw new WebApplicationException(
                     "This account is linked to a social provider. Please use social login.",
                     Response.Status.BAD_REQUEST);
         }
 
         // Verifica a senha
-        log.debugf("🔐 Verifying password for user: %s", request.email);
+        log.debugf("🔐 Verifying password for user: %s", request.getEmail());
         log.debugf("📝 Hash from DB: %s",
                 user.passwordHash != null ? user.passwordHash.substring(0, 20) + "..." : "NULL");
 
-        boolean passwordValid = passwordEncoder.verifyPassword(request.password, user.passwordHash);
+        boolean passwordValid = passwordEncoder.verifyPassword(request.getPassword(), user.passwordHash);
 
         if (!passwordValid) {
-            log.warnf("⚠️ Invalid password for user: %s", request.email);
+            log.warnf("⚠️ Invalid password for user: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
                     Response.Status.UNAUTHORIZED);

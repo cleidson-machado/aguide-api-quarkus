@@ -57,7 +57,7 @@ public class AuthController {
     @Path("/register")
     @PermitAll // Endpoint público
     public Response register(@Valid RegisterRequest request) {
-        log.infof("POST /api/v1/auth/register - Email: %s", request.email);
+        log.infof("POST /api/v1/auth/register - Email: %s", request.getEmail());
 
         try {
             LoginResponse response = authService.register(request);
@@ -87,7 +87,7 @@ public class AuthController {
     @Path("/login")
     @PermitAll // Endpoint público
     public Response login(@Valid LoginRequest request) {
-        log.infof("POST /api/v1/auth/login - Email: %s", request.email);
+        log.infof("POST /api/v1/auth/login - Email: %s", request.getEmail());
 
         try {
             LoginResponse response = authService.login(request);
