@@ -25,7 +25,7 @@ import jakarta.ws.rs.core.Response;
 //This is a comment!! Just to try git commit triggering jenkins job!
 //This is a comment!! Just to try git commit triggering jenkins job! Try! 01 no Jenkins Pipeline!!
 
-@Path("/users")
+@Path("/api/v1/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {

@@ -32,7 +32,7 @@ import jakarta.ws.rs.core.Response;
  * @since 1.0
  * @see ContentService
  */
-@Path("/contents")
+@Path("/api/v1/contents")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ContentRecordResource {
