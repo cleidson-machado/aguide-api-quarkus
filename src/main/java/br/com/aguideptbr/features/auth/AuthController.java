@@ -26,12 +26,16 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 
 /**
- * Controller de autenticação.
+ * REST Controller para autenticação e autorização de usuários.
  *
- * Endpoints:
- * - POST /api/v1/auth/register - Registro de novo usuário
- * - POST /api/v1/auth/login - Login com email/senha
- * - GET /api/v1/auth/me - Dados do usuário autenticado
+ * Esta classe implementa endpoints REST para registro de novos usuários,
+ * autenticação via email/senha com geração de tokens JWT, e consulta
+ * de dados do usuário autenticado.
+ *
+ * @author Cleidson Machado
+ * @since 1.0
+ * @see AuthService
+ * @see JWTService
  */
 @Path("/api/v1/auth")
 @Produces(MediaType.APPLICATION_JSON)

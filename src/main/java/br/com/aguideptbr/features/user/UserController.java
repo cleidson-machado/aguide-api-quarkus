@@ -22,13 +22,20 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-//This is a comment!! Just to try git commit triggering jenkins job!
-//This is a comment!! Just to try git commit triggering jenkins job! Try! 01 no Jenkins Pipeline!!
-
+/**
+ * REST Controller para gerenciamento de usuários do sistema.
+ *
+ * Esta classe implementa endpoints REST para operações CRUD completas
+ * de usuários, incluindo soft delete, paginação e restauração de usuários.
+ *
+ * @author Cleidson Machado
+ * @since 1.0
+ * @see UserModel
+ */
 @Path("/api/v1/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class UserResource {
+public class UserController {
 
     @Inject
     Logger log;
