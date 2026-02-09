@@ -9,14 +9,17 @@ services:
     container_name: aguide-api
     restart: unless-stopped
     environment:
-      # A URL agora aponta para o nome do container do banco de dados.
-      # Isso funciona porque ambos estarão na mesma rede!
-      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://quarkus_postgres:5432/quarkus_db
-      QUARKUS_DATASOURCE_USERNAME: quarkus
-      QUARKUS_DATASOURCE_PASSWORD: quarkus123
-      # Use 'dev' para desenvolvimento ou 'prod' para produção
-      # dev: porta 8083, SSL habilitado, limpa banco
-      # prod: porta 8080, sem SSL, NÃO limpa banco
+      # 🚨 PRODUÇÃO VPS - USA quarkus_db (PROTEGIDO)
+      # Banco de dados aponta para container postgres (mesma rede Docker)
+      DB_PROD_HOST: quarkus_postgres
+      DB_PROD_PORT: 5432
+      DB_PROD_NAME: quarkus_db
+      DB_PROD_USERNAME: quarkus
+      DB_PROD_PASSWORD: quarkus123
+
+      # ⚠️ CRÍTICO: SEMPRE usar profile 'prod' no VPS!
+      # prod = Não limpa banco, usa quarkus_db
+      # NUNCA usar 'dev' em produção (causaria perda de dados)
       QUARKUS_PROFILE: prod
     ports:
       - "127.0.0.1:8083:8080"
