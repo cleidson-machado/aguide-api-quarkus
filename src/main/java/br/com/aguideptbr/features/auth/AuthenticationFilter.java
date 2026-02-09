@@ -3,6 +3,7 @@ package br.com.aguideptbr.features.auth;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
@@ -13,6 +14,7 @@ import br.com.aguideptbr.features.auth.exceptions.TokenExpiredException;
 import br.com.aguideptbr.features.auth.exceptions.TokenInvalidException;
 import br.com.aguideptbr.features.auth.exceptions.TokenMalformedException;
 import br.com.aguideptbr.features.auth.exceptions.TokenMissingException;
+import br.com.aguideptbr.features.user.UserModel;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -158,10 +160,12 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 }
             }
 
-            // 6. Valida claims obrigatórios
-            if (!payloadJson.has("sub") || !payloadJson.has("upn") || !payloadJson.has("groups")) {
-                log.warnf("⚠️ Token sem claims obrigatórios (sub, upn, groups): %s", path);
-                String jsonError = "{\"error\":\"token_invalid\",\"message\":\"Token não possui claims obrigatórios\"}";
+            // 6. Valida claims obrigatórios (payload mínimo: sub, upn)
+            // Nota: 'groups' foi removido por segurança - roles são buscadas do banco
+            // quando necessário
+            if (!payloadJson.has("sub") || !payloadJson.has("upn")) {
+                log.warnf("⚠️ Token sem claims obrigatórios (sub, upn): %s", path);
+                String jsonError = "{\"error\":\"token_invalid\",\"message\":\"Token não possui claims obrigatórios (sub, upn)\"}";
                 Response response = Response.status(401)
                         .entity(jsonError)
                         .header("Content-Type", "application/json")
@@ -171,8 +175,55 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 return;
             }
 
-            // 7. Token validado com sucesso
-            log.debugf("✅ Token JWT válido para endpoint: %s", path);
+            // 7. Valida que o usuário ainda existe no banco (防止 token de usuário deletado)
+            String userId = payloadJson.get("sub").asText();
+            try {
+                UUID userUuid = UUID.fromString(userId);
+                UserModel user = UserModel.findById(userUuid);
+
+                if (user == null) {
+                    log.warnf("⚠️ Token válido mas usuário não existe mais: %s", userId);
+                    String jsonError = "{\"error\":\"user_not_found\",\"message\":\"Usuário associado ao token não existe mais\"}";
+                    Response response = Response.status(401)
+                            .entity(jsonError)
+                            .header("Content-Type", "application/json")
+                            .build();
+                    log.infof("📤 Abortando por usuário inexistente: %s", jsonError);
+                    requestContext.abortWith(response);
+                    return;
+                }
+
+                if (user.deletedAt != null) {
+                    log.warnf("⚠️ Token válido mas usuário foi deletado: %s", userId);
+                    String jsonError = "{\"error\":\"user_deleted\",\"message\":\"Usuário foi desativado\"}";
+                    Response response = Response.status(401)
+                            .entity(jsonError)
+                            .header("Content-Type", "application/json")
+                            .build();
+                    log.infof("📤 Abortando por usuário deletado: %s", jsonError);
+                    requestContext.abortWith(response);
+                    return;
+                }
+
+                // ✅ Usuário válido - roles serão verificadas via @RolesAllowed quando
+                // necessário
+                log.debugf("✅ Usuário validado: %s (role: %s)", user.email, user.role);
+
+            } catch (IllegalArgumentException e) {
+                log.warnf("⚠️ UUID inválido no claim 'sub': %s", userId);
+                String jsonError = "{\"error\":\"token_invalid\",\"message\":\"ID de usuário inválido no token\"}";
+                Response response = Response.status(401)
+                        .entity(jsonError)
+                        .header("Content-Type", "application/json")
+                        .build();
+                log.infof("📤 Abortando por UUID inválido: %s", jsonError);
+                requestContext.abortWith(response);
+                return;
+            }
+
+            // 8. Token validado com sucesso (assinatura, expiração, claims, usuário
+            // existente)
+            log.debugf("✅ Token JWT completamente validado para endpoint: %s", path);
 
         } catch (IllegalArgumentException e) {
             // Erro de decodificação Base64

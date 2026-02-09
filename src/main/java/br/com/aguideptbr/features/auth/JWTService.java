@@ -9,8 +9,6 @@ import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -68,13 +66,6 @@ public class JWTService {
             long currentTime = Instant.now().getEpochSecond();
             long expiresAt = currentTime + expirationTime;
 
-            Set<String> groups = new HashSet<>();
-            if (user.role != null && !user.role.isEmpty()) {
-                groups.add(user.role);
-            } else {
-                groups.add("USER"); // Role padrão
-            }
-
             // Header JWT (algorítmo RS256)
             String header = """
                     {
@@ -83,16 +74,13 @@ public class JWTService {
                     }
                     """.trim();
 
-            // Payload JWT
+            // Payload JWT MÍNIMO - Apenas identificadores essenciais
+            // Dados sensíveis (roles, nome) são buscados do banco quando necessário
             String payload = String.format("""
                     {
                       "iss": "%s",
                       "sub": "%s",
                       "upn": "%s",
-                      "email": "%s",
-                      "name": "%s",
-                      "surname": "%s",
-                      "groups": %s,
                       "iat": %d,
                       "exp": %d
                     }
@@ -100,10 +88,6 @@ public class JWTService {
                     issuer,
                     user.id.toString(),
                     user.email,
-                    user.email,
-                    user.name != null ? user.name : "",
-                    user.surname != null ? user.surname : "",
-                    objectMapper.writeValueAsString(groups),
                     currentTime,
                     expiresAt);
 
