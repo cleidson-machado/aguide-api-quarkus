@@ -3,7 +3,128 @@
 ## Visão Geral
 Este é um projeto **Java 17+ com Quarkus 3.x** seguindo arquitetura de camadas (Controller → Service → Repository). Use sempre CDI do Quarkus (`@Inject`, `@ApplicationScoped`) e RESTEasy Reactive para APIs REST.
 
-## 🖥️ Ambiente de Desenvolvimento (CRÍTICO)
+---
+
+## 🚨 SEPARAÇÃO DE BANCOS DE DADOS (CRÍTICO - LEIA PRIMEIRO!)
+
+### 🔴 PROBLEMA HISTÓRICO: Perda de Dados de Produção
+Este projeto sofreu **MÚLTIPLAS PERDAS** do banco de produção devido a configurações incorretas. O problema ocorria quando:
+- Executar `./mvnw quarkus:dev` localmente → **DESTRUÍA** `quarkus_db` (produção)
+- Executar `./mvnw test` → **DESTRUÍA** `quarkus_db` (produção)
+- Flyway com `clean-at-start=true` apontando para banco errado
+
+### ✅ SOLUÇÃO IMPLEMENTADA: 3 Bancos Separados
+
+#### 1️⃣ **quarkus_db** (PRODUÇÃO - VPS)
+- **NUNCA** conectar neste banco localmente!
+- Usado APENAS no VPS via Docker Compose
+- Profile: `QUARKUS_PROFILE=prod`
+- Flyway: `clean-at-start=false` (OBRIGATÓRIO)
+- Configuração: [application-prod.properties](src/main/resources/application-prod.properties)
+
+#### 2️⃣ **quarkus_dev** (DESENVOLVIMENTO LOCAL)
+- Banco isolado para desenvolvimento no MacBook
+- Pode ser limpo/resetado sem riscos
+- Profile: `QUARKUS_PROFILE=dev`
+- Flyway: `clean-at-start=true` (permitido)
+- Configuração: [application-dev.properties](src/main/resources/application-dev.properties)
+
+#### 3️⃣ **quarkus_test** (TESTES)
+- Banco dedicado para testes (`./mvnw test`)
+- Limpo antes de cada execução de testes
+- Flyway: `clean-at-start=false` (evita timeout, mas é recriado externamente)
+- Configuração: [src/test/resources/application.properties](src/test/resources/application.properties)
+
+### 📦 Configuração de Ambientes
+
+#### **Desenvolvimento Local (MacBook)**
+```bash
+# 1. Verificar se PostgreSQL está rodando (container quarkus_postgres)
+docker ps | grep quarkus_postgres
+
+# 2. Carregar variáveis de ambiente
+source .env
+
+# 3. Executar aplicação (usa quarkus_dev)
+./mvnw quarkus:dev
+```
+
+#### **Testes (MacBook)**
+```bash
+# Usa quarkus_test automaticamente (src/test/resources/application.properties)
+./mvnw test
+```
+
+#### **Produção (VPS)**
+```bash
+# Docker Compose cria e gerencia tudo (usa quarkus_db)
+docker compose up -d
+
+# Verifica se está usando QUARKUS_PROFILE=prod
+docker compose exec aguide-api env | grep QUARKUS_PROFILE
+```
+
+### 🔒 Proteções Implementadas
+
+#### ✅ Variáveis de Ambiente (.env)
+- **NUNCA commitado no Git** (protegido pelo `.gitignore`)
+- Define qual banco usar em cada ambiente
+- Exemplo: `DB_DEV_NAME=quarkus_dev`, `DB_PROD_NAME=quarkus_db`
+
+#### ✅ Profiles do Quarkus
+- **dev**: Aponta para `quarkus_dev`, permite `clean-at-start=true`
+- **prod**: Aponta para `quarkus_db`, **PROÍBE** `clean-at-start=true`
+- **test**: Aponta para `quarkus_test`, controlado por scripts externos
+
+#### ✅ Docker Compose
+- `docker-compose.yml`: **Produção VPS** (cria apenas a aplicação, PostgreSQL externo)
+- PostgreSQL local gerenciado separadamente (já existente no Docker Desktop)
+
+#### ✅ Validações de Segurança
+- Script: [validate-production-safety.sh](validate-production-safety.sh)
+- Verifica `application-prod.properties` antes de deploy
+- Bloqueia merge se detectar `clean-at-start=true` em prod
+
+### ⚠️ REGRAS INVIOLÁVEIS
+
+#### 🔴 JAMAIS faça:
+- ❌ Conectar em `quarkus_db` localmente (só no VPS!)
+- ❌ Usar `clean-at-start=true` com `QUARKUS_PROFILE=prod`
+- ❌ Commitar arquivo `.env` no Git
+- ❌ Executar `./mvnw quarkus:dev` sem verificar `.env`
+- ❌ Assumir que o profile correto está ativo
+
+#### ✅ SEMPRE faça:
+- ✅ Verificar `echo $QUARKUS_PROFILE` antes de executar a aplicação
+- ✅ Usar `source .env` antes de `./mvnw quarkus:dev`
+- ✅ Confirmar banco com: `grep DB_DEV_NAME .env`
+- ✅ Testar localmente com `quarkus_dev` antes de fazer PR
+- ✅ Executar `validate-production-safety.sh` antes de merge
+
+### 📋 Checklist Antes de Executar Código
+
+**Antes de `./mvnw quarkus:dev`:**
+- [ ] Executei `source .env`?
+- [ ] Estou usando `QUARKUS_PROFILE=dev`?
+- [ ] PostgreSQL local está rodando? (`docker ps | grep postgres`)
+- [ ] Banco `quarkus_dev` existe? (não é `quarkus_db`)
+
+**Antes de `./mvnw test`:**
+- [ ] Banco `quarkus_test` existe?
+- [ ] Não estou apontando para `quarkus_db` ou `quarkus_dev`
+
+**Antes de fazer PR/merge para main:**
+- [ ] `application-prod.properties` tem `clean-at-start=false`?
+- [ ] `docker-compose.yml` usa `QUARKUS_PROFILE=prod`?
+- [ ] Rodei `validate-production-safety.sh`?
+
+### 📖 Documentação Adicional
+- [.env.example](.env.example) - Template de configuração
+- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Incidente que motivou essas mudanças
+
+---
+
+## 🖥️ Ambiente de Desenvolvimento (DETALHES TÉCNICOS)
 
 ### Ambiente LOCAL (macOS/Linux)
 - **NÃO usa Docker** para executar a aplicação Quarkus localmente
