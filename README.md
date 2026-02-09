@@ -729,6 +729,19 @@ git branch -D develop
 - Remoata
 git push origin --delete develop
 
+### Workflow Completo Recomendado
+
+# 1. Desenvolvimento (testar manualmente)
+source .env
+./mvnw quarkus:dev
+# Testar endpoints no Swagger: https://localhost:8443/q/swagger-ui
+
+# 2. Validar testes (antes de commit)
+./mvnw test
+
+# 3. Build completo (antes de PR)
+./mvnw clean verify
+
 ### 📚 Referências 2
 
 - [Quarkus Dev Mode](https://quarkus.io/guides/maven-tooling#dev-mode)

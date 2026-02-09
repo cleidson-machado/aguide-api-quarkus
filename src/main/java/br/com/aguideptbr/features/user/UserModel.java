@@ -1,20 +1,25 @@
 package br.com.aguideptbr.features.user;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import br.com.aguideptbr.features.phone.PhoneNumberModel;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 /**
@@ -91,6 +96,16 @@ public class UserModel extends PanacheEntityBase {
      */
     @Column(name = "oauth_id", length = 255)
     public String oauthId;
+
+    /**
+     * Telefones do usuário.
+     * Um usuário pode ter múltiplos telefones (Brasil, Portugal, trabalho, etc).
+     * IMPORTANTE: Não serializado no JSON por padrão (@JsonIgnore).
+     * Use o endpoint /api/v1/users/{userId}/phones para buscar telefones.
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<PhoneNumberModel> phoneNumbers = new ArrayList<>();
 
     // ========== Métodos de Consulta ==========
 
@@ -195,5 +210,44 @@ public class UserModel extends PanacheEntityBase {
      */
     public boolean isActive() {
         return this.deletedAt == null;
+    }
+
+    // ========== Métodos de Telefone ==========
+
+    /**
+     * Retorna o telefone principal do usuário.
+     *
+     * @return Telefone principal ou null
+     */
+    @JsonIgnore
+    public PhoneNumberModel getPrimaryPhone() {
+        return phoneNumbers.stream()
+                .filter(p -> Boolean.TRUE.equals(p.isPrimary))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Retorna telefones com WhatsApp ativo.
+     *
+     * @return Lista de telefones com WhatsApp
+     */
+    @JsonIgnore
+    public List<PhoneNumberModel> getWhatsAppPhones() {
+        return phoneNumbers.stream()
+                .filter(p -> Boolean.TRUE.equals(p.hasWhatsApp))
+                .toList();
+    }
+
+    /**
+     * Retorna telefones com Telegram ativo.
+     *
+     * @return Lista de telefones com Telegram
+     */
+    @JsonIgnore
+    public List<PhoneNumberModel> getTelegramPhones() {
+        return phoneNumbers.stream()
+                .filter(p -> Boolean.TRUE.equals(p.hasTelegram))
+                .toList();
     }
 }
