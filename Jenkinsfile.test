@@ -10,7 +10,7 @@ pipeline {
         // Configurações do projeto
         PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
         GIT_REPO = 'https://github.com/cleidson-machado/aguide-api-quarkus.git'
-        GIT_BRANCH = 'develop-data-objects'  // Ajuste conforme a branch
+        GIT_BRANCH = 'develop'  // Branch padrão para testes
         MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
     }
 
@@ -46,14 +46,14 @@ pipeline {
                     echo '🔍 Validando branch para ambiente de TESTE...'
 
                     // Captura a branch atual (pode vir do webhook ou da env)
-                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'develop-data-objects'
+                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'develop'
 
                     echo "📌 Branch detectada: ${currentBranch}"
 
-                    // ⭐ SÓ EXECUTA EM BRANCHES DEVELOP-*
-                    if (!currentBranch.startsWith('develop-')) {
+                    // ⭐ SÓ EXECUTA EM BRANCHES DEVELOP OU DEVELOP-*
+                    if (!currentBranch.startsWith('develop')) {
                         echo "⚠️  Branch '${currentBranch}' NÃO é uma branch de desenvolvimento"
-                        echo "❌ Este job é EXCLUSIVO para branches 'develop-*'"
+                        echo "❌ Este job é EXCLUSIVO para branches 'develop' ou 'develop-*'"
                         echo "🚫 Build cancelado - use o job 'aguide-api-production' para branch main"
                         currentBuild.result = 'NOT_BUILT'
                         error("Branch ${currentBranch} não permitida neste job de TESTE")
