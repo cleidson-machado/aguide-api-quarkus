@@ -721,6 +721,14 @@ Quando `./mvnw quarkus:dev` estiver rodando, você pode usar:
 - Tags para releases: git tag -a v1.0.0 -m "Release 1.0.0" → rastreia versões
 - Commits descritivos: git commit -m "feat: adiciona autenticação" (use Conventional Commits)
 
+### Deletar branch local e remota de develop (fora dela):
+- Antes de deletar, certifique-se de estar em outra branch (ex: main)
+git checkout main
+- Local
+git branch -D develop
+- Remoata
+git push origin --delete develop
+
 ### 📚 Referências 2
 
 - [Quarkus Dev Mode](https://quarkus.io/guides/maven-tooling#dev-mode)
