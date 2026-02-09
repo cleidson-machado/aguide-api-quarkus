@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
+import br.com.aguideptbr.features.user.dto.UserDetailResponse;
 import br.com.aguideptbr.util.PaginatedResponse;
 import io.quarkus.panache.common.Page;
 import jakarta.inject.Inject;
@@ -40,16 +41,44 @@ public class UserController {
     @Inject
     Logger log;
 
+    /**
+     * Lista todos os usuários ativos COM seus telefones.
+     * Limitado a 50 usuários para evitar sobrecarga.
+     *
+     * GET /api/v1/users
+     *
+     * Para listas maiores, use /api/v1/users/paginated
+     */
     @GET
-    public List<UserModel> list() {
-        return UserModel.findAllActive();
+    public Response list() {
+        log.info("GET /api/v1/users - Listando usuários com telefones (limite 50)");
+
+        List<UserModel> users = UserModel.find("deletedAt is null")
+                .page(Page.of(0, 50))
+                .list();
+
+        List<UserDetailResponse> response = users.stream()
+                .map(UserDetailResponse::new)
+                .toList();
+
+        log.infof("Retornando %d usuários com telefones", response.size());
+        return Response.ok(response).build();
     }
 
+    /**
+     * Lista usuários ativos COM seus telefones (paginado).
+     *
+     * GET /api/v1/users/paginated?page=0&size=10
+     *
+     * Ideal para data tables no frontend.
+     */
     @GET
     @Path("/paginated")
-    public PaginatedResponse<UserModel> listPaginated(
+    public Response listPaginated(
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("10") int size) {
+
+        log.infof("GET /api/v1/users/paginated - page=%d, size=%d", page, size);
 
         long totalItems = UserModel.count("deletedAt is null");
         int totalPages = (int) Math.ceil((double) totalItems / size);
@@ -58,7 +87,18 @@ public class UserController {
                 .page(Page.of(page, size))
                 .list();
 
-        return new PaginatedResponse<>(users, totalItems, totalPages, page);
+        List<UserDetailResponse> usersWithPhones = users.stream()
+                .map(UserDetailResponse::new)
+                .toList();
+
+        PaginatedResponse<UserDetailResponse> response = new PaginatedResponse<>(
+                usersWithPhones,
+                totalItems,
+                totalPages,
+                page);
+
+        log.infof("Retornando página %d com %d usuários (total: %d)", page, usersWithPhones.size(), totalItems);
+        return Response.ok(response).build();
     }
 
     @GET
@@ -69,6 +109,53 @@ public class UserController {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(user).build();
+    }
+
+    /**
+     * Retorna usuário com telefones incluídos.
+     *
+     * Use este endpoint quando precisar do usuário + telefones em uma única
+     * chamada.
+     * Evita múltiplas requisições do frontend.
+     *
+     * GET /api/v1/users/{id}/details
+     *
+     * Response:
+     * {
+     * "id": "uuid",
+     * "name": "João",
+     * "email": "joao@example.com",
+     * "phones": [
+     * {
+     * "id": "uuid",
+     * "fullNumber": "+556798407322",
+     * "formattedNumber": "+55 (67) 9 8407-3221",
+     * "isPrimary": true,
+     * "isVerified": true,
+     * "hasWhatsApp": true,
+     * "hasTelegram": false,
+     * "hasSignal": false
+     * }
+     * ]
+     * }
+     */
+    @GET
+    @Path("/{id}/details")
+    public Response getUserWithPhones(@PathParam("id") UUID id) {
+        log.infof("GET /api/v1/users/%s/details - Buscando usuário com telefones", id);
+
+        UserModel user = UserModel.findByIdActive(id);
+        if (user == null) {
+            log.warnf("Usuário %s não encontrado", id);
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("{\"error\": \"Usuário não encontrado\"}")
+                    .build();
+        }
+
+        UserDetailResponse response = new UserDetailResponse(user);
+        log.infof("Usuário %s encontrado com %d telefones", id, response.getPhones().size());
+
+        return Response.ok(response).build();
     }
 
     @POST
