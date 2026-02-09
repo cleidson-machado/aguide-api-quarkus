@@ -714,7 +714,14 @@ Quando `./mvnw quarkus:dev` estiver rodando, você pode usar:
 
 ---
 
-### 📚 Referências
+### 📚 Referências 1
+- Adoção parcial do GitFlow para organização de branches em 09/02/2026
+- Branches com padrão: feature/, bugfix/, docs/ para organizar o desenvolvimento
+- Rebase ao invés de merge (opcional): git rebase main antes de mergear mantém histórico limpo
+- Tags para releases: git tag -a v1.0.0 -m "Release 1.0.0" → rastreia versões
+- Commits descritivos: git commit -m "feat: adiciona autenticação" (use Conventional Commits)
+
+### 📚 Referências 2
 
 - [Quarkus Dev Mode](https://quarkus.io/guides/maven-tooling#dev-mode)
 - [Quarkus Datasource Configuration](https://quarkus.io/guides/datasource#configuration-reference)
