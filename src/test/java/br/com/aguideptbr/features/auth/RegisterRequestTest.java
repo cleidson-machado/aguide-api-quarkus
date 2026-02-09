@@ -31,7 +31,7 @@ class AuthDTOTest {
         assertEquals("João", userInfo.getName(), "Nome deve estar correto");
         assertEquals("Silva", userInfo.getSurname(), "Sobrenome deve estar correto");
         assertEquals("joao@example.com", userInfo.getEmail(), "Email deve estar correto");
-        assertEquals("USER", userInfo.getRole(), "Role deve estar correto");
+        assertEquals(UserRole.FREE, userInfo.getRole(), "Role deve estar correto");
     }
 
     @Test
