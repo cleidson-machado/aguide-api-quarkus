@@ -13,8 +13,6 @@ import java.util.Base64;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -39,7 +37,6 @@ public class JWTService {
     String privateKeyLocation;
 
     private String privateKeyPem;
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostConstruct
     void loadPrivateKey() {
@@ -74,13 +71,16 @@ public class JWTService {
                     }
                     """.trim();
 
-            // Payload JWT MÍNIMO - Apenas identificadores essenciais
-            // Dados sensíveis (roles, nome) são buscados do banco quando necessário
+            // Payload JWT SIMPLIFICADO
+            // "admin": true apenas para ADMIN, false para todos os outros roles
+            // Dados adicionais (role específico, nome) são buscados do banco quando
+            // necessário
             String payload = String.format("""
                     {
                       "iss": "%s",
                       "sub": "%s",
                       "upn": "%s",
+                      "admin": %s,
                       "iat": %d,
                       "exp": %d
                     }
@@ -88,6 +88,7 @@ public class JWTService {
                     issuer,
                     user.id.toString(),
                     user.email,
+                    user.role.isAdmin(), // true apenas para ADMIN, false para outros
                     currentTime,
                     expiresAt);
 

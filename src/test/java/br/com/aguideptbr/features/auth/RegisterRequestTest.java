@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import br.com.aguideptbr.features.auth.dto.LoginResponse;
 import br.com.aguideptbr.features.auth.dto.UserInfoDTO;
+import br.com.aguideptbr.features.user.UserRole;
 
 /**
  * Testes unitários para DTOs da feature Auth.
@@ -23,7 +24,7 @@ class AuthDTOTest {
                 "João",
                 "Silva",
                 "joao@example.com",
-                "USER");
+                UserRole.FREE);
 
         assertNotNull(userInfo, "UserInfoDTO não deve ser nulo");
         assertNotNull(userInfo.getId(), "ID não deve ser nulo");
@@ -40,7 +41,7 @@ class AuthDTOTest {
                 "Maria",
                 "Santos",
                 "maria@example.com",
-                "ADMIN");
+                UserRole.ADMIN);
 
         LoginResponse response = new LoginResponse(
                 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",

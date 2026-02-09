@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.user.UserRole;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -43,7 +44,7 @@ class JWTServiceTest {
         user.name = "João";
         user.surname = "Silva";
         user.email = "joao@example.com";
-        user.role = "USER";
+        user.role = UserRole.FREE;
 
         String token = jwtService.generateToken(user);
 
@@ -61,7 +62,7 @@ class JWTServiceTest {
         admin.name = "Admin";
         admin.surname = "Master";
         admin.email = "admin@example.com";
-        admin.role = "ADMIN";
+        admin.role = UserRole.ADMIN;
 
         String token = jwtService.generateToken(admin);
 
@@ -101,7 +102,7 @@ class JWTServiceTest {
         user.name = "João";
         user.surname = "Silva";
         user.email = "joao@example.com";
-        user.role = "ADMIN";
+        user.role = UserRole.ADMIN;
 
         String token = jwtService.generateToken(user);
 
