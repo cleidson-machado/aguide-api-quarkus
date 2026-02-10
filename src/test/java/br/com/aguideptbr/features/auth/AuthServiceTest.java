@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.user.UserRole;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -44,7 +45,7 @@ class AuthServiceTest {
         user.surname = "Silva";
         user.email = "maria-test-auth@example.com";
         user.passwordHash = passwordEncoder.hashPassword("senha123");
-        user.role = "USER";
+        user.role = UserRole.FREE;
         user.persist();
 
         // Busca usuário pelo email
@@ -72,7 +73,7 @@ class AuthServiceTest {
         user.surname = "Oliveira";
         user.email = "PEDRO-TEST-AUTH@EXAMPLE.COM".toLowerCase().trim(); // Simula normalização
         user.passwordHash = passwordEncoder.hashPassword("senha789");
-        user.role = "USER";
+        user.role = UserRole.FREE;
         user.persist();
 
         // Busca com email em lowercase
@@ -94,7 +95,7 @@ class AuthServiceTest {
         user.surname = "Teste";
         user.email = "joao-test-auth@example.com";
         user.passwordHash = hash;
-        user.role = "USER";
+        user.role = UserRole.FREE;
         user.persist();
 
         // Busca usuário e verifica que hash foi persistido

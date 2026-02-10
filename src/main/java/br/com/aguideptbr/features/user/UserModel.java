@@ -16,6 +16,8 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -54,11 +56,13 @@ public class UserModel extends PanacheEntityBase {
     public String passwordHash;
 
     /**
-     * Role do usuário (USER, ADMIN, etc).
+     * Role do usuário (ADMIN, MANAGER, CHANNEL_OWNER, PREMIUM_USER, FREE).
+     * Armazenado como String no banco, mas manipulado como Enum no código.
      * Usado para controle de acesso com @RolesAllowed.
      */
-    @Column(length = 20)
-    public String role = "USER";
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    public UserRole role = UserRole.FREE;
 
     /**
      * Data de criação do usuário.
