@@ -40,10 +40,6 @@ public class UserController {
 
     private final Logger log;
 
-    public UserController(Logger log) {
-        this.log = log;
-    }
-
     /**
      * Lista todos os usuários ativos COM seus telefones.
      * Limitado a 50 usuários para evitar sobrecarga.
@@ -150,7 +146,7 @@ public class UserController {
         UserModel user = UserModel.findByIdActive(id);
         if (user == null) {
             log.warnf("Usuário %s não encontrado", id);
-            return Response.status(Status.NOT_FOUND)
+            return Response.status(Response.Status.NOT_FOUND)
                     .entity("{\"error\": \"Usuário não encontrado\"}")
                     .build();
         }

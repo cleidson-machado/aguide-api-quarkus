@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.phone.dto.PhoneNumberRequest;
 import br.com.aguideptbr.features.phone.dto.PhoneNumberResponse;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -19,7 +20,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status;
 
 /**
  * Controller REST para gerenciamento de telefones dos usuários.
@@ -37,13 +37,11 @@ import jakarta.ws.rs.core.Response.Status;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PhoneNumberController {
 
-    private final PhoneNumberService phoneService;
-    private final Logger log;
+    @Inject
+    PhoneNumberService phoneService;
 
-    public PhoneNumberController(PhoneNumberService phoneService, Logger log) {
-        this.phoneService = phoneService;
-        this.log = log;
-    }
+    @Inject
+    Logger log;
 
     /**
      * Adiciona um novo telefone para um usuário.
@@ -86,7 +84,7 @@ public class PhoneNumberController {
         PhoneNumberResponse response = new PhoneNumberResponse(created);
 
         log.infof("Phone created: id=%s, fullNumber=%s", created.id, created.fullNumber);
-        return Response.status(Status.CREATED).entity(response).build();
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     /**

@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -24,13 +25,11 @@ import jakarta.ws.rs.NotFoundException;
 @ApplicationScoped
 public class PhoneNumberService {
 
-    private final PhoneNumberRepository phoneRepository;
-    private final Logger log;
+    @Inject
+    PhoneNumberRepository phoneRepository;
 
-    public PhoneNumberService(PhoneNumberRepository phoneRepository, Logger log) {
-        this.phoneRepository = phoneRepository;
-        this.log = log;
-    }
+    @Inject
+    Logger log;
 
     // ========== Regex de Validação ==========
 
