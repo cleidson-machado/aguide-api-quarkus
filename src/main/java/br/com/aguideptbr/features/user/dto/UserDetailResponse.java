@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.user.UserRole;
 
 /**
  * DTO de resposta completa do usuário incluindo telefones.
@@ -19,7 +20,7 @@ public class UserDetailResponse {
     private String name;
     private String surname;
     private String email;
-    private String role;
+    private UserRole role;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -81,11 +82,11 @@ public class UserDetailResponse {
         this.email = email;
     }
 
-    public String getRole() {
+    public UserRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(UserRole role) {
         this.role = role;
     }
 
