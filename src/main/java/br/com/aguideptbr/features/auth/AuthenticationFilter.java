@@ -23,6 +23,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 
 /**
@@ -86,7 +87,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         if (authHeader == null || authHeader.trim().isEmpty()) {
             log.warnf("⚠️ Token ausente para endpoint protegido: %s", path);
             String jsonError = "{\"error\":\"token_missing\",\"message\":\"Token de autenticação é obrigatório\"}";
-            Response response = Response.status(Response.Status.UNAUTHORIZED)
+            Response response = Response.status(Status.UNAUTHORIZED)
                     .entity(jsonError)
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -98,7 +99,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         if (!authHeader.startsWith(BEARER_PREFIX)) {
             log.warnf("⚠️ Authorization header malformado (sem 'Bearer'): %s", path);
             String jsonError = "{\"error\":\"token_malformed\",\"message\":\"Header Authorization deve começar com 'Bearer '\"}";
-            Response response = Response.status(Response.Status.UNAUTHORIZED)
+            Response response = Response.status(Status.UNAUTHORIZED)
                     .entity(jsonError)
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -114,7 +115,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         if (token.isEmpty()) {
             log.warnf("⚠️ Token vazio após 'Bearer': %s", path);
             String jsonError = "{\"error\":\"token_missing\",\"message\":\"Token não pode estar vazio após 'Bearer '\"}";
-            Response response = Response.status(Response.Status.UNAUTHORIZED)
+            Response response = Response.status(Status.UNAUTHORIZED)
                     .entity(jsonError)
                     .type(MediaType.APPLICATION_JSON)
                     .build();
