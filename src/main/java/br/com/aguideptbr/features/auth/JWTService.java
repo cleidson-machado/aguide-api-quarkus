@@ -25,9 +25,8 @@ public class JWTService {
 
     private final Logger log;
     private final String issuer;
-    private final Long expirationTime; // Em segundos
+    private final Long expirationTime;
     private final String privateKeyLocation;
-
     private String privateKeyPem;
 
     public JWTService(

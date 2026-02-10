@@ -14,6 +14,10 @@ public class PasswordEncoder {
 
     private final Logger log;
 
+    public PasswordEncoder(Logger log) {
+        this.log = log;
+    }
+
     private static final int BCRYPT_ITERATION_COUNT = 10; // Custo do BCrypt (2^10 = 1024 rounds)
 
     public PasswordEncoder(Logger log) {

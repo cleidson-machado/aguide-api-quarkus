@@ -43,7 +43,7 @@ public class AuthController {
 
     private final Logger log;
     private final AuthService authService;
-    private final JsonWebToken jwt; // Token JWT injetado automaticamente pelo Quarkus
+    private final JsonWebToken jwt;
 
     public AuthController(Logger log, AuthService authService, JsonWebToken jwt) {
         this.log = log;

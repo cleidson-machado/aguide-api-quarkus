@@ -93,6 +93,7 @@ class PasswordHashValidationTest {
     void testPasswordEncoderVerification() {
         log.info("🔐 Testando PasswordEncoder do sistema...");
 
+        // Criar PasswordEncoder com Logger (constructor injection)
         Logger encoderLogger = Logger.getLogger(PasswordEncoder.class);
         PasswordEncoder encoder = new PasswordEncoder(encoderLogger);
 
