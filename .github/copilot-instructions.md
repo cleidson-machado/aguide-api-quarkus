@@ -1,220 +1,220 @@
-# GitHub Copilot - Instruções do Projeto
+# GitHub Copilot - Project Instructions
 
-## Visão Geral
-Este é um projeto **Java 17+ com Quarkus 3.x** seguindo arquitetura de camadas (Controller → Service → Repository). Use sempre CDI do Quarkus (`@Inject`, `@ApplicationScoped`) e RESTEasy Reactive para APIs REST.
+## Overview
+This is a **Java 17+ with Quarkus 3.x** project following layered architecture (Controller → Service → Repository). Always use Quarkus CDI (`@Inject`, `@ApplicationScoped`) and RESTEasy Reactive for REST APIs.
 
 ---
 
-## 🚨 SEPARAÇÃO DE BANCOS DE DADOS (CRÍTICO - LEIA PRIMEIRO!)
+## 🚨 DATABASE SEPARATION (CRITICAL - READ FIRST!)
 
-### 🔴 PROBLEMA HISTÓRICO: Perda de Dados de Produção
-Este projeto sofreu **MÚLTIPLAS PERDAS** do banco de produção devido a configurações incorretas. O problema ocorria quando:
-- Executar `./mvnw quarkus:dev` localmente → **DESTRUÍA** `quarkus_db` (produção)
-- Executar `./mvnw test` → **DESTRUÍA** `quarkus_db` (produção)
-- Flyway com `clean-at-start=true` apontando para banco errado
+### 🔴 HISTORICAL PROBLEM: Production Data Loss
+This project suffered **MULTIPLE LOSSES** of the production database due to incorrect configurations. The problem occurred when:
+- Running `./mvnw quarkus:dev` locally → **DESTROYED** `quarkus_db` (production)
+- Running `./mvnw test` → **DESTROYED** `quarkus_db` (production)
+- Flyway with `clean-at-start=true` pointing to wrong database
 
-### ✅ SOLUÇÃO IMPLEMENTADA: 3 Bancos Separados
+### ✅ IMPLEMENTED SOLUTION: 3 Separate Databases
 
-#### 1️⃣ **quarkus_db** (PRODUÇÃO - VPS)
-- **NUNCA** conectar neste banco localmente!
-- Usado APENAS no VPS via Docker Compose
+#### 1️⃣ **quarkus_db** (PRODUCTION - VPS)
+- **NEVER** connect to this database locally!
+- Used ONLY on VPS via Docker Compose
 - Profile: `QUARKUS_PROFILE=prod`
-- Flyway: `clean-at-start=false` (OBRIGATÓRIO)
-- Configuração: [application-prod.properties](src/main/resources/application-prod.properties)
+- Flyway: `clean-at-start=false` (MANDATORY)
+- Configuration: [application-prod.properties](src/main/resources/application-prod.properties)
 
-#### 2️⃣ **quarkus_dev** (DESENVOLVIMENTO LOCAL)
-- Banco isolado para desenvolvimento no MacBook
-- Pode ser limpo/resetado sem riscos
+#### 2️⃣ **quarkus_dev** (LOCAL DEVELOPMENT)
+- Isolated database for development on MacBook
+- Can be cleaned/reset without risks
 - Profile: `QUARKUS_PROFILE=dev`
-- Flyway: `clean-at-start=true` (permitido)
-- Configuração: [application-dev.properties](src/main/resources/application-dev.properties)
+- Flyway: `clean-at-start=true` (allowed)
+- Configuration: [application-dev.properties](src/main/resources/application-dev.properties)
 
-#### 3️⃣ **quarkus_test** (TESTES)
-- Banco dedicado para testes (`./mvnw test`)
-- Limpo antes de cada execução de testes
-- Flyway: `clean-at-start=false` (evita timeout, mas é recriado externamente)
-- Configuração: [src/test/resources/application.properties](src/test/resources/application.properties)
+#### 3️⃣ **quarkus_test** (TESTS)
+- Dedicated database for tests (`./mvnw test`)
+- Cleaned before each test execution
+- Flyway: `clean-at-start=false` (avoids timeout, but recreated externally)
+- Configuration: [src/test/resources/application.properties](src/test/resources/application.properties)
 
-### 📦 Configuração de Ambientes
+### 📦 Environment Configuration
 
-#### **Desenvolvimento Local (MacBook)**
+#### **Local Development (MacBook)**
 ```bash
-# 1. Verificar se PostgreSQL está rodando (container quarkus_postgres)
+# 1. Check if PostgreSQL is running (quarkus_postgres container)
 docker ps | grep quarkus_postgres
 
-# 2. Carregar variáveis de ambiente
+# 2. Load environment variables
 source .env
 
-# 3. Executar aplicação (usa quarkus_dev)
+# 3. Run application (uses quarkus_dev)
 ./mvnw quarkus:dev
 ```
 
-#### **Testes (MacBook)**
+#### **Tests (MacBook)**
 ```bash
-# Usa quarkus_test automaticamente (src/test/resources/application.properties)
+# Uses quarkus_test automatically (src/test/resources/application.properties)
 ./mvnw test
 ```
 
-#### **Produção (VPS)**
+#### **Production (VPS)**
 ```bash
-# Docker Compose cria e gerencia tudo (usa quarkus_db)
+# Docker Compose creates and manages everything (uses quarkus_db)
 docker compose up -d
 
-# Verifica se está usando QUARKUS_PROFILE=prod
+# Verify it's using QUARKUS_PROFILE=prod
 docker compose exec aguide-api env | grep QUARKUS_PROFILE
 ```
 
-### 🔒 Proteções Implementadas
+### 🔒 Implemented Protections
 
-#### ✅ Variáveis de Ambiente (.env)
-- **NUNCA commitado no Git** (protegido pelo `.gitignore`)
-- Define qual banco usar em cada ambiente
-- Exemplo: `DB_DEV_NAME=quarkus_dev`, `DB_PROD_NAME=quarkus_db`
+#### ✅ Environment Variables (.env)
+- **NEVER committed to Git** (protected by `.gitignore`)
+- Defines which database to use in each environment
+- Example: `DB_DEV_NAME=quarkus_dev`, `DB_PROD_NAME=quarkus_db`
 
-#### ✅ Profiles do Quarkus
-- **dev**: Aponta para `quarkus_dev`, permite `clean-at-start=true`
-- **prod**: Aponta para `quarkus_db`, **PROÍBE** `clean-at-start=true`
-- **test**: Aponta para `quarkus_test`, controlado por scripts externos
+#### ✅ Quarkus Profiles
+- **dev**: Points to `quarkus_dev`, allows `clean-at-start=true`
+- **prod**: Points to `quarkus_db`, **FORBIDS** `clean-at-start=true`
+- **test**: Points to `quarkus_test`, controlled by external scripts
 
 #### ✅ Docker Compose
-- `docker-compose.yml`: **Produção VPS** (cria apenas a aplicação, PostgreSQL externo)
-- PostgreSQL local gerenciado separadamente (já existente no Docker Desktop)
+- `docker-compose.yml`: **Production VPS** (creates only the application, external PostgreSQL)
+- Local PostgreSQL managed separately (already exists in Docker Desktop)
 
-#### ✅ Validações de Segurança
+#### ✅ Security Validations
 - Script: [validate-production-safety.sh](validate-production-safety.sh)
-- Verifica `application-prod.properties` antes de deploy
-- Bloqueia merge se detectar `clean-at-start=true` em prod
+- Verifies `application-prod.properties` before deploy
+- Blocks merge if it detects `clean-at-start=true` in prod
 
-### ⚠️ REGRAS INVIOLÁVEIS
+### ⚠️ INVIOLABLE RULES
 
-#### 🔴 JAMAIS faça:
-- ❌ Conectar em `quarkus_db` localmente (só no VPS!)
-- ❌ Usar `clean-at-start=true` com `QUARKUS_PROFILE=prod`
-- ❌ Commitar arquivo `.env` no Git
-- ❌ Executar `./mvnw quarkus:dev` sem verificar `.env`
-- ❌ Assumir que o profile correto está ativo
+#### 🔴 NEVER do:
+- ❌ Connect to `quarkus_db` locally (only on VPS!)
+- ❌ Use `clean-at-start=true` with `QUARKUS_PROFILE=prod`
+- ❌ Commit `.env` file to Git
+- ❌ Run `./mvnw quarkus:dev` without checking `.env`
+- ❌ Assume the correct profile is active
 
-#### ✅ SEMPRE faça:
-- ✅ Verificar `echo $QUARKUS_PROFILE` antes de executar a aplicação
-- ✅ Usar `source .env` antes de `./mvnw quarkus:dev`
-- ✅ Confirmar banco com: `grep DB_DEV_NAME .env`
-- ✅ Testar localmente com `quarkus_dev` antes de fazer PR
-- ✅ Executar `validate-production-safety.sh` antes de merge
+#### ✅ ALWAYS do:
+- ✅ Check `echo $QUARKUS_PROFILE` before running the application
+- ✅ Use `source .env` before `./mvnw quarkus:dev`
+- ✅ Confirm database with: `grep DB_DEV_NAME .env`
+- ✅ Test locally with `quarkus_dev` before creating PR
+- ✅ Run `validate-production-safety.sh` before merge
 
-### 📋 Checklist Antes de Executar Código
+### 📋 Checklist Before Running Code
 
-**Antes de `./mvnw quarkus:dev`:**
-- [ ] Executei `source .env`?
-- [ ] Estou usando `QUARKUS_PROFILE=dev`?
-- [ ] PostgreSQL local está rodando? (`docker ps | grep postgres`)
-- [ ] Banco `quarkus_dev` existe? (não é `quarkus_db`)
+**Before `./mvnw quarkus:dev`:**
+- [ ] Did I run `source .env`?
+- [ ] Am I using `QUARKUS_PROFILE=dev`?
+- [ ] Is local PostgreSQL running? (`docker ps | grep postgres`)
+- [ ] Does `quarkus_dev` database exist? (not `quarkus_db`)
 
-**Antes de `./mvnw test`:**
-- [ ] Banco `quarkus_test` existe?
-- [ ] Não estou apontando para `quarkus_db` ou `quarkus_dev`
+**Before `./mvnw test`:**
+- [ ] Does `quarkus_test` database exist?
+- [ ] Am I not pointing to `quarkus_db` or `quarkus_dev`
 
-**Antes de fazer PR/merge para main:**
-- [ ] `application-prod.properties` tem `clean-at-start=false`?
-- [ ] `docker-compose.yml` usa `QUARKUS_PROFILE=prod`?
-- [ ] Rodei `validate-production-safety.sh`?
+**Before creating PR/merge to main:**
+- [ ] Does `application-prod.properties` have `clean-at-start=false`?
+- [ ] Does `docker-compose.yml` use `QUARKUS_PROFILE=prod`?
+- [ ] Did I run `validate-production-safety.sh`?
 
-### 📖 Documentação Adicional
-- [.env.example](.env.example) - Template de configuração
-- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Incidente que motivou essas mudanças
+### 📖 Additional Documentation
+- [.env.example](.env.example) - Configuration template
+- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Incident that motivated these changes
 
 ---
 
-## 🖥️ Ambiente de Desenvolvimento (DETALHES TÉCNICOS)
+## 🖥️ Development Environment (TECHNICAL DETAILS)
 
-### Ambiente LOCAL (macOS/Linux)
-- **NÃO usa Docker** para executar a aplicação Quarkus localmente
-- Aplicação roda via **terminal direto**: `./mvnw quarkus:dev`
-- PostgreSQL roda em **Docker** (container `quarkus_postgres`)
-- Aplicação conecta ao banco via `jdbc:postgresql://localhost:5432/quarkus_db`
-- Porta local: `https://localhost:8443` (HTTPS com certificado auto-assinado)
+### LOCAL Environment (macOS/Linux)
+- **DOES NOT use Docker** to run Quarkus application locally
+- Application runs via **direct terminal**: `./mvnw quarkus:dev`
+- PostgreSQL runs in **Docker** (container `quarkus_postgres`)
+- Application connects to database via `jdbc:postgresql://localhost:5432/quarkus_db`
+- Local port: `https://localhost:8443` (HTTPS with self-signed certificate)
 
-### Ambiente PRODUÇÃO (VPS)
-- **Usa Docker Compose** (`docker-compose.yml`)
-- Aplicação e PostgreSQL em containers separados
-- Deploy via Jenkins pipeline automático
-- Network bridge para comunicação entre containers
+### PRODUCTION Environment (VPS)
+- **Uses Docker Compose** (`docker-compose.yml`)
+- Application and PostgreSQL in separate containers
+- Deploy via automatic Jenkins pipeline
+- Bridge network for communication between containers
 
-### ⚠️ REGRA IMPORTANTE
-**NUNCA assuma** que a aplicação está rodando em Docker localmente. Sempre pergunte ou verifique com `docker ps` e `ps aux | grep quarkus` para identificar o ambiente antes de sugerir comandos de restart ou debug.
+### ⚠️ IMPORTANT RULE
+**NEVER assume** the application is running in Docker locally. Always ask or verify with `docker ps` and `ps aux | grep quarkus` to identify the environment before suggesting restart or debug commands.
 
-## Estrutura de Pacotes OBRIGATÓRIA
+## MANDATORY Package Structure
 ```
 br.com.aguideptbr/
-├── features/          # Funcionalidades de negócio (organizadas por domínio)
-│   ├── auth/          # Autenticação e segurança (feature)
+├── features/          # Business functionalities (organized by domain)
+│   ├── auth/          # Authentication and security (feature)
 │   ├── user/
 │   │   ├── UserController.java
 │   │   ├── UserService.java
 │   │   ├── UserRepository.java
-│   │   └── User.java (entidade)
-│   └── [outra-feature]/
-└── util/              # Utilitários compartilhados
+│   │   └── User.java (entity)
+│   └── [other-feature]/
+└── util/              # Shared utilities
 ```
 
 ---
 
-### 📂 Organização de Arquivos e Diretórios
+### 📂 File and Directory Organization
 
-- **Arquivos de Produção e Estrutura:** O agente tem permissão total para criar e editar arquivos essenciais na raiz do projeto, como `Dockerfile`, `Jenkinsfile`, `pom.xml`, `.gitignore`, e arquivos de configuração.
-- **Código Fonte:** A pasta `src/main/java/` é o core do projeto. O agente deve manipular, criar ou refatorar módulos dentro desta pasta conforme as solicitações de desenvolvimento.
-- **Arquivos Temporários e de Rascunho (REGRA CRÍTICA):**
-  - **Local Obrigatório:** `a_error_log_temp/`
-  - Os arquivos de testes devem seguir esse padrão (`src/test/java/br/com/aguideptbr/features/[NOME_DA_FEATURE]/[NOME_ARQUIVO_JAVA]Test.java`),
-  ou seja, salvar testes na estrutura correta dentro de `src/test/java/...`. respeitando a organização por features do projeto.
-  - Os rascunhos de documentação (`*.md`), arquivos de texto para manipulação de dados ou logs de debug gerados pelo agente **DEVEM** ser criados exclusivamente dentro de `a_error_log_temp/`.
-  - **Proibição:** Nunca criar arquivos de "suporte ao raciocínio" ou "testes rápidos" na raiz do projeto. Se não for um arquivo de configuração oficial ou código de produção, ele pertence à `a_error_log_temp/`.
+- **Production and Structure Files:** The agent has full permission to create and edit essential files in the project root, such as `Dockerfile`, `Jenkinsfile`, `pom.xml`, `.gitignore`, and configuration files.
+- **Source Code:** The `src/main/java/` folder is the project core. The agent should manipulate, create or refactor modules within this folder according to development requests.
+- **Temporary and Draft Files (CRITICAL RULE):**
+  - **Mandatory Location:** `a_error_log_temp/`
+  - Test files should follow this pattern (`src/test/java/br/com/aguideptbr/features/[FEATURE_NAME]/[JAVA_FILE_NAME]Test.java`),
+  that is, save tests in the correct structure within `src/test/java/...` respecting the project's organization by features.
+  - Documentation drafts (`*.md`), text files for data manipulation or debug logs generated by the agent **MUST** be created exclusively within `a_error_log_temp/`.
+  - **Prohibition:** Never create "reasoning support" or "quick test" files in the project root. If it's not an official configuration file or production code, it belongs to `a_error_log_temp/`.
 
-  ## 🤖 Comportamento do Agente na Criação de Arquivos
+  ## 🤖 Agent Behavior in File Creation
 
-1. **Identificação de Escopo:** Antes de criar um arquivo, o agente deve classificar:
-   - *É essencial para o funcionamento do pipeline ou deploy?* (Ex: `pom.xml`, `Dockerfile`, `Jenkinsfile`) -> **Raiz**.
-   - *É um teste, rascunho, dump de dados ou arquivo auxiliar?* -> **a_error_log_temp/**.
-2. **Limpeza Automática:** Ao sugerir novos scripts de teste, o agente deve nomeá-los como `a_error_log_temp/test_nome_do_recurso.sh` por padrão.
+1. **Scope Identification:** Before creating a file, the agent should classify:
+   - *Is it essential for pipeline or deploy operation?* (Ex: `pom.xml`, `Dockerfile`, `Jenkinsfile`) -> **Root**.
+   - *Is it a test, draft, data dump or auxiliary file?* -> **a_error_log_temp/**.
+2. **Automatic Cleanup:** When suggesting new test scripts, the agent should name them as `a_error_log_temp/test_resource_name.sh` by default.
 
 ---
 
-## Convenções de Código
+## Code Conventions
 
-### ✅ Encapsulamento de Campos (Sonar: java:S1104) - CRÍTICO
+### ✅ Field Encapsulation (Sonar: java:S1104) - CRITICAL
 
-**REGRA FUNDAMENTAL:** Campos de classe **NUNCA** devem ser `public` (exceto em entidades Panache).
+**FUNDAMENTAL RULE:** Class fields should **NEVER** be `public` (except in Panache entities).
 
-#### ❌ PROIBIDO (viola java:S1104):
+#### ❌ FORBIDDEN (violates java:S1104):
 ```java
 public class ErrorResponse {
-    public String error;        // ❌ Campo público
-    public String message;      // ❌ Campo público
-    public LocalDateTime timestamp; // ❌ Campo público
+    public String error;        // ❌ Public field
+    public String message;      // ❌ Public field
+    public LocalDateTime timestamp; // ❌ Public field
 }
 
 public class LoginRequest {
-    public String email;        // ❌ Campo público
-    public String password;     // ❌ Campo público
+    public String email;        // ❌ Public field
+    public String password;     // ❌ Public field
 }
 ```
 
-#### ✅ CORRETO (encapsulamento adequado):
+#### ✅ CORRECT (proper encapsulation):
 
-**Para DTOs e Classes Utilitárias:**
+**For DTOs and Utility Classes:**
 ```java
 public class ErrorResponse {
-    private String error;       // ✅ Privado
-    private String message;     // ✅ Privado
-    private LocalDateTime timestamp; // ✅ Privado
+    private String error;       // ✅ Private
+    private String message;     // ✅ Private
+    private LocalDateTime timestamp; // ✅ Private
 
-    // Construtor
+    // Constructor
     public ErrorResponse(String error, String message) {
         this.error = error;
         this.message = message;
         this.timestamp = LocalDateTime.now();
     }
 
-    // Getters obrigatórios (Jackson precisa para serialização JSON)
+    // Mandatory getters (Jackson needs them for JSON serialization)
     public String getError() {
         return error;
     }
@@ -229,14 +229,14 @@ public class ErrorResponse {
 }
 
 public class LoginRequest {
-    @NotBlank(message = "Email é obrigatório")
-    @Email(message = "Email inválido")
-    private String email;       // ✅ Privado
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email")
+    private String email;       // ✅ Private
 
-    @NotBlank(message = "Senha é obrigatória")
-    private String password;    // ✅ Privado
+    @NotBlank(message = "Password is required")
+    private String password;    // ✅ Private
 
-    // Getters e Setters (necessários para Bean Validation e Jackson)
+    // Getters and Setters (needed for Bean Validation and Jackson)
     public String getEmail() {
         return email;
     }
@@ -255,56 +255,56 @@ public class LoginRequest {
 }
 ```
 
-**Para Constantes:**
+**For Constants:**
 ```java
 public class Constants {
-    // ✅ Constantes podem ser public static final
+    // ✅ Constants can be public static final
     public static final String TOKEN_TYPE = "Bearer";
     public static final int MAX_ATTEMPTS = 3;
 }
 ```
 
-**Exceção - Entidades Panache:**
+**Exception - Panache Entities:**
 ```java
 @Entity
 @Table(name = "users")
 public class UserModel extends PanacheEntity {
-    // ✅ Panache permite campos public por convenção do framework
+    // ✅ Panache allows public fields by framework convention
     public String name;
     public String email;
 
-    // Mas métodos com lógica devem existir
+    // But methods with logic must exist
     public boolean isActive() {
         return deletedAt == null;
     }
 }
 ```
 
-#### 🎯 Benefícios do Encapsulamento:
-- **Controle de Acesso:** Define quem pode ler/escrever dados
-- **Validação:** Permite adicionar lógica nos setters
-- **Debugging:** Facilita rastreamento de mudanças via breakpoints
-- **Manutenibilidade:** Mudanças internas não afetam código externo
-- **Conformidade Sonar:** Atende java:S1104 e melhora qualidade do código
+#### 🎯 Benefits of Encapsulation:
+- **Access Control:** Defines who can read/write data
+- **Validation:** Allows adding logic in setters
+- **Debugging:** Facilitates tracking changes via breakpoints
+- **Maintainability:** Internal changes don't affect external code
+- **Sonar Compliance:** Meets java:S1104 and improves code quality
 
-#### 📋 Checklist ao Criar Classes:
-- [ ] Todos os campos são `private` (exceto constantes `static final` e entidades Panache)?
-- [ ] Getters estão presentes para todos os campos que precisam ser acessados externamente?
-- [ ] Setters estão presentes apenas para campos mutáveis?
-- [ ] Bean Validation funciona com getters/setters (`@NotBlank`, `@Email`, etc.)?
-- [ ] Jackson consegue serializar/desserializar com getters/setters?
+#### 📋 Class Creation Checklist:
+- [ ] All fields are `private` (except `static final` constants and Panache entities)?
+- [ ] Getters are present for all fields that need external access?
+- [ ] Setters are present only for mutable fields?
+- [ ] Bean Validation works with getters/setters (`@NotBlank`, `@Email`, etc.)?
+- [ ] Jackson can serialize/deserialize with getters/setters?
 
-### ✅ Convenção de nomes (Sonar: java:S117)
-- **Variáveis locais e parâmetros** devem usar **camelCase** (ex.: `titleText`).
-- **Evite snake_case** em variáveis e parâmetros (ex.: `title_txt`).
-- **Constantes** podem usar **UPPER_SNAKE_CASE** (ex.: `TOKEN_TYPE`).
+### ✅ Naming Convention (Sonar: java:S117)
+- **Local variables and parameters** should use **camelCase** (e.g.: `titleText`).
+- **Avoid snake_case** in variables and parameters (e.g.: `title_txt`).
+- **Constants** can use **UPPER_SNAKE_CASE** (e.g.: `TOKEN_TYPE`).
 
-### 1. Controllers REST
-- Usar `@Path("/api/v1/recurso")` na classe
-- Métodos anotados com `@GET`, `@POST`, `@PUT`, `@DELETE`
-- Retornar `Response` ou `Uni<Response>` (reactive)
-- Validar entrada com Bean Validation (`@Valid`)
-- Logs obrigatórios: entrada de request e erros
+### 1. REST Controllers
+- Use `@Path("/api/v1/resource")` on class
+- Methods annotated with `@GET`, `@POST`, `@PUT`, `@DELETE`
+- Return `Response` or `Uni<Response>` (reactive)
+- Validate input with Bean Validation (`@Valid`)
+- Mandatory logs: request entry and errors
 ```java
 @Path("/api/v1/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -322,10 +322,10 @@ public class UserController {
 ```
 
 ### 2. Services
-- Anotados com `@ApplicationScoped`
-- Contém lógica de negócio
-- Injeta repositories com `@Inject`
-- Transações com `@Transactional` quando necessário
+- Annotated with `@ApplicationScoped`
+- Contains business logic
+- Inject repositories with `@Inject`
+- Transactions with `@Transactional` when needed
 ```java
 @ApplicationScoped
 public class UserService {
@@ -334,15 +334,15 @@ public class UserService {
 
     @Transactional
     public User create(User user) {
-        // lógica de negócio
+        // business logic
     }
 }
 ```
 
 ### 3. Repositories
-- Estender `PanacheRepository<Entity>` ou usar `PanacheEntity`
-- Métodos de consulta customizados seguem padrão `findByXxx`
-- Não colocar lógica de negócio aqui
+- Extend `PanacheRepository<Entity>` or use `PanacheEntity`
+- Custom query methods follow `findByXxx` pattern
+- Do not place business logic here
 ```java
 @ApplicationScoped
 public class UserRepository implements PanacheRepository<User> {
@@ -352,10 +352,10 @@ public class UserRepository implements PanacheRepository<User> {
 }
 ```
 
-### 4. Entidades
-- Herdar de `PanacheEntity` (id gerado automaticamente) OU usar `PanacheEntityBase` com `@Id` customizado
-- Usar `@Entity`, `@Table`, `@Column`
-- Sempre incluir campos de auditoria:
+### 4. Entities
+- Inherit from `PanacheEntity` (auto-generated id) OR use `PanacheEntityBase` with custom `@Id`
+- Use `@Entity`, `@Table`, `@Column`
+- Always include audit fields:
 ```java
 @Entity
 @Table(name = "users")
@@ -376,40 +376,40 @@ public class User extends PanacheEntity {
 }
 ```
 
-## Tratamento de Exceções
-- Usar `@ServerExceptionMapper` para tratamento global
-- Nunca expor stacktraces para o cliente em produção
-- Retornar JSON estruturado:
+## Exception Handling
+- Use `@ServerExceptionMapper` for global handling
+- Never expose stacktraces to client in production
+- Return structured JSON:
 ```java
 {
   "error": "User not found",
-  "message": "Usuário com ID 123 não encontrado",
+  "message": "User with ID 123 not found",
   "timestamp": "2026-01-31T10:30:00Z"
 }
 ```
 
 ## Logging
-- Injetar `Logger` do JBoss: `@Inject Logger log;`
-- Níveis: `log.info()` para operações normais, `log.error()` para erros, `log.debug()` para debug
-- Sempre logar: início de operações importantes, erros com stacktrace, dados sensíveis NÃO devem ser logados
-- **Proibido usar `System.out/err`** (Sonar: Replace this use of System.out by a logger)
+- Inject JBoss `Logger`: `@Inject Logger log;`
+- Levels: `log.info()` for normal operations, `log.error()` for errors, `log.debug()` for debugging
+- Always log: start of important operations, errors with stacktrace, sensitive data should NOT be logged
+- **Forbidden to use `System.out/err`** (Sonar: Replace this use of System.out by a logger)
 
-## Configurações
-- Usar `application.properties` para configurações comuns
-- Usar `application-dev.properties` e `application-prod.properties` para ambientes específicos
-- Acessar configs com `@ConfigProperty(name = "key") String value;`
+## Configuration
+- Use `application.properties` for common configurations
+- Use `application-dev.properties` and `application-prod.properties` for environment-specific settings
+- Access configs with `@ConfigProperty(name = "key") String value;`
 
 ---
 
-## ⚠️ PROTEÇÃO DO BANCO DE DADOS DE PRODUÇÃO (CRÍTICO)
+## ⚠️ PRODUCTION DATABASE PROTECTION (CRITICAL)
 
-### 🚨 REGRAS INVIOLÁVEIS - BANCO DE DADOS PRINCIPAL
+### 🚨 INVIOLABLE RULES - MAIN DATABASE
 
-O banco de dados de produção (`jdbc:postgresql://quarkus_postgres:5432/quarkus_db`) **JAMAIS** deve ser destruído ou recriado. Esta é uma regra **ABSOLUTA** e **NÃO NEGOCIÁVEL**.
+The production database (`jdbc:postgresql://quarkus_postgres:5432/quarkus_db`) should **NEVER** be destroyed or recreated. This is an **ABSOLUTE** and **NON-NEGOTIABLE** rule.
 
-#### 🔴 Configurações PROIBIDAS em Produção:
+#### 🔴 FORBIDDEN Configurations in Production:
 ```properties
-# ❌ NUNCA USE ISSO EM PRODUÇÃO:
+# ❌ NEVER USE THIS IN PRODUCTION:
 quarkus.flyway.clean-at-start=true
 quarkus.hibernate-orm.database.generation=drop
 quarkus.hibernate-orm.database.generation=drop-and-create
@@ -417,50 +417,50 @@ quarkus.hibernate-orm.database.generation=create
 quarkus.hibernate-orm.database.generation=create-drop
 ```
 
-#### ✅ Configurações OBRIGATÓRIAS para Produção:
+#### ✅ MANDATORY Configurations for Production:
 ```properties
-# ✅ SEMPRE USE EM PRODUÇÃO (application-prod.properties):
+# ✅ ALWAYS USE IN PRODUCTION (application-prod.properties):
 quarkus.hibernate-orm.database.generation=none
 quarkus.flyway.clean-at-start=false
 quarkus.flyway.migrate-at-start=true
 quarkus.flyway.baseline-on-migrate=true
 ```
 
-#### ✅ Configurações PERMITIDAS para Desenvolvimento:
+#### ✅ ALLOWED Configurations for Development:
 ```properties
-# ✅ PERMITIDO EM application-dev.properties:
+# ✅ ALLOWED IN application-dev.properties:
 quarkus.hibernate-orm.database.generation=none
-quarkus.flyway.clean-at-start=true  # OK para develop branch
+quarkus.flyway.clean-at-start=true  # OK for develop branch
 quarkus.flyway.migrate-at-start=true
 ```
 
-### 🛡️ Proteção por Branch
+### 🛡️ Branch Protection
 
-#### Branch `main` (PRODUÇÃO):
-- **SEMPRE** usar profile `prod` no `docker-compose.yml`: `QUARKUS_PROFILE=prod`
-- **NUNCA** permitir `clean-at-start=true` em merges para main
-- **VERIFICAR** `application-prod.properties` antes de cada merge
-- **APENAS** migrations incrementais não-destrutivas são permitidas
+#### Branch `main` (PRODUCTION):
+- **ALWAYS** use `prod` profile in `docker-compose.yml`: `QUARKUS_PROFILE=prod`
+- **NEVER** allow `clean-at-start=true` in merges to main
+- **VERIFY** `application-prod.properties` before each merge
+- **ONLY** incremental non-destructive migrations are allowed
 
-#### Branch `develop-data-objects` (DESENVOLVIMENTO):
-- **PERMITIDO** usar `clean-at-start=true` para desenvolvimento
-- **PERMITIDO** recriar banco de dados localmente para testes
-- **OBRIGATÓRIO** revisar configurações antes de fazer PR para main
+#### Branch `develop-data-objects` (DEVELOPMENT):
+- **ALLOWED** to use `clean-at-start=true` for development
+- **ALLOWED** to recreate database locally for tests
+- **MANDATORY** to review configurations before creating PR to main
 
-### ✅ Checklist Antes de Merge develop → main
+### ✅ Checklist Before Merge develop → main
 
-**ANTES de criar PR de develop para main, VERIFICAR:**
+**BEFORE creating PR from develop to main, VERIFY:**
 
-1. [ ] `application-prod.properties` tem `quarkus.flyway.clean-at-start=false`
-2. [ ] `application-prod.properties` tem `quarkus.hibernate-orm.database.generation=none`
-3. [ ] `docker-compose.yml` usa `QUARKUS_PROFILE=prod`
-4. [ ] Nenhuma migration contém `DROP DATABASE`, `DROP SCHEMA` ou `TRUNCATE`
-5. [ ] Todas as migrations são incrementais (apenas `ALTER TABLE ADD`, `CREATE INDEX`, etc.)
-6. [ ] Testou a migration localmente sem `clean-at-start`
+1. [ ] `application-prod.properties` has `quarkus.flyway.clean-at-start=false`
+2. [ ] `application-prod.properties` has `quarkus.hibernate-orm.database.generation=none`
+3. [ ] `docker-compose.yml` uses `QUARKUS_PROFILE=prod`
+4. [ ] No migration contains `DROP DATABASE`, `DROP SCHEMA` or `TRUNCATE`
+5. [ ] All migrations are incremental (only `ALTER TABLE ADD`, `CREATE INDEX`, etc.)
+6. [ ] Tested the migration locally without `clean-at-start`
 
-### 📋 Formato de Migrations Seguras
+### 📋 Safe Migration Format
 
-✅ **PERMITIDO** (não-destrutivo):
+✅ **ALLOWED** (non-destructive):
 ```sql
 -- V1.0.5__Add_status_column.sql
 ALTER TABLE content_records ADD COLUMN status VARCHAR(20);
@@ -470,270 +470,270 @@ ALTER TABLE content_records ALTER COLUMN status SET NOT NULL;
 CREATE INDEX idx_content_status ON content_records(status);
 ```
 
-❌ **PROIBIDO** (destrutivo):
+❌ **FORBIDDEN** (destructive):
 ```sql
--- ❌ NUNCA FAÇA ISSO EM PRODUÇÃO:
+-- ❌ NEVER DO THIS IN PRODUCTION:
 DROP TABLE content_records;
 TRUNCATE TABLE users;
 DROP SCHEMA public CASCADE;
 ALTER TABLE content_records DROP COLUMN important_data;
 ```
 
-### 🚨 O Que Acontece Se Violar Esta Regra?
+### 🚨 What Happens If This Rule Is Violated?
 
-**CONSEQUÊNCIAS CATASTRÓFICAS:**
-- Perda total de dados de produção
-- Downtime da aplicação
-- Perda de confiança dos usuários
-- Impossibilidade de recuperação (sem backup)
+**CATASTROPHIC CONSEQUENCES:**
+- Total loss of production data
+- Application downtime
+- Loss of user trust
+- Impossibility of recovery (without backup)
 
-### 🔧 Como Recuperar Se Banco Foi Destruído?
+### 🔧 How to Recover If Database Was Destroyed?
 
-1. **Parar imediatamente** a aplicação
-2. **Restaurar** do último backup disponível
-3. **Verificar** as configurações antes de reiniciar
-4. **Nunca** fazer deploy sem revisar configs
+1. **Immediately stop** the application
+2. **Restore** from the last available backup
+3. **Verify** configurations before restarting
+4. **Never** deploy without reviewing configs
 
-### 📝 Ao Criar Novas Features
+### 📝 When Creating New Features
 
-**SEMPRE pergunte:**
-- "Esta migration é incremental e não-destrutiva?"
-- "Testei sem `clean-at-start=true`?"
-- "A configuração de produção está protegida?"
+**ALWAYS ask:**
+- "Is this migration incremental and non-destructive?"
+- "Did I test without `clean-at-start=true`?"
+- "Is the production configuration protected?"
 
-**NUNCA assuma:**
-- Que o Hibernate vai "gerenciar" o schema em produção
-- Que `clean-at-start` está desabilitado por padrão
-- Que o profile correto será usado automaticamente
+**NEVER assume:**
+- That Hibernate will "manage" the schema in production
+- That `clean-at-start` is disabled by default
+- That the correct profile will be used automatically
 
-### 🤖 GitHub Actions e CI/CD (CRÍTICO)
+### 🤖 GitHub Actions and CI/CD (CRITICAL)
 
-**PROBLEMA IDENTIFICADO:**
-O GitHub Actions pode causar perda de dados se não validar o profile antes do deploy!
+**IDENTIFIED PROBLEM:**
+GitHub Actions can cause data loss if it doesn't validate the profile before deploy!
 
-**Verificações OBRIGATÓRIAS no workflow de deploy:**
+**MANDATORY Verifications in deploy workflow:**
 ```yaml
-- name: ⚠️ Verificar configuração de produção
+- name: ⚠️ Verify production configuration
   run: |
     grep -q "quarkus.flyway.clean-at-start=false" src/main/resources/application-prod.properties || exit 1
     grep -q "quarkus.hibernate-orm.database.generation=none" src/main/resources/application-prod.properties || exit 1
-    echo "✅ Configurações de produção verificadas"
+    echo "✅ Production configurations verified"
 
-- name: ⚠️ Validar docker-compose.yml no VPS
+- name: ⚠️ Validate docker-compose.yml on VPS
   script: |
     cd /opt/apps/aguide-api-quarkus
-    grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || (echo "❌ PROFILE INCORRETO!" && exit 1)
-    echo "✅ Profile de produção confirmado"
+    grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || (echo "❌ INCORRECT PROFILE!" && exit 1)
+    echo "✅ Production profile confirmed"
 ```
 
-**NUNCA no deploy de produção:**
-- ❌ `docker compose down` sem verificar volumes persistentes
-- ❌ `docker compose build --no-cache` sem validar configurações
-- ❌ Deploy sem confirmar `QUARKUS_PROFILE=prod`
-- ❌ Rebuild de banco de dados (usar apenas migrations)
+**NEVER in production deploy:**
+- ❌ `docker compose down` without checking persistent volumes
+- ❌ `docker compose build --no-cache` without validating configurations
+- ❌ Deploy without confirming `QUARKUS_PROFILE=prod`
+- ❌ Database rebuild (use only migrations)
 
-**Comando SEGURO para deploy:**
+**SAFE command for deploy:**
 ```bash
 cd /opt/apps/aguide-api-quarkus
 git pull origin main
-# Verifica profile antes de qualquer operação
+# Verify profile before any operation
 grep -q "QUARKUS_PROFILE=prod" docker-compose.yml || exit 1
-# Apenas atualiza o serviço da aplicação (não toca no postgres)
+# Only update the application service (don't touch postgres)
 docker compose up -d --no-deps --build aguide-api
 docker system prune -f
 ```
 
 ---
 
-## Migrations de Banco de Dados
-- Usar Flyway em `src/main/resources/db/migration/`
-- Nomenclatura: `V[major].[minor].[patch]__[Description].sql`
-- Exemplo: `V1.0.3__Add_user_role_column.sql`
-- **NUNCA modificar migrations já aplicadas**
-- **PostgreSQL em Produção e Testes**: Mesmas migrations são usadas em ambos ambientes (quarkus_db e quarkus_test)
-- **SEMPRE usar `ON CONFLICT DO NOTHING`** para INSERTs de dados iniciais (idempotência)
+## Database Migrations
+- Use Flyway in `src/main/resources/db/migration/`
+- Naming: `V[major].[minor].[patch]__[Description].sql`
+- Example: `V1.0.3__Add_user_role_column.sql`
+- **NEVER modify already applied migrations**
+- **PostgreSQL in Production and Tests**: Same migrations are used in both environments (quarkus_db and quarkus_test)
+- **ALWAYS use `ON CONFLICT DO NOTHING`** for initial data INSERTs (idempotency)
 
-## Testes
-- Localização: `src/test/java/br/com/aguideptbr/features/[feature]/`
-- Usar `@QuarkusTest` para testes de integração
-- Usar `RestAssured` para testar endpoints
-- Cobertura mínima desejada: 80%
+## Tests
+- Location: `src/test/java/br/com/aguideptbr/features/[feature]/`
+- Use `@QuarkusTest` for integration tests
+- Use `RestAssured` to test endpoints
+- Desired minimum coverage: 80%
 
-### Boas práticas de testes unitários (FOCO)
-- **Foque na regra de negócio** (Service) e nos fluxos críticos.
-- **Isole dependências** com mocks (Repository, gateways externos).
-- **Testes negativos são obrigatórios**: validar erros/exceções esperadas.
-- **Evite testes fracos** (getters/setters sem lógica e duplicação da implementação).
-- **Determinismo**: sem dependência de data/hora real, rede, ordem de execução.
-- **Se o teste precisar de `@QuarkusTest`**, provavelmente é integração, não unitário.
+### Unit Testing Best Practices (FOCUS)
+- **Focus on business rules** (Service) and critical flows.
+- **Isolate dependencies** with mocks (Repository, external gateways).
+- **Negative tests are mandatory**: validate expected errors/exceptions.
+- **Avoid weak tests** (getters/setters without logic and implementation duplication).
+- **Determinism**: no dependency on real date/time, network, execution order.
+- **If the test needs `@QuarkusTest`**, it's probably integration, not unit.
 
-### Quando criar testes unitários
-- Regras com múltiplas ramificações (if/else, validações, autorização).
-- Cálculos, transformações e normalizações.
-- Bugs recorrentes (testes evitam regressão).
-- Casos de erro esperados (ex.: senha inválida, recurso inexistente).
+### When to Create Unit Tests
+- Rules with multiple branches (if/else, validations, authorization).
+- Calculations, transformations and normalizations.
+- Recurring bugs (tests prevent regression).
+- Expected error cases (e.g.: invalid password, non-existent resource).
 
-### Configuração de Testes (CRÍTICO)
-**SEMPRE criar `src/test/resources/application.properties` com:**
+### Test Configuration (CRITICAL)
+**ALWAYS create `src/test/resources/application.properties` with:**
 ```properties
-# Desabilita AuthenticationFilter em testes
+# Disable AuthenticationFilter in tests
 quarkus.arc.exclude-types=br.com.aguideptbr.features.auth.AuthenticationFilter
 
-# Desabilita JWT em testes (evita erro de chave pública não encontrada)
+# Disable JWT in tests (avoids public key not found error)
 quarkus.smallrye-jwt.enabled=false
 
-# Usa PostgreSQL com banco dedicado para testes (quarkus_test)
+# Use PostgreSQL with dedicated database for tests (quarkus_test)
 quarkus.datasource.db-kind=postgresql
 quarkus.datasource.jdbc.url=${QUARKUS_DATASOURCE_JDBC_URL:jdbc:postgresql://quarkus_postgres:5432/quarkus_test}
 quarkus.datasource.username=${QUARKUS_DATASOURCE_USERNAME:quarkus}
 quarkus.datasource.password=${QUARKUS_DATASOURCE_PASSWORD:quarkus123}
 
-# Flyway em testes - USA MESMAS MIGRATIONS DE PRODUÇÃO
+# Flyway in tests - USES SAME MIGRATIONS AS PRODUCTION
 quarkus.flyway.clean-at-start=true
 quarkus.flyway.migrate-at-start=true
-# Location padrão: classpath:db/migration (não precisa especificar)
+# Default location: classpath:db/migration (no need to specify)
 ```
 
-**Importante sobre Migrations:**
-- Produção e testes usam **PostgreSQL** (quarkus_db e quarkus_test)
-- **MESMAS migrations** são usadas em ambos ambientes
-- Flyway executa `clean-at-start=true` em testes para garantir ambiente limpo
-- Não é necessário criar migrations separadas ou adaptar sintaxe
+**Important about Migrations:**
+- Production and tests use **PostgreSQL** (quarkus_db and quarkus_test)
+- **SAME migrations** are used in both environments
+- Flyway executes `clean-at-start=true` in tests to ensure clean environment
+- No need to create separate migrations or adapt syntax
 
-**Importante sobre JWT em Testes:**
-- **SEMPRE** configurar `quarkus.smallrye-jwt.enabled=false` em testes
-- Isso desabilita completamente a extensão SmallRye JWT, evitando tentativas de carregar chaves
-- Combinado com `quarkus.arc.exclude-types` do AuthFilter, garante que testes rodem sem autenticação
+**Important about JWT in Tests:**
+- **ALWAYS** configure `quarkus.smallrye-jwt.enabled=false` in tests
+- This completely disables the SmallRye JWT extension, avoiding attempts to load keys
+- Combined with `quarkus.arc.exclude-types` from AuthFilter, ensures tests run without authentication
 
-### Regras de Testes
-✅ **PERMITIDO:**
-- Desabilitar filtros de autenticação via `quarkus.arc.exclude-types`
-- Usar PostgreSQL com banco dedicado `quarkus_test` (isolado de produção)
-- RestAssured sem headers de autenticação em testes
-- Flyway `clean-at-start=true` para garantir ambiente limpo a cada teste
+### Test Rules
+✅ **ALLOWED:**
+- Disable authentication filters via `quarkus.arc.exclude-types`
+- Use PostgreSQL with dedicated database `quarkus_test` (isolated from production)
+- RestAssured without authentication headers in tests
+- Flyway `clean-at-start=true` to ensure clean environment at each test
 
-❌ **PROIBIDO:**
-- Hardcoded tokens/senhas no código de teste
-- Usar `-DskipTests` no Jenkins/CI (testes são barreira de qualidade)
-- Pular testes para "resolver rápido" problemas de autenticação
-- Conectar em `quarkus_db` (produção) durante testes - SEMPRE usar `quarkus_test`
-- Criar migrations separadas para testes (usar as mesmas de produção)
+❌ **FORBIDDEN:**
+- Hardcoded tokens/passwords in test code
+- Use `-DskipTests` in Jenkins/CI (tests are quality barrier)
+- Skip tests to "quickly fix" authentication problems
+- Connect to `quarkus_db` (production) during tests - ALWAYS use `quarkus_test`
+- Create separate migrations for tests (use the same as production)
 
-## Segurança
+## Security
 
-### Autenticação JWT (CRÍTICO - Lições Aprendidas)
-- **Implementação MANUAL de JWT**: Não usar SmallRye JWT Builder (`io.smallrye.jwt.build.Jwt`)
-- **Razão**: SmallRye JWT tem problemas de parsing com chaves RSA PKCS#8 geradas por OpenSSL
-- **Solução Atual**: Assinatura JWT manual usando `java.security.Signature` em `JWTService.java`
-- **Formato da Chave**: PKCS#8 inline no `application.properties` via `mp.jwt.sign.key-content`
+### JWT Authentication (CRITICAL - Lessons Learned)
+- **MANUAL JWT Implementation**: Do not use SmallRye JWT Builder (`io.smallrye.jwt.build.Jwt`)
+- **Reason**: SmallRye JWT has parsing problems with RSA PKCS#8 keys generated by OpenSSL
+- **Current Solution**: Manual JWT signing using `java.security.Signature` in `JWTService.java`
+- **Key Format**: PKCS#8 inline in `application.properties` via `mp.jwt.sign.key-content`
 
-#### Geração de Chaves JWT (Comando Correto)
+#### JWT Key Generation (Correct Command)
 ```bash
-# Gera chave privada RSA 2048 bits em formato PKCS#8
+# Generate RSA 2048-bit private key in PKCS#8 format
 openssl genpkey -algorithm RSA -out security/jwt-private.pem -pkeyopt rsa_keygen_bits:2048
 
-# Extrai chave pública
+# Extract public key
 openssl rsa -pubout -in security/jwt-private.pem -out security/jwt-public.pem
 
-# Define permissões corretas
+# Set correct permissions
 chmod 600 security/jwt-private.pem
 chmod 644 security/jwt-public.pem
 ```
 
-#### Estrutura do Token JWT
+#### JWT Token Structure
 - **Header:** `{"alg": "RS256", "typ": "JWT"}`
 - **Payload:** Claims (iss, sub, upn, email, name, surname, groups, iat, exp)
-- **Signature:** SHA256withRSA usando chave privada
-- **Formato Final:** `base64url(header).base64url(payload).base64url(signature)`
+- **Signature:** SHA256withRSA using private key
+- **Final Format:** `base64url(header).base64url(payload).base64url(signature)`
 
-#### Configuração de Segurança
-- `AuthenticationFilter` valida tokens JWT em requests
-- `@RolesAllowed` para controle de acesso baseado em roles
-- **Nunca comitar:** chaves privadas, credenciais, tokens
-- **Chaves em Produção:** Usar variáveis de ambiente ou secrets manager
+#### Security Configuration
+- `AuthenticationFilter` validates JWT tokens in requests
+- `@RolesAllowed` for role-based access control
+- **Never commit:** private keys, credentials, tokens
+- **Keys in Production:** Use environment variables or secrets manager
 
-#### Credenciais de Teste (Desenvolvimento)
+#### Test Credentials (Development)
 - Email: `contato@aguide.space`
-- Senha: `admin123`
+- Password: `admin123`
 - Role: `ADMIN`
-- Hash BCrypt: `$2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy`
+- BCrypt Hash: `$2a$10$1b.v1jTmdr.c1XJXM10bsO.YwcpgZkXszAivtIL6VgfUQF2RhMIBy`
 
-**Documentação Completa:** Ver `a_error_log_temp/SAGA_JWT_AUTHENTICATION_FIX.md`
+**Complete Documentation:** See `a_error_log_temp/SAGA_JWT_AUTHENTICATION_FIX.md`
 
 ## Docker
-- Dockerfiles em `src/main/docker/`
-- Preferir `Dockerfile.jvm` para desenvolvimento
-- `Dockerfile.native` para produção (GraalVM)
+- Dockerfiles in `src/main/docker/`
+- Prefer `Dockerfile.jvm` for development
+- `Dockerfile.native` for production (GraalVM)
 
 ## CI/CD
-- Jenkins configurado (ver `Jenkinsfile`)
-- SonarQube integrado para análise de código
-- Build Maven: `./mvnw clean package`
+- Jenkins configured (see `Jenkinsfile`)
+- SonarQube integrated for code analysis
+- Maven build: `./mvnw clean package`
 
-## O QUE NÃO FAZER
-❌ Criar arquivos temporários na raiz do projeto
-❌ Colocar lógica de negócio em Controllers ou Repositories
-❌ Usar anotações do Spring (usar Quarkus CDI)
-❌ Esquecer `@Transactional` em métodos que modificam dados
-❌ Criar packages fora de `br.com.aguideptbr`
-❌ Ignorar tratamento de exceções
-❌ Logar informações sensíveis (senhas, tokens)
-❌ Hardcoded credenciais/tokens em testes
-❌ Pular testes no CI/CD com `-DskipTests`
-❌ Usar banco real (PostgreSQL) em testes unitários
-❌ **JAMAIS** usar `quarkus.flyway.clean-at-start=true` em produção
-❌ **JAMAIS** usar `quarkus.hibernate-orm.database.generation` diferente de `none` em produção
-❌ **JAMAIS** criar migrations destrutivas (`DROP TABLE`, `TRUNCATE`) para produção
-❌ **JAMAIS** fazer merge develop→main sem verificar configurações de banco de dados
-❌ **JAMAIS** assumir que o profile correto será usado automaticamente
+## WHAT NOT TO DO
+❌ Create temporary files in project root
+❌ Put business logic in Controllers or Repositories
+❌ Use Spring annotations (use Quarkus CDI)
+❌ Forget `@Transactional` in methods that modify data
+❌ Create packages outside `br.com.aguideptbr`
+❌ Ignore exception handling
+❌ Log sensitive information (passwords, tokens)
+❌ Hardcoded credentials/tokens in tests
+❌ Skip tests in CI/CD with `-DskipTests`
+❌ Use real database (PostgreSQL) in unit tests
+❌ **NEVER** use `quarkus.flyway.clean-at-start=true` in production
+❌ **NEVER** use `quarkus.hibernate-orm.database.generation` different from `none` in production
+❌ **NEVER** create destructive migrations (`DROP TABLE`, `TRUNCATE`) for production
+❌ **NEVER** merge develop→main without checking database configurations
+❌ **NEVER** assume the correct profile will be used automatically
 
-## Recursos do Quarkus a Utilizar
-✅ Dev Mode: `./mvnw quarkus:dev` (hot reload automático)
-✅ Dev Services: bancos de dados automaticamente em containers
-✅ Panache: simplificação de JPA/Hibernate
-✅ RESTEasy Reactive: performance melhorada
-✅ SmallRye Health: endpoints `/q/health`
+## Quarkus Resources to Use
+✅ Dev Mode: `./mvnw quarkus:dev` (automatic hot reload)
+✅ Dev Services: databases automatically in containers
+✅ Panache: JPA/Hibernate simplification
+✅ RESTEasy Reactive: improved performance
+✅ SmallRye Health: `/q/health` endpoints
 ✅ OpenAPI/Swagger: `/q/swagger-ui`
 
-## Comandos Git e Interação com o Usuário
+## Git Commands and User Interaction
 
-- Sempre que o agente for sugerir comandos Git que possam alterar o estado da branch local ou remota, como `git commit`, `git push`, `git reset`, `git rebase`, `git pull --rebase`, `git push --force` ou similares, ele deve **obrigatoriamente perguntar ao usuário desenvolvedor** se pode prosseguir com a execução desses comandos.
-- O agente deve alertar o usuário sobre o potencial risco de "bagunçar" a branch atual, explicando que esses comandos podem modificar o histórico ou o conteúdo da branch local e remota.
-- Somente após a confirmação explícita do usuário, o agente deve sugerir ou executar comandos Git que alterem a branch local ou remota.
-- Para comandos Git que não alterem o estado da branch (como `git status`, `git log`, `git diff`), o agente pode sugerir ou executar sem necessidade de confirmação.
+- Whenever the agent is about to suggest Git commands that can alter the state of local or remote branch, such as `git commit`, `git push`, `git reset`, `git rebase`, `git pull --rebase`, `git push --force` or similar, it must **mandatorily ask the developer user** if it can proceed with executing these commands.
+- The agent should warn the user about the potential risk of "messing up" the current branch, explaining that these commands can modify the history or content of local and remote branch.
+- Only after explicit confirmation from the user, should the agent suggest or execute Git commands that change the local or remote branch.
+- For Git commands that do not change the branch state (like `git status`, `git log`, `git diff`), the agent can suggest or execute without needing confirmation.
 
-### Adição de Arquivos ao Stage (git add)
+### Adding Files to Stage (git add)
 
-- **Em hipótese alguma** o agente deve sugerir comandos de adição em lote como `git add .`, `git add -A`, ou `git add --all`.
-- Todos os arquivos devem ser adicionados individualmente usando `git add <caminho-do-arquivo>` após serem explicitamente listados e revisados com o usuário.
-- Isso evita a inclusão acidental de arquivos temporários, logs, credenciais ou outros artefatos indesejados no commit.
+- **Under no circumstances** should the agent suggest batch addition commands like `git add .`, `git add -A`, or `git add --all`.
+- All files must be added individually using `git add <file-path>` after being explicitly listed and reviewed with the user.
+- This prevents accidental inclusion of temporary files, logs, credentials or other unwanted artifacts in the commit.
 
-Exemplo de comportamento esperado:
+Expected behavior example:
 
-Usuário: "Adicione minhas alterações e faça commit."
+User: "Add my changes and commit."
 
-Agente: "Vou adicionar os seguintes arquivos individualmente:
+Agent: "I'll add the following files individually:
 - `src/main/java/br/com/aguideptbr/features/user/UserService.java`
 - `src/test/java/br/com/aguideptbr/features/user/UserServiceTest.java`
 
-Confirma a adição desses arquivos ao stage?"
+Confirm adding these files to stage?"
 
-Usuário: "Sim."
+User: "Yes."
 
-Agente:
+Agent:
 ``bash
 git add src/main/java/br/com/aguideptbr/features/user/UserService.java
 git add src/test/java/br/com/aguideptbr/features/user/UserServiceTest.java
 ``
 
-Agora vou fazer commit das suas alterações. Isso irá modificar o histórico da branch local. Deseja continuar?
+Now I'll commit your changes. This will modify the local branch history. Do you want to continue?
 
-Usuário: "Sim."
+User: "Yes."
 
-Agente:
+Agent:
 ``bash
-git commit -m "feat(user): implementa nova funcionalidade X"
+git commit -m "feat(user): implement new feature X"
 ``
 
 ---
-**Importante:** Ao gerar código, sempre verificar se está seguindo estas diretrizes. Em caso de dúvida, consultar o arquivo `DEVELOPMENT_GUIDE.md` na raiz do projeto.
+**Important:** When generating code, always check if you are following these guidelines. In case of doubt, consult the `DEVELOPMENT_GUIDE.md` file in the project root.
