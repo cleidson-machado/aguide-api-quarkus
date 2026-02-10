@@ -43,8 +43,15 @@ import jakarta.ws.rs.ext.Provider;
  */
 @Provider
 @Priority(Priorities.AUTHENTICATION)
+@SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes (RESTEasy limitation)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
+    // NOTE: Field injection is intentionally used here instead of constructor
+    // injection.
+    // RESTEasy requires @Provider classes to have either:
+    // - No-arg constructor (incompatible with constructor injection), OR
+    // - Field injection with @Inject or @Context
+    // This is a documented exception to java:S6813 Sonar rule.
     @Inject
     Logger log;
 

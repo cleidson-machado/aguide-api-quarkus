@@ -16,7 +16,6 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 /**
  * Serviço responsável pela geração e validação de tokens JWT.
@@ -24,19 +23,23 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class JWTService {
 
-    @Inject
-    Logger log;
-
-    @ConfigProperty(name = "mp.jwt.verify.issuer")
-    String issuer;
-
-    @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600")
-    Long expirationTime; // Em segundos
-
-    @ConfigProperty(name = "mp.jwt.sign.key.location")
-    String privateKeyLocation;
+    private final Logger log;
+    private final String issuer;
+    private final Long expirationTime; // Em segundos
+    private final String privateKeyLocation;
 
     private String privateKeyPem;
+
+    public JWTService(
+            Logger log,
+            @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer,
+            @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600") Long expirationTime,
+            @ConfigProperty(name = "mp.jwt.sign.key.location") String privateKeyLocation) {
+        this.log = log;
+        this.issuer = issuer;
+        this.expirationTime = expirationTime;
+        this.privateKeyLocation = privateKeyLocation;
+    }
 
     @PostConstruct
     void loadPrivateKey() {

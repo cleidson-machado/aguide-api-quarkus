@@ -36,27 +36,32 @@ import jakarta.ws.rs.ext.Provider;
  * }
  */
 @Provider
+@SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes (RESTEasy limitation)
 public class JwtExceptionMapper implements ExceptionMapper<JwtAuthenticationException> {
 
-    @Inject
-    Logger log;
+        // NOTE: Field injection is intentionally used here instead of constructor
+        // injection.
+        // RESTEasy requires @Provider classes to have no-arg constructor or field
+        // injection.
+        @Inject
+        Logger log;
 
-    @Override
-    public Response toResponse(JwtAuthenticationException exception) {
-        // Log do erro (sem stacktrace para erros de autenticação esperados)
-        log.warnf("🔒 JWT Authentication Error: [%s] %s",
-                exception.getErrorType().getCode(),
-                exception.getMessage());
+        @Override
+        public Response toResponse(JwtAuthenticationException exception) {
+                // Log do erro (sem stacktrace para erros de autenticação esperados)
+                log.warnf("🔒 JWT Authentication Error: [%s] %s",
+                                exception.getErrorType().getCode(),
+                                exception.getMessage());
 
-        // Cria resposta estruturada
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getErrorType().getCode(),
-                exception.getMessage());
+                // Cria resposta estruturada
+                ErrorResponse errorResponse = new ErrorResponse(
+                                exception.getErrorType().getCode(),
+                                exception.getMessage());
 
-        // Retorna 401 Unauthorized
-        return Response
-                .status(Response.Status.UNAUTHORIZED)
-                .entity(errorResponse)
-                .build();
-    }
+                // Retorna 401 Unauthorized
+                return Response
+                                .status(Response.Status.UNAUTHORIZED)
+                                .entity(errorResponse)
+                                .build();
+        }
 }

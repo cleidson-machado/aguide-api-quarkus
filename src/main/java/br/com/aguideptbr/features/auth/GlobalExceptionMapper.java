@@ -17,8 +17,13 @@ import jakarta.ws.rs.ext.Provider;
  * Garante que todas as exceções retornem JSON estruturado.
  */
 @Provider
+@SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes (RESTEasy limitation)
 public class GlobalExceptionMapper implements ExceptionMapper<WebApplicationException> {
 
+    // NOTE: Field injection is intentionally used here instead of constructor
+    // injection.
+    // RESTEasy requires @Provider classes to have no-arg constructor or field
+    // injection.
     @Inject
     Logger log;
 

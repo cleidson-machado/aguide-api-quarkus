@@ -239,6 +239,136 @@ Return `PaginatedResponse<T>` wrapper (see [util/PaginatedResponse.java](src/mai
 
 ## Code Conventions
 
+### ✅ Dependency Injection (Sonar: java:S6813) - CRITICAL
+
+**FUNDAMENTAL RULE:** Always use **constructor injection** instead of **field injection** for dependencies.
+
+#### Why Constructor Injection?
+- **Immutability**: Dependencies can be declared as `final`, ensuring they cannot be changed after object creation
+- **Testability**: Makes testing easier as dependencies are explicit and required in constructor
+- **Clear Dependencies**: All dependencies are visible in the constructor signature
+- **Prevents Null Values**: Dependencies cannot be null if properly injected via constructor
+- **Framework Independent**: Not tied to specific DI framework annotations
+- **Sonar Compliance**: Meets java:S6813 quality rule
+
+#### ❌ FORBIDDEN (field injection - violates java:S6813):
+
+    @ApplicationScoped
+    public class UserService {
+        @Inject
+        Logger log;
+
+        @Inject
+        UserRepository userRepository;
+
+        public void createUser() {
+            // business logic
+        }
+    }
+
+    @Path("/api/v1/users")
+    public class UserController {
+        @Inject
+        UserService userService;
+
+        @Inject
+        Logger log;
+    }
+
+#### ✅ CORRECT (constructor injection):
+
+    @ApplicationScoped
+    public class UserService {
+        private final Logger log;
+        private final UserRepository userRepository;
+
+        public UserService(Logger log, UserRepository userRepository) {
+            this.log = log;
+            this.userRepository = userRepository;
+        }
+
+        public void createUser() {
+            // business logic
+        }
+    }
+
+    @Path("/api/v1/users")
+    public class UserController {
+        private final UserService userService;
+        private final Logger log;
+
+        public UserController(UserService userService, Logger log) {
+            this.userService = userService;
+            this.log = log;
+        }
+    }
+
+#### Special Case - @ConfigProperty
+For `@ConfigProperty`, inject via constructor parameter:
+
+    @ApplicationScoped
+    public class JWTService {
+        private final Logger log;
+        private final String issuer;
+        private final Long expirationTime;
+
+        public JWTService(
+                Logger log,
+                @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer,
+                @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600") Long expirationTime) {
+            this.log = log;
+            this.issuer = issuer;
+            this.expirationTime = expirationTime;
+        }
+    }
+
+#### ⚠️ Exception: JAX-RS @Provider Classes
+**For `@Provider` classes (filters, exception mappers), use field injection:**
+
+    @Provider
+    @SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes
+    public class JwtExceptionMapper implements ExceptionMapper<JwtAuthenticationException> {
+        // NOTE: Field injection is intentionally used here instead of constructor injection.
+        // RESTEasy requires @Provider classes to have no-arg constructor or field injection.
+        @Inject
+        Logger log;
+
+        @Override
+        public Response toResponse(JwtAuthenticationException exception) {
+            // ...
+        }
+    }
+
+**Why this exception?**
+RESTEasy dynamically registers `@Provider` classes and requires either:
+- No-arg constructor (incompatible with constructor injection), OR
+- Field injection with `@Inject` or `@Context`
+
+**Apply constructor injection to:**
+- ✅ Controllers (`@Path`)
+- ✅ Services (`@ApplicationScoped`)
+- ✅ Repositories
+- ✅ Utilities
+
+**Use field injection ONLY for:**
+- ❌ JAX-RS Providers (`@Provider`)
+- ❌ Exception Mappers (`ExceptionMapper`)
+- ❌ Filters (`ContainerRequestFilter`)
+
+**When using field injection in @Provider classes:**
+- Add `@SuppressWarnings("java:S6813")` to suppress Sonar warning
+- Add explanatory comment about RESTEasy limitation
+
+#### 📋 Class Creation Checklist:
+- [ ] All dependencies injected via constructor (not fields)?
+- [ ] All injected dependencies declared as `private final`?
+- [ ] Constructor has all required dependencies as parameters?
+- [ ] No `@Inject` annotations on fields (except @Provider classes)?
+- [ ] `@ConfigProperty` values injected via constructor parameters?
+- [ ] `@SuppressWarnings("java:S6813")` added if using field injection in @Provider?
+
+---
+
 ### ✅ Field Encapsulation (Sonar: java:S1104) - CRITICAL
 
 **FUNDAMENTAL RULE:** Class fields should **NEVER** be `public` (except in Panache entities).
