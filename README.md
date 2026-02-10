@@ -738,6 +738,10 @@ source .env
 
 # 2. Validar testes (antes de commit)
 ./mvnw test
+./mvnw clean
+./mvnw clean verify
+./mvnw clean package
+./test.sh
 
 # 3. Build completo (antes de PR)
 ./mvnw clean verify

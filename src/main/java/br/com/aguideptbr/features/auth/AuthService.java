@@ -11,7 +11,7 @@ import br.com.aguideptbr.features.user.UserRole;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * Serviço de autenticação responsável por:
@@ -49,7 +49,7 @@ public class AuthService {
             log.warnf("⚠️ Email already registered: %s", request.getEmail());
             throw new WebApplicationException(
                     "Email already registered",
-                    Response.Status.CONFLICT);
+                    Status.CONFLICT);
         }
 
         // Cria novo usuário
@@ -89,7 +89,7 @@ public class AuthService {
             log.warnf("⚠️ User not found: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
-                    Response.Status.UNAUTHORIZED);
+                    Status.UNAUTHORIZED);
         }
 
         // Verifica se o usuário usa OAuth2 (não tem senha local)
@@ -97,7 +97,7 @@ public class AuthService {
             log.warnf("⚠️ OAuth2 user trying password login: %s", request.getEmail());
             throw new WebApplicationException(
                     "This account is linked to a social provider. Please use social login.",
-                    Response.Status.BAD_REQUEST);
+                    Status.BAD_REQUEST);
         }
 
         // Verifica a senha
@@ -111,7 +111,7 @@ public class AuthService {
             log.warnf("⚠️ Invalid password for user: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
-                    Response.Status.UNAUTHORIZED);
+                    Status.UNAUTHORIZED);
         }
 
         log.infof("✅ Login bem-sucedido: %s", user.email);

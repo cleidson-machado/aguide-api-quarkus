@@ -6,6 +6,7 @@ import br.com.aguideptbr.features.auth.dto.ErrorResponse;
 import br.com.aguideptbr.features.auth.exceptions.JwtAuthenticationException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
@@ -56,7 +57,7 @@ public class JwtExceptionMapper implements ExceptionMapper<JwtAuthenticationExce
 
                 // Retorna 401 Unauthorized
                 return Response
-                                .status(Response.Status.UNAUTHORIZED)
+                                .status(Status.UNAUTHORIZED)
                                 .entity(errorResponse)
                                 .build();
         }

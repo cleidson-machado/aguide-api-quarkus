@@ -21,6 +21,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * REST Controller para gerenciamento de usuários do sistema.
@@ -108,7 +109,7 @@ public class UserController {
     public Response getUserById(@PathParam("id") UUID id) {
         UserModel user = UserModel.findByIdActive(id);
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.status(Status.NOT_FOUND).build();
         }
         return Response.ok(user).build();
     }
@@ -149,7 +150,7 @@ public class UserController {
         UserModel user = UserModel.findByIdActive(id);
         if (user == null) {
             log.warnf("Usuário %s não encontrado", id);
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity("{\"error\": \"Usuário não encontrado\"}")
                     .build();
         }
@@ -166,7 +167,7 @@ public class UserController {
         log.info("POST /users - Criando usuário");
         userModel.persist();
         return Response
-                .status(Response.Status.CREATED)
+                .status(Status.CREATED)
                 .entity(userModel)
                 .build();
     }
@@ -182,7 +183,7 @@ public class UserController {
         UserModel user = UserModel.findByIdActive(id);
 
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity("{\"error\": \"Usuário não encontrado ou já foi deletado\"}")
                     .build();
         }
@@ -204,13 +205,13 @@ public class UserController {
         UserModel user = UserModel.findById(id);
 
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity("{\"error\": \"Usuário não encontrado\"}")
                     .build();
         }
 
         if (user.isActive()) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Status.BAD_REQUEST)
                     .entity("{\"error\": \"Usuário já está ativo\"}")
                     .build();
         }
@@ -228,7 +229,7 @@ public class UserController {
         UserModel userToUpdate = UserModel.findByIdActive(id);
 
         if (userToUpdate == null) {
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity("{\"error\": \"Usuário não encontrado ou foi deletado\"}")
                     .build();
         }

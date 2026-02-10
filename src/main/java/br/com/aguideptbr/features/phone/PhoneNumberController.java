@@ -19,6 +19,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * Controller REST para gerenciamento de telefones dos usuários.
@@ -85,7 +86,7 @@ public class PhoneNumberController {
         PhoneNumberResponse response = new PhoneNumberResponse(created);
 
         log.infof("Phone created: id=%s, fullNumber=%s", created.id, created.fullNumber);
-        return Response.status(Response.Status.CREATED).entity(response).build();
+        return Response.status(Status.CREATED).entity(response).build();
     }
 
     /**
