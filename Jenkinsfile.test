@@ -1,9 +1,19 @@
 pipeline {
     agent any
 
-    // ⭐ TRIGGER: Aceita webhooks do GitHub ## Teste ##
+    // ⭐ TRIGGER: Aceita webhooks do GitHub para branches de teste
     triggers {
+        // GitHub webhook trigger - dispara automaticamente em push
         githubPush()
+
+        // Mantém apenas os últimos 10 builds
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+
+        // Timeout de 30 minutos
+        timeout(time: 30, unit: 'MINUTES')
+
+        // Não permite builds concorrentes
+        disableConcurrentBuilds()
     }
 
     environment {
