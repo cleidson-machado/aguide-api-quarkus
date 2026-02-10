@@ -7,11 +7,11 @@ import br.com.aguideptbr.features.auth.dto.LoginResponse;
 import br.com.aguideptbr.features.auth.dto.RegisterRequest;
 import br.com.aguideptbr.features.auth.dto.UserInfoDTO;
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.user.UserRole;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * Serviço de autenticação responsável por:
@@ -22,14 +22,15 @@ import jakarta.ws.rs.core.Response;
 @ApplicationScoped
 public class AuthService {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+    private final JWTService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Inject
-    JWTService jwtService;
-
-    @Inject
-    PasswordEncoder passwordEncoder;
+    public AuthService(Logger log, JWTService jwtService, PasswordEncoder passwordEncoder) {
+        this.log = log;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Registra um novo usuário na aplicação.
@@ -48,7 +49,7 @@ public class AuthService {
             log.warnf("⚠️ Email already registered: %s", request.getEmail());
             throw new WebApplicationException(
                     "Email already registered",
-                    Response.Status.CONFLICT);
+                    Status.CONFLICT);
         }
 
         // Cria novo usuário
@@ -57,7 +58,7 @@ public class AuthService {
         newUser.surname = request.getSurname();
         newUser.email = request.getEmail().toLowerCase().trim();
         newUser.passwordHash = passwordEncoder.hashPassword(request.getPassword());
-        newUser.role = "USER"; // Role padrão
+        newUser.role = UserRole.FREE; // Role padrão para novos usuários
 
         // Persiste no banco
         newUser.persist();
@@ -88,7 +89,7 @@ public class AuthService {
             log.warnf("⚠️ User not found: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
-                    Response.Status.UNAUTHORIZED);
+                    Status.UNAUTHORIZED);
         }
 
         // Verifica se o usuário usa OAuth2 (não tem senha local)
@@ -96,7 +97,7 @@ public class AuthService {
             log.warnf("⚠️ OAuth2 user trying password login: %s", request.getEmail());
             throw new WebApplicationException(
                     "This account is linked to a social provider. Please use social login.",
-                    Response.Status.BAD_REQUEST);
+                    Status.BAD_REQUEST);
         }
 
         // Verifica a senha
@@ -110,7 +111,7 @@ public class AuthService {
             log.warnf("⚠️ Invalid password for user: %s", request.getEmail());
             throw new WebApplicationException(
                     "Invalid email or password",
-                    Response.Status.UNAUTHORIZED);
+                    Status.UNAUTHORIZED);
         }
 
         log.infof("✅ Login bem-sucedido: %s", user.email);

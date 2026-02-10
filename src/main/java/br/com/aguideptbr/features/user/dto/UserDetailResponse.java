@@ -34,7 +34,7 @@ public class UserDetailResponse {
         this.name = user.name;
         this.surname = user.surname;
         this.email = user.email;
-        this.role = user.role;
+        this.role = user.role.name();
         this.createdAt = user.createdAt;
         this.updatedAt = user.updatedAt;
         this.deletedAt = user.deletedAt;

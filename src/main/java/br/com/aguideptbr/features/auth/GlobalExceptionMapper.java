@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
@@ -17,18 +18,23 @@ import jakarta.ws.rs.ext.Provider;
  * Garante que todas as exceções retornem JSON estruturado.
  */
 @Provider
+@SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes (RESTEasy limitation)
 public class GlobalExceptionMapper implements ExceptionMapper<WebApplicationException> {
 
+    // NOTE: Field injection is intentionally used here instead of constructor
+    // injection.
+    // RESTEasy requires @Provider classes to have no-arg constructor or field
+    // injection.
     @Inject
     Logger log;
 
     @Override
     public Response toResponse(WebApplicationException exception) {
-        Response.Status status = Response.Status.fromStatusCode(exception.getResponse().getStatus());
+        Status status = Status.fromStatusCode(exception.getResponse().getStatus());
 
         // Se status for null, usa INTERNAL_SERVER_ERROR
         if (status == null) {
-            status = Response.Status.INTERNAL_SERVER_ERROR;
+            status = Status.INTERNAL_SERVER_ERROR;
         }
 
         String errorCode = status.name();

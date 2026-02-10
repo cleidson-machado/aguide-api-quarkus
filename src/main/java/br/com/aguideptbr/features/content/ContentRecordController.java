@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.util.PaginatedResponse;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -21,6 +20,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * REST Controller para gerenciamento de conteúdos (vídeos, artigos, podcasts).
@@ -37,11 +37,13 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ContentRecordController {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+    private final ContentService contentService;
 
-    @Inject
-    ContentService contentService;
+    public ContentRecordController(Logger log, ContentService contentService) {
+        this.log = log;
+        this.contentService = contentService;
+    }
 
     // **
     // Examples of usage:
@@ -90,12 +92,12 @@ public class ContentRecordController {
             }
         } catch (IllegalArgumentException err) {
             log.error("GET /contents - IllegalArgumentException: " + err.getMessage(), err);
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Status.BAD_REQUEST)
                     .entity(err.getMessage())
                     .build();
         } catch (Exception e) {
             log.error("GET /contents - Erro inesperado: " + e.getMessage(), e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
                     .entity("Erro interno do servidor: " + e.getMessage())
                     .build();
         }
@@ -128,7 +130,7 @@ public class ContentRecordController {
     public Response findByTitle(@PathParam("title") String title) {
         ContentRecordModel result = ContentRecordModel.findByTitle(title);
         if (result == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.status(Status.NOT_FOUND).build();
         }
         return Response.ok(result).build();
     }
@@ -137,7 +139,7 @@ public class ContentRecordController {
     @Path("/search")
     public Response searchContentsByTitle(@QueryParam("q") String query) {
         if (query == null || query.trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Status.BAD_REQUEST)
                     .entity("O parâmetro de busca 'q' não pode ser vazio.")
                     .build();
         }
@@ -150,7 +152,7 @@ public class ContentRecordController {
     public Response create(@Valid ContentRecordModel contentRecordModel) {
         contentRecordModel.persist();
         return Response
-                .status(Response.Status.CREATED)
+                .status(Status.CREATED)
                 .entity(contentRecordModel)
                 .build();
     }
@@ -161,7 +163,7 @@ public class ContentRecordController {
     public Response update(@PathParam("id") UUID id, @Valid ContentRecordModel dataFromRequest) {
         ContentRecordModel existing = ContentRecordModel.findById(id);
         if (existing == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.status(Status.NOT_FOUND).build();
         }
 
         existing.title = dataFromRequest.title;
@@ -182,7 +184,7 @@ public class ContentRecordController {
         ContentRecordModel existing = ContentRecordModel.findById(id);
         if (existing == null) {
             // Create a more detailed response for not found
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity("The Content with ID " + id + " was not found to DELETE!.")
                     .build();
         }
@@ -192,7 +194,7 @@ public class ContentRecordController {
             return Response.noContent().build();
         } else {
             // Rare case: content existed but was not deleted....
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
                     .entity("Failed to delete the Content with ID " + id + ".")
                     .build();
         }
@@ -207,7 +209,7 @@ public class ContentRecordController {
             idHash = UUID.fromString(idStr);
         } catch (IllegalArgumentException err) {
             String plusInfoMsg = "Found a error: " + err.getMessage();
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Status.BAD_REQUEST)
                     .entity(new ContentWithComment(null, plusInfoMsg))
                     .build();
         }
@@ -215,7 +217,7 @@ public class ContentRecordController {
         ContentRecordModel result = ContentRecordModel.findById(idHash);
         if (result == null) {
             String plusInfoMsg = "No content found for the provided ID: " + idHash;
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Status.NOT_FOUND)
                     .entity(new ContentWithComment(null, plusInfoMsg))
                     .build();
         }

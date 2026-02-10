@@ -2,6 +2,8 @@ package br.com.aguideptbr.features.auth.dto;
 
 import java.util.UUID;
 
+import br.com.aguideptbr.features.user.UserRole;
+
 /**
  * DTO contendo informações básicas do usuário autenticado.
  * Usado em respostas de autenticação (login, register) e outras operações que
@@ -22,7 +24,7 @@ public class UserInfoDTO {
     private String name;
     private String surname;
     private String email;
-    private String role;
+    private UserRole role;
 
     /**
      * Construtor padrão.
@@ -38,9 +40,10 @@ public class UserInfoDTO {
      * @param name    Nome do usuário
      * @param surname Sobrenome do usuário
      * @param email   Email do usuário
-     * @param role    Papel/permissão do usuário (USER, ADMIN)
+     * @param role    Papel/permissão do usuário (ADMIN, MANAGER, CHANNEL_OWNER,
+     *                PREMIUM_USER, FREE)
      */
-    public UserInfoDTO(UUID id, String name, String surname, String email, String role) {
+    public UserInfoDTO(UUID id, String name, String surname, String email, UserRole role) {
         this.id = id;
         this.name = name;
         this.surname = surname;
@@ -82,11 +85,11 @@ public class UserInfoDTO {
         this.email = email;
     }
 
-    public String getRole() {
+    public UserRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(UserRole role) {
         this.role = role;
     }
 
@@ -97,7 +100,7 @@ public class UserInfoDTO {
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
                 ", email='" + email + '\'' +
-                ", role='" + role + '\'' +
+                ", role=" + role +
                 '}';
     }
 }

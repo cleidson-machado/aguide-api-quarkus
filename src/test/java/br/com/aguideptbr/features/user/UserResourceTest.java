@@ -50,7 +50,7 @@ class UserResourceTest {
         testUser.surname = "Test Surname"; // Campo obrigatório
         testUser.email = "test" + System.currentTimeMillis() + "@example.com";
         testUser.passwordHash = "$2a$10$testhashedpassword";
-        testUser.role = "USER";
+        testUser.role = UserRole.FREE;
 
         testUser.persist();
 

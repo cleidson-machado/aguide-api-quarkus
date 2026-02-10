@@ -9,18 +9,13 @@ import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 /**
  * Serviço responsável pela geração e validação de tokens JWT.
@@ -28,20 +23,22 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class JWTService {
 
-    @Inject
-    Logger log;
-
-    @ConfigProperty(name = "mp.jwt.verify.issuer")
-    String issuer;
-
-    @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600")
-    Long expirationTime; // Em segundos
-
-    @ConfigProperty(name = "mp.jwt.sign.key.location")
-    String privateKeyLocation;
-
+    private final Logger log;
+    private final String issuer;
+    private final Long expirationTime;
+    private final String privateKeyLocation;
     private String privateKeyPem;
-    private ObjectMapper objectMapper = new ObjectMapper();
+
+    public JWTService(
+            Logger log,
+            @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer,
+            @ConfigProperty(name = "jwt.expiration.time", defaultValue = "3600") Long expirationTime,
+            @ConfigProperty(name = "mp.jwt.sign.key.location") String privateKeyLocation) {
+        this.log = log;
+        this.issuer = issuer;
+        this.expirationTime = expirationTime;
+        this.privateKeyLocation = privateKeyLocation;
+    }
 
     @PostConstruct
     void loadPrivateKey() {
@@ -68,13 +65,6 @@ public class JWTService {
             long currentTime = Instant.now().getEpochSecond();
             long expiresAt = currentTime + expirationTime;
 
-            Set<String> groups = new HashSet<>();
-            if (user.role != null && !user.role.isEmpty()) {
-                groups.add(user.role);
-            } else {
-                groups.add("USER"); // Role padrão
-            }
-
             // Header JWT (algorítmo RS256)
             String header = """
                     {
@@ -83,16 +73,16 @@ public class JWTService {
                     }
                     """.trim();
 
-            // Payload JWT
+            // Payload JWT SIMPLIFICADO
+            // "admin": true apenas para ADMIN, false para todos os outros roles
+            // Dados adicionais (role específico, nome) são buscados do banco quando
+            // necessário
             String payload = String.format("""
                     {
                       "iss": "%s",
                       "sub": "%s",
                       "upn": "%s",
-                      "email": "%s",
-                      "name": "%s",
-                      "surname": "%s",
-                      "groups": %s,
+                      "admin": %s,
                       "iat": %d,
                       "exp": %d
                     }
@@ -100,10 +90,7 @@ public class JWTService {
                     issuer,
                     user.id.toString(),
                     user.email,
-                    user.email,
-                    user.name != null ? user.name : "",
-                    user.surname != null ? user.surname : "",
-                    objectMapper.writeValueAsString(groups),
+                    user.role.isAdmin(), // true apenas para ADMIN, false para outros
                     currentTime,
                     expiresAt);
 
