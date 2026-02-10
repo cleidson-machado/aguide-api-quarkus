@@ -20,6 +20,10 @@ public class PasswordEncoder {
 
     private static final int BCRYPT_ITERATION_COUNT = 10; // Custo do BCrypt (2^10 = 1024 rounds)
 
+    public PasswordEncoder(Logger log) {
+        this.log = log;
+    }
+
     /**
      * Gera o hash BCrypt de uma senha.
      *

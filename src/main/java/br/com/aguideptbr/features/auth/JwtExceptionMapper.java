@@ -36,6 +36,7 @@ import jakarta.ws.rs.ext.Provider;
  * }
  */
 @Provider
+@SuppressWarnings("java:S6813") // Field injection required for JAX-RS @Provider classes (RESTEasy limitation)
 public class JwtExceptionMapper implements ExceptionMapper<JwtAuthenticationException> {
 
         @Inject
