@@ -40,6 +40,10 @@ public class UserController {
 
     private final Logger log;
 
+    public UserController(Logger log) {
+        this.log = log;
+    }
+
     /**
      * Lista todos os usuários ativos COM seus telefones.
      * Limitado a 50 usuários para evitar sobrecarga.
