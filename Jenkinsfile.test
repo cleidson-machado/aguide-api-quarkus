@@ -10,7 +10,7 @@ pipeline {
         // Configurações do projeto
         PROJECT_DIR = '/opt/apps/aguide-api-quarkus'
         GIT_REPO = 'https://github.com/cleidson-machado/aguide-api-quarkus.git'
-        GIT_BRANCH = 'develop'  // Branch padrão para testes
+        // GIT_BRANCH será detectada automaticamente do webhook ou do checkout
         MAVEN_OPTS = '-Dmaven.repo.local=/var/jenkins_home/.m2/repository'
     }
 
@@ -30,7 +30,7 @@ pipeline {
                     echo "📝 Job Name: ${JOB_NAME}"
                     echo "🔗 Build URL: ${BUILD_URL}"
                     echo "👤 Iniciado por: ${userName}"
-                    echo "🌿 Branch Git: ${env.GIT_BRANCH}"
+                    echo "🌿 Branch Git (webhook): ${env.GIT_BRANCH ?: 'N/A'}"
                     echo "📂 Workspace: ${WORKSPACE}"
                     echo "🏠 Jenkins Home: ${JENKINS_HOME}"
                     echo "🖥️  Node Name: ${NODE_NAME}"
@@ -45,16 +45,23 @@ pipeline {
                 script {
                     echo '🔍 Validando branch para ambiente de TESTE...'
 
-                    // Captura a branch atual (pode vir do webhook ou da env)
-                    def currentBranch = env.GIT_BRANCH ?: env.BRANCH_NAME ?: 'develop'
+                    // Captura a branch do webhook GitHub (formato: refs/heads/branch-name)
+                    def gitBranch = env.GIT_BRANCH ?: 'refs/heads/develop'
+                    def currentBranch = gitBranch.replaceAll('refs/heads/', '').replaceAll('origin/', '')
 
-                    echo "📌 Branch detectada: ${currentBranch}"
+                    // Salva a branch detectada na variável de ambiente
+                    env.DETECTED_BRANCH = currentBranch
 
-                    // ⭐ SÓ EXECUTA EM BRANCHES DEVELOP OU DEVELOP-*
-                    if (!currentBranch.startsWith('develop')) {
-                        echo "⚠️  Branch '${currentBranch}' NÃO é uma branch de desenvolvimento"
-                        echo "❌ Este job é EXCLUSIVO para branches 'develop' ou 'develop-*'"
-                        echo "🚫 Build cancelado - use o job 'aguide-api-production' para branch main"
+                    echo "📌 Branch detectada do webhook: ${currentBranch}"
+
+                    // ⭐ ACEITA: develop, develop-*, feature/* (para PRs)
+                    def isValidBranch = currentBranch.startsWith('develop') ||
+                                        currentBranch.startsWith('feature/')
+
+                    if (!isValidBranch) {
+                        echo "⚠️  Branch '${currentBranch}' não é válida para testes"
+                        echo "❌ Este job aceita apenas: develop, develop-*, feature/*"
+                        echo "🚫 Para branch 'main', use o job de produção"
                         currentBuild.result = 'NOT_BUILT'
                         error("Branch ${currentBranch} não permitida neste job de TESTE")
                     }
@@ -67,12 +74,19 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo '📥 Atualizando código do repositório...'
-                sh '''
-                    cd /opt/apps/aguide-api-quarkus
-                    git fetch origin
-                    git reset --hard origin/${GIT_BRANCH}
-                    git clean -fd
-                '''
+                script {
+                    // Usa a branch detectada no stage anterior
+                    def branchToTest = env.DETECTED_BRANCH ?: 'develop'
+                    echo "🔄 Fazendo checkout da branch: ${branchToTest}"
+
+                    sh """
+                        cd /opt/apps/aguide-api-quarkus
+                        git fetch origin
+                        git checkout ${branchToTest}
+                        git reset --hard origin/${branchToTest}
+                        git clean -fd
+                    """
+                }
 
                 // Captura informações do commit
                 script {
@@ -93,6 +107,7 @@ pipeline {
                 echo "📌 Commit: ${env.GIT_COMMIT_SHORT}"
                 echo "💬 Mensagem: ${env.GIT_COMMIT_MSG}"
                 echo "👨‍💻 Autor: ${env.GIT_AUTHOR}"
+                echo "🌿 Branch testada: ${env.DETECTED_BRANCH}"
             }
         }
 
@@ -356,7 +371,7 @@ EOF
                 echo "📝 Job: ${JOB_NAME}"
                 echo "🎯 Status: ${currentBuild.currentResult}"
                 echo "⏱️  Duração: ${duration}"
-                echo "🌿 Branch: ${env.GIT_BRANCH}"
+                echo "🌿 Branch Testada: ${env.DETECTED_BRANCH ?: 'N/A'}"
                 echo "📌 Commit: ${env.GIT_COMMIT_SHORT ?: 'N/A'}"
                 echo "👨‍💻 Autor: ${env.GIT_AUTHOR ?: 'N/A'}"
                 echo "⏰ Finalizado: ${new Date()}"
