@@ -5,7 +5,9 @@ pipeline {
     triggers {
         // GitHub webhook trigger - dispara automaticamente em push
         githubPush()
+    }
 
+    options {
         // Mantém apenas os últimos 10 builds
         buildDiscarder(logRotator(numToKeepStr: '10'))
 
