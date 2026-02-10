@@ -93,8 +93,9 @@ class PasswordHashValidationTest {
     void testPasswordEncoderVerification() {
         log.info("🔐 Testando PasswordEncoder do sistema...");
 
-        PasswordEncoder encoder = new PasswordEncoder();
-        encoder.log = Logger.getLogger(PasswordEncoder.class);
+        // Criar PasswordEncoder com Logger (constructor injection)
+        Logger encoderLogger = Logger.getLogger(PasswordEncoder.class);
+        PasswordEncoder encoder = new PasswordEncoder(encoderLogger);
 
         // Testa senha correta
         boolean correctPassword = encoder.verifyPassword(EXPECTED_PASSWORD, HASH_FROM_MIGRATION);

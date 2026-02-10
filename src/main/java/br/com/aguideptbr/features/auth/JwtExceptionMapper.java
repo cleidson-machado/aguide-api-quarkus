@@ -38,25 +38,25 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class JwtExceptionMapper implements ExceptionMapper<JwtAuthenticationException> {
 
-    @Inject
-    Logger log;
+        @Inject
+        Logger log;
 
-    @Override
-    public Response toResponse(JwtAuthenticationException exception) {
-        // Log do erro (sem stacktrace para erros de autenticação esperados)
-        log.warnf("🔒 JWT Authentication Error: [%s] %s",
-                exception.getErrorType().getCode(),
-                exception.getMessage());
+        @Override
+        public Response toResponse(JwtAuthenticationException exception) {
+                // Log do erro (sem stacktrace para erros de autenticação esperados)
+                log.warnf("🔒 JWT Authentication Error: [%s] %s",
+                                exception.getErrorType().getCode(),
+                                exception.getMessage());
 
-        // Cria resposta estruturada
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getErrorType().getCode(),
-                exception.getMessage());
+                // Cria resposta estruturada
+                ErrorResponse errorResponse = new ErrorResponse(
+                                exception.getErrorType().getCode(),
+                                exception.getMessage());
 
-        // Retorna 401 Unauthorized
-        return Response
-                .status(Response.Status.UNAUTHORIZED)
-                .entity(errorResponse)
-                .build();
-    }
+                // Retorna 401 Unauthorized
+                return Response
+                                .status(Response.Status.UNAUTHORIZED)
+                                .entity(errorResponse)
+                                .build();
+        }
 }

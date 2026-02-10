@@ -12,7 +12,6 @@ import br.com.aguideptbr.features.auth.dto.LoginResponse;
 import br.com.aguideptbr.features.auth.dto.RegisterRequest;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -42,14 +41,15 @@ import jakarta.ws.rs.core.SecurityContext;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthController {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+    private final AuthService authService;
+    private final JsonWebToken jwt;
 
-    @Inject
-    AuthService authService;
-
-    @Inject
-    JsonWebToken jwt; // Token JWT injetado automaticamente pelo Quarkus
+    public AuthController(Logger log, AuthService authService, JsonWebToken jwt) {
+        this.log = log;
+        this.authService = authService;
+        this.jwt = jwt;
+    }
 
     /**
      * Registra um novo usuário.

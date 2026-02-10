@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.util.PaginatedResponse;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -37,11 +36,13 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ContentRecordController {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+    private final ContentService contentService;
 
-    @Inject
-    ContentService contentService;
+    public ContentRecordController(Logger log, ContentService contentService) {
+        this.log = log;
+        this.contentService = contentService;
+    }
 
     // **
     // Examples of usage:
