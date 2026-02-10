@@ -9,7 +9,6 @@ import br.com.aguideptbr.features.auth.dto.UserInfoDTO;
 import br.com.aguideptbr.features.user.UserModel;
 import br.com.aguideptbr.features.user.UserRole;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -23,14 +22,15 @@ import jakarta.ws.rs.core.Response;
 @ApplicationScoped
 public class AuthService {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+    private final JWTService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Inject
-    JWTService jwtService;
-
-    @Inject
-    PasswordEncoder passwordEncoder;
+    public AuthService(Logger log, JWTService jwtService, PasswordEncoder passwordEncoder) {
+        this.log = log;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Registra um novo usuário na aplicação.

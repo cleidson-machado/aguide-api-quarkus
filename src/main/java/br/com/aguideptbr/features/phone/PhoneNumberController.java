@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.phone.dto.PhoneNumberRequest;
 import br.com.aguideptbr.features.phone.dto.PhoneNumberResponse;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -37,11 +36,13 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PhoneNumberController {
 
-    @Inject
-    PhoneNumberService phoneService;
+    private final PhoneNumberService phoneService;
+    private final Logger log;
 
-    @Inject
-    Logger log;
+    public PhoneNumberController(PhoneNumberService phoneService, Logger log) {
+        this.phoneService = phoneService;
+        this.log = log;
+    }
 
     /**
      * Adiciona um novo telefone para um usuário.

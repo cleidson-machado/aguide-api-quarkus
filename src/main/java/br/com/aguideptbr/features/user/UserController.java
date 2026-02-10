@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.user.dto.UserDetailResponse;
 import br.com.aguideptbr.util.PaginatedResponse;
 import io.quarkus.panache.common.Page;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -38,8 +37,11 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserController {
 
-    @Inject
-    Logger log;
+    private final Logger log;
+
+    public UserController(Logger log) {
+        this.log = log;
+    }
 
     /**
      * Lista todos os usuários ativos COM seus telefones.
