@@ -38,11 +38,11 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Column(name = "description", columnDefinition = "TEXT")
     public String description;
 
-    @Column(name = "url", length = 2048, unique = true)
-    public String url;
+    @Column(name = "video_url", length = 2048, unique = true)
+    public String videoUrl;
 
-    @Column(name = "thumbnail_url")
-    public String thumbnailUrl;
+    @Column(name = "video_thumbnail_url")
+    public String videoThumbnailUrl;
 
     @Column(name = "published_at")
     @Temporal(TemporalType.TIMESTAMP)
@@ -197,10 +197,10 @@ public class ContentRecordModel extends PanacheEntityBase {
     /**
      * Finds a content record by URL.
      *
-     * @param url The URL to search for.
+     * @param videoUrl The video URL to search for.
      * @return The found ContentRecordModel, or null if not found.
      */
-    public static ContentRecordModel findByUrl(String url) {
-        return find("url", url).firstResult();
+    public static ContentRecordModel findByUrl(String videoUrl) {
+        return find("videoUrl", videoUrl).firstResult();
     }
 }

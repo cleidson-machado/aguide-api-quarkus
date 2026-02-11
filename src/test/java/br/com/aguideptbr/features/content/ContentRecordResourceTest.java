@@ -48,7 +48,7 @@ class ContentRecordResourceTest {
                 ContentRecordModel testContent = new ContentRecordModel();
                 testContent.title = "Test Content " + System.currentTimeMillis();
                 testContent.description = "Test Description";
-                testContent.url = "https://test.example.com/" + System.currentTimeMillis();
+                testContent.videoUrl = "https://test.example.com/" + System.currentTimeMillis();
                 testContent.channelName = "Test Channel";
                 testContent.type = ContentType.VIDEO;
 
