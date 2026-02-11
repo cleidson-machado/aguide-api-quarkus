@@ -38,6 +38,17 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Column(name = "description", columnDefinition = "TEXT")
     public String description;
 
+    // INICIO ========== IDENTIFICAÇÃOES DO CANAL ==========
+    @Column(name = "channel_id", columnDefinition = "TEXT")
+    public String channelId;
+
+    @Column(name = "channel_owner_link_id", columnDefinition = "TEXT")
+    public String channelOwnerLinkId;
+
+    @Column(name = "channel_name")
+    public String channelName;
+    // FIM ========== IDENTIFICAÇÃOES DO CANAL ==========
+
     @Column(name = "video_url", length = 2048, unique = true)
     public String videoUrl;
 
@@ -48,10 +59,7 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime publishedAt;
 
-    // ========== CANAL E TIPO ==========
-    @Column(name = "channel_name")
-    public String channelName;
-
+    // ========== TIPO DE CONTEÚDO ==========
     @Column(name = "content_type")
     @Enumerated(EnumType.STRING)
     public ContentType type;
@@ -202,5 +210,25 @@ public class ContentRecordModel extends PanacheEntityBase {
      */
     public static ContentRecordModel findByUrl(String videoUrl) {
         return find("videoUrl", videoUrl).firstResult();
+    }
+
+    /**
+     * Finds content records by channel ID.
+     *
+     * @param channelId The channel ID to search for (e.g., YouTube channel ID).
+     * @return A list of ContentRecordModel matching the channel.
+     */
+    public static List<ContentRecordModel> findByChannelId(String channelId) {
+        return list("channelId", channelId);
+    }
+
+    /**
+     * Finds content records by channel owner link ID.
+     *
+     * @param ownerId The channel owner link ID to search for.
+     * @return A list of ContentRecordModel matching the owner.
+     */
+    public static List<ContentRecordModel> findByChannelOwner(String ownerId) {
+        return list("channelOwnerLinkId", ownerId);
     }
 }
