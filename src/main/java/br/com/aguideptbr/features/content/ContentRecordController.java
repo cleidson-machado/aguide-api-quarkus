@@ -168,10 +168,10 @@ public class ContentRecordController {
 
         existing.title = dataFromRequest.title;
         existing.description = dataFromRequest.description;
-        existing.url = dataFromRequest.url;
+        existing.videoUrl = dataFromRequest.videoUrl;
         existing.channelName = dataFromRequest.channelName;
         existing.type = dataFromRequest.type;
-        existing.thumbnailUrl = dataFromRequest.thumbnailUrl;
+        existing.videoThumbnailUrl = dataFromRequest.videoThumbnailUrl;
         existing.setPublishedAt(dataFromRequest.getPublishedAt());
 
         return Response.ok(existing).build();
