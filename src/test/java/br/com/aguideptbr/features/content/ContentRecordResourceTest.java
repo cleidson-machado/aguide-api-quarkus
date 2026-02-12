@@ -49,7 +49,6 @@ class ContentRecordResourceTest {
                 testContent.title = "Test Content " + System.currentTimeMillis();
                 testContent.description = "Test Description";
                 testContent.videoUrl = "https://test.example.com/" + System.currentTimeMillis();
-                testContent.channelName = "Test Channel";
                 testContent.type = ContentType.VIDEO;
 
                 testContent.persist();
