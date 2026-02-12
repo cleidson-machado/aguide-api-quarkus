@@ -65,7 +65,10 @@ if echo "$OUTPUT" | grep -q "BUILD SUCCESS"; then
     TOTAL_SKIPPED=$(echo "$OUTPUT" | grep "Skipped:" | tail -1 | sed -n 's/.*Skipped: \([0-9]*\).*/\1/p')
     TIME=$(echo "$OUTPUT" | grep "Total time:" | sed -n 's/.*Total time: *\([0-9.]*\) s/\1/p')
 
-    echo -e "${BOLD}${GREEN}✓ Test Suites:${NC} ${BOLD}8 passed${NC}, 8 total"
+    # Contar test suites dinamicamente
+    TOTAL_SUITES=$(echo "$OUTPUT" | grep -c "Tests run:")
+
+    echo -e "${BOLD}${GREEN}✓ Test Suites:${NC} ${BOLD}${TOTAL_SUITES} passed${NC}, ${TOTAL_SUITES} total"
     echo -e "${BOLD}${GREEN}✓ Tests:${NC}       ${BOLD}${TOTAL_TESTS} passed${NC}${GRAY} (${TOTAL_SKIPPED} skipped)${NC}, ${TOTAL_TESTS} total"
     echo -e "${BOLD}Time:${NC}        ${TIME}s"
     echo ""
