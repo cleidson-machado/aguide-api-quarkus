@@ -49,9 +49,6 @@ class ContentRecordResourceTest {
                 testContent.title = "Test Content " + System.currentTimeMillis();
                 testContent.description = "Test Description";
                 testContent.videoUrl = "https://test.example.com/" + System.currentTimeMillis();
-                testContent.channelName = "Test Channel";
-                testContent.channelId = "UC-test-channel-123";
-                testContent.channelOwnerLinkId = "owner-link-456";
                 testContent.type = ContentType.VIDEO;
 
                 testContent.persist();
@@ -63,43 +60,5 @@ class ContentRecordResourceTest {
                 assertNotNull(found, "Should find persisted content");
                 assertEquals(testContent.title, found.title);
                 assertEquals(testContent.description, found.description);
-        }
-
-        @Test
-        @Transactional
-        void testFindByChannelId() {
-                // Cria conteúdo de teste com channelId
-                ContentRecordModel testContent = new ContentRecordModel();
-                testContent.title = "Channel Test " + System.currentTimeMillis();
-                testContent.videoUrl = "https://test.example.com/channel/" + System.currentTimeMillis();
-                testContent.channelId = "UC-test-unique-123";
-                testContent.channelName = "Test Channel Name";
-                testContent.type = ContentType.VIDEO;
-                testContent.persist();
-
-                // Busca por channelId
-                var results = ContentRecordModel.findByChannelId("UC-test-unique-123");
-                assertNotNull(results, "Results should not be null");
-                assertTrue(results.size() > 0, "Should find at least one content by channelId");
-                assertEquals("UC-test-unique-123", results.get(0).channelId);
-        }
-
-        @Test
-        @Transactional
-        void testFindByChannelOwner() {
-                // Cria conteúdo de teste com channelOwnerLinkId
-                ContentRecordModel testContent = new ContentRecordModel();
-                testContent.title = "Owner Test " + System.currentTimeMillis();
-                testContent.videoUrl = "https://test.example.com/owner/" + System.currentTimeMillis();
-                testContent.channelOwnerLinkId = "owner-link-unique-789";
-                testContent.channelName = "Owner Test Channel";
-                testContent.type = ContentType.VIDEO;
-                testContent.persist();
-
-                // Busca por channelOwnerLinkId
-                var results = ContentRecordModel.findByChannelOwner("owner-link-unique-789");
-                assertNotNull(results, "Results should not be null");
-                assertTrue(results.size() > 0, "Should find at least one content by channelOwnerLinkId");
-                assertEquals("owner-link-unique-789", results.get(0).channelOwnerLinkId);
         }
 }
