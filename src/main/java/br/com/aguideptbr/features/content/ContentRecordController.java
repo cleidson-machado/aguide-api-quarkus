@@ -49,7 +49,6 @@ public class ContentRecordController {
     // Examples of usage:
     // GET /contents?sort=title&order=asc - Alphabetical order
     // GET /contents?sort=title&order=desc - Descending alphabetical order
-    // GET /contents?sort=channelName&order=asc - By channel
     // GET /contents?sort=publishedAt&order=desc - Most recent published content
     // first
     // GET /contents?page=0&size=10&sort=title&order=asc - Paginated by title

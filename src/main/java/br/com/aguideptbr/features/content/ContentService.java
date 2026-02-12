@@ -84,7 +84,8 @@ public class ContentService {
     }
 
     private boolean isValidSortField(String field) {
-        return List.of("title", "description", "channelName", "type", "publishedAt", "createdAt").contains(field);
+        return List.of("title", "description", "channelName", "channelId", "channelOwnerLinkId", "type", "publishedAt",
+                "createdAt").contains(field);
     }
 
     private Sort buildSort(String sortField, String sortOrder) {
