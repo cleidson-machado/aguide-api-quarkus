@@ -48,16 +48,7 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime publishedAt;
 
-    // ========== CANAL E TIPO ==========
-    @Column(name = "channel_id", columnDefinition = "TEXT")
-    public String channelId;
-
-    @Column(name = "channel_owner_link_id", columnDefinition = "TEXT")
-    public String channelOwnerLinkId;
-
-    @Column(name = "channel_name")
-    public String channelName;
-
+    // ========== TIPO DE CONTEÚDO ==========
     @Column(name = "content_type")
     @Enumerated(EnumType.STRING)
     public ContentType type;

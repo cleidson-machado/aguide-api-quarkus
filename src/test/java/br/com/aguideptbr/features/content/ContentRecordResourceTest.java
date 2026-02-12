@@ -49,9 +49,6 @@ class ContentRecordResourceTest {
                 testContent.title = "Test Content " + System.currentTimeMillis();
                 testContent.description = "Test Description";
                 testContent.videoUrl = "https://test.example.com/" + System.currentTimeMillis();
-                testContent.channelId = "UC-test-channel-123";
-                testContent.channelOwnerLinkId = "owner-link-456";
-                testContent.channelName = "Test Channel";
                 testContent.type = ContentType.VIDEO;
 
                 testContent.persist();
