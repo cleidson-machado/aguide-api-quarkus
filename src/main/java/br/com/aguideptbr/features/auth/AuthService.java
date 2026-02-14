@@ -2,6 +2,7 @@ package br.com.aguideptbr.features.auth;
 
 import org.jboss.logging.Logger;
 
+import br.com.aguideptbr.features.auth.dto.GoogleOAuthRequest;
 import br.com.aguideptbr.features.auth.dto.LoginRequest;
 import br.com.aguideptbr.features.auth.dto.LoginResponse;
 import br.com.aguideptbr.features.auth.dto.RegisterRequest;
@@ -117,6 +118,75 @@ public class AuthService {
         log.infof("✅ Login bem-sucedido: %s", user.email);
 
         // Gera token JWT
+        String token = jwtService.generateToken(user);
+
+        return buildLoginResponse(token, user);
+    }
+
+    /**
+     * Autentica ou registra um usuário via Google OAuth.
+     *
+     * <p>
+     * Fluxo de autenticação OAuth:
+     * </p>
+     * <ol>
+     * <li>Busca usuário pelo oauthId do Google</li>
+     * <li>Se não existir, busca por email</li>
+     * <li>Se não existir, cria novo usuário com dados do Google</li>
+     * <li>Atualiza tokens OAuth do usuário</li>
+     * <li>Gera token JWT da aplicação</li>
+     * <li>Retorna resposta de login</li>
+     * </ol>
+     *
+     * @param request Dados de autenticação do Google
+     * @return Resposta de login com token JWT
+     * @throws WebApplicationException se o email já estiver cadastrado com senha
+     *                                 local
+     */
+    @Transactional
+    public LoginResponse loginWithGoogle(GoogleOAuthRequest request) {
+        log.infof("🔐 Google OAuth login attempt: %s (OAuth ID: %s)",
+                request.getEmail(), request.getOauthId());
+
+        // 1. Busca usuário pelo OAuth ID (mais confiável)
+        UserModel user = UserModel.findByOAuth(
+                request.getOauthProvider().toUpperCase(),
+                request.getOauthId());
+
+        // 2. Se não encontrou, busca por email
+        if (user == null) {
+            user = UserModel.findByEmail(request.getEmail().toLowerCase().trim());
+
+            // 3. Se encontrou por email mas já tem senha local, retorna erro
+            if (user != null && !user.isOAuthUser()) {
+                log.warnf("⚠️ Email %s já está cadastrado com senha local", request.getEmail());
+                throw new WebApplicationException(
+                        "Email already registered with password. Please login with email and password.",
+                        Status.CONFLICT);
+            }
+
+            // 4. Se não existe usuário, cria um novo
+            if (user == null) {
+                log.infof("📝 Creating new user from Google OAuth: %s", request.getEmail());
+                user = new UserModel();
+                user.name = request.getName();
+                user.surname = request.getSurname();
+                user.email = request.getEmail().toLowerCase().trim();
+                user.role = UserRole.FREE; // Role padrão para novos usuários OAuth
+                user.passwordHash = null; // OAuth users não têm senha local
+            }
+
+            // 5. Atualiza dados OAuth do usuário
+            user.oauthProvider = request.getOauthProvider().toUpperCase();
+            user.oauthId = request.getOauthId();
+        }
+
+        // 6. Persiste no banco (cria ou atualiza)
+        user.persist();
+
+        log.infof("✅ Google OAuth login successful: %s (ID: %s)", user.email, user.id);
+
+        // 7. Gera token JWT da aplicação
         String token = jwtService.generateToken(user);
 
         return buildLoginResponse(token, user);
