@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
+import br.com.aguideptbr.features.auth.dto.GoogleOAuthRequest;
 import br.com.aguideptbr.features.auth.dto.LoginRequest;
 import br.com.aguideptbr.features.auth.dto.LoginResponse;
 import br.com.aguideptbr.features.auth.dto.RegisterRequest;
@@ -78,6 +79,41 @@ public class AuthController {
             return Response
                     .status(Status.INTERNAL_SERVER_ERROR)
                     .entity(Map.of("error", "Erro ao processar registro"))
+                    .build();
+        }
+    }
+
+    /**
+     * Autentica ou registra um usuário via Google OAuth.
+     *
+     * <p>
+     * Este endpoint recebe as credenciais do Google após autenticação
+     * bem-sucedida no cliente Flutter. Cria um novo usuário se não existir,
+     * ou atualiza os tokens OAuth se já existir.
+     * </p>
+     *
+     * @param request Dados de autenticação do Google
+     * @return 200 OK com token JWT
+     */
+    @POST
+    @Path("/oauth/google")
+    @PermitAll // Endpoint público
+    public Response loginWithGoogle(@Valid GoogleOAuthRequest request) {
+        log.infof("POST /api/v1/auth/oauth/google - Email: %s", request.getEmail());
+
+        try {
+            LoginResponse response = authService.loginWithGoogle(request);
+
+            return Response
+                    .ok(response)
+                    .build();
+        } catch (WebApplicationException e) {
+            throw e; // Re-lança exceções de validação/conflito
+        } catch (Exception e) {
+            log.error("❌ Erro ao autenticar com Google OAuth", e);
+            return Response
+                    .status(Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Erro ao processar autenticação OAuth"))
                     .build();
         }
     }
