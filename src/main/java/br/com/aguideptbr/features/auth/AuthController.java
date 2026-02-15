@@ -101,6 +101,12 @@ public class AuthController {
     public Response loginWithGoogle(@Valid GoogleOAuthRequest request) {
         log.infof("POST /api/v1/auth/oauth/google - Email: %s", request.getEmail());
 
+        // 🔍 DEBUG: Log completo dos campos YouTube recebidos
+        log.infof("📺 YouTube Data Received:");
+        log.infof("   - youtubeUserId: %s", request.getYoutubeUserId());
+        log.infof("   - youtubeChannelId: %s", request.getYoutubeChannelId());
+        log.infof("   - youtubeChannelTitle: %s", request.getYoutubeChannelTitle());
+
         try {
             LoginResponse response = authService.loginWithGoogle(request);
 

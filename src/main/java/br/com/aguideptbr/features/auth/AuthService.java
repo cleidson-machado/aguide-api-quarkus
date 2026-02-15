@@ -187,6 +187,12 @@ public class AuthService {
         // 6. Persiste no banco (cria ou atualiza)
         user.persist();
 
+        // 🔍 DEBUG: Verificar valores após persistência
+        log.infof("📺 Valores após persist():");
+        log.infof("   - user.youtubeUserId: %s", user.youtubeUserId);
+        log.infof("   - user.youtubeChannelId: %s", user.youtubeChannelId);
+        log.infof("   - user.youtubeChannelTitle: %s", user.youtubeChannelTitle);
+
         log.infof("✅ Google OAuth login successful: %s (ID: %s)", user.email, user.id);
 
         // 7. Gera token JWT da aplicação
