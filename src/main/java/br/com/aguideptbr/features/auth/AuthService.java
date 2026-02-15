@@ -209,6 +209,12 @@ public class AuthService {
             log.debugf("✅ Updated YouTube User ID: %s", user.youtubeUserId);
         }
 
+        // Atualiza YouTube Channel ID (se disponível)
+        if (request.getYoutubeChannelId() != null && !request.getYoutubeChannelId().isBlank()) {
+            user.youtubeChannelId = request.getYoutubeChannelId();
+            log.debugf("✅ Updated YouTube Channel ID: %s", user.youtubeChannelId);
+        }
+
         // Atualiza YouTube Channel Title (se disponível)
         if (request.getYoutubeChannelTitle() != null && !request.getYoutubeChannelTitle().isBlank()) {
             user.youtubeChannelTitle = request.getYoutubeChannelTitle();

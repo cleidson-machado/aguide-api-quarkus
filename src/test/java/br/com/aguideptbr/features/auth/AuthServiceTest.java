@@ -117,6 +117,7 @@ class AuthServiceTest {
         user.passwordHash = passwordEncoder.hashPassword("senha123");
         user.role = UserRole.FREE;
         user.youtubeUserId = "UCUXeX3iLBjsWbc_1bCrEdCQ";
+        user.youtubeChannelId = "UCUXeX3iLBjsWbc_1bCrEdCQ";
         user.youtubeChannelTitle = "Test Channel";
         user.persist();
 
@@ -125,9 +126,12 @@ class AuthServiceTest {
 
         assertNotNull(found, "Usuário deve ser encontrado");
         assertNotNull(found.youtubeUserId, "YouTube User ID não deve ser nulo");
+        assertNotNull(found.youtubeChannelId, "YouTube Channel ID não deve ser nulo");
         assertNotNull(found.youtubeChannelTitle, "YouTube Channel Title não deve ser nulo");
         assertTrue(found.youtubeUserId.equals("UCUXeX3iLBjsWbc_1bCrEdCQ"),
                 "YouTube User ID deve estar correto");
+        assertTrue(found.youtubeChannelId.equals("UCUXeX3iLBjsWbc_1bCrEdCQ"),
+                "YouTube Channel ID deve estar correto");
         assertTrue(found.youtubeChannelTitle.equals("Test Channel"),
                 "YouTube Channel Title deve estar correto");
     }
@@ -143,6 +147,7 @@ class AuthServiceTest {
         user.passwordHash = passwordEncoder.hashPassword("senha123");
         user.role = UserRole.FREE;
         user.youtubeUserId = null;
+        user.youtubeChannelId = null;
         user.youtubeChannelTitle = null;
         user.persist();
 
@@ -151,6 +156,7 @@ class AuthServiceTest {
 
         assertNotNull(found, "Usuário deve ser encontrado");
         assertNull(found.youtubeUserId, "YouTube User ID deve ser null");
+        assertNull(found.youtubeChannelId, "YouTube Channel ID deve ser null");
         assertNull(found.youtubeChannelTitle, "YouTube Channel Title deve ser null");
     }
 
@@ -167,6 +173,7 @@ class AuthServiceTest {
         user.passwordHash = null; // OAuth users não têm senha local
         user.role = UserRole.FREE;
         user.youtubeUserId = "UCTestChannelId123";
+        user.youtubeChannelId = "UCTestChannelId123";
         user.youtubeChannelTitle = "My YouTube Channel";
         user.persist();
 
@@ -176,9 +183,12 @@ class AuthServiceTest {
         assertNotNull(found, "Usuário deve ser encontrado");
         assertTrue(found.isOAuthUser(), "Usuário deve ser OAuth");
         assertNotNull(found.youtubeUserId, "YouTube User ID não deve ser nulo");
+        assertNotNull(found.youtubeChannelId, "YouTube Channel ID não deve ser nulo");
         assertNotNull(found.youtubeChannelTitle, "YouTube Channel Title não deve ser nulo");
         assertTrue(found.youtubeUserId.equals("UCTestChannelId123"),
                 "YouTube User ID deve estar correto");
+        assertTrue(found.youtubeChannelId.equals("UCTestChannelId123"),
+                "YouTube Channel ID deve estar correto");
         assertTrue(found.youtubeChannelTitle.equals("My YouTube Channel"),
                 "YouTube Channel Title deve estar correto");
     }

@@ -18,7 +18,9 @@ import jakarta.validation.constraints.NotBlank;
  * <li><b>oauthId:</b> ID único do usuário no Google</li>
  * <li><b>accessToken:</b> Token de acesso do Google</li>
  * <li><b>idToken:</b> Token JWT do Google com informações do usuário</li>
- * <li><b>youtubeUserId:</b> YouTube User ID ou Channel ID (opcional)</li>
+ * <li><b>youtubeUserId:</b> YouTube User ID (opcional, formato: UCxxxxx)</li>
+ * <li><b>youtubeChannelId:</b> YouTube Channel ID (opcional, formato:
+ * UCxxxxx)</li>
  * <li><b>youtubeChannelTitle:</b> Título do canal YouTube (opcional)</li>
  * </ul>
  *
@@ -50,10 +52,16 @@ public class GoogleOAuthRequest {
     private String idToken;
 
     /**
-     * YouTube User ID ou Channel ID (opcional).
+     * YouTube User ID (opcional).
      * Formato: UCxxxxx ou UXxxxxx
      */
     private String youtubeUserId;
+
+    /**
+     * YouTube Channel ID (opcional).
+     * Formato: UCxxxxx ou UXxxxxx
+     */
+    private String youtubeChannelId;
 
     /**
      * Título do canal YouTube do usuário (opcional).
@@ -141,6 +149,14 @@ public class GoogleOAuthRequest {
 
     public void setYoutubeUserId(String youtubeUserId) {
         this.youtubeUserId = youtubeUserId;
+    }
+
+    public String getYoutubeChannelId() {
+        return youtubeChannelId;
+    }
+
+    public void setYoutubeChannelId(String youtubeChannelId) {
+        this.youtubeChannelId = youtubeChannelId;
     }
 
     public String getYoutubeChannelTitle() {
