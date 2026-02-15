@@ -181,6 +181,9 @@ public class AuthService {
             user.oauthId = request.getOauthId();
         }
 
+        // 5.1. Atualiza dados do YouTube (se disponíveis)
+        updateYoutubeData(user, request);
+
         // 6. Persiste no banco (cria ou atualiza)
         user.persist();
 
@@ -190,6 +193,30 @@ public class AuthService {
         String token = jwtService.generateToken(user);
 
         return buildLoginResponse(token, user);
+    }
+
+    /**
+     * Atualiza dados do YouTube no usuário.
+     * Só atualiza se os valores não forem null/vazios (preserva dados antigos).
+     *
+     * @param user    Usuário a ser atualizado
+     * @param request Request com dados do Google OAuth
+     */
+    private void updateYoutubeData(UserModel user, GoogleOAuthRequest request) {
+        // Atualiza YouTube User ID (se disponível)
+        if (request.getYoutubeUserId() != null && !request.getYoutubeUserId().isBlank()) {
+            user.youtubeUserId = request.getYoutubeUserId();
+            log.debugf("✅ Updated YouTube User ID: %s", user.youtubeUserId);
+        }
+
+        // Atualiza YouTube Channel Title (se disponível)
+        if (request.getYoutubeChannelTitle() != null && !request.getYoutubeChannelTitle().isBlank()) {
+            user.youtubeChannelTitle = request.getYoutubeChannelTitle();
+            log.debugf("✅ Updated YouTube Channel Title: %s", user.youtubeChannelTitle);
+        }
+
+        // Nota: Se os campos vierem como null, mantém o valor anterior no banco
+        // Isso evita perda de dados se a captura falhar temporariamente
     }
 
     /**
