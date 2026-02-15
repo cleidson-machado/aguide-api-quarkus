@@ -209,16 +209,34 @@ public class AuthService {
      * @param request Request com dados do Google OAuth
      */
     private void updateYoutubeData(UserModel user, GoogleOAuthRequest request) {
+        // 🔍 DEBUG: Log dos valores recebidos
+        log.infof("📺 updateYoutubeData() - Valores recebidos do request:");
+        log.infof("   - youtubeUserId: %s", request.getYoutubeUserId());
+        log.infof("   - youtubeChannelId: %s", request.getYoutubeChannelId());
+        log.infof("   - youtubeChannelTitle: %s", request.getYoutubeChannelTitle());
+
         // Atualiza YouTube User ID (se disponível)
         if (request.getYoutubeUserId() != null && !request.getYoutubeUserId().isBlank()) {
             user.youtubeUserId = request.getYoutubeUserId();
-            log.debugf("✅ Updated YouTube User ID: %s", user.youtubeUserId);
+            log.infof("✅ Updated YouTube User ID: %s", user.youtubeUserId);
+        } else {
+            log.warnf("⚠️ YouTube User ID is null or blank - NOT updating");
+        }
+
+        // Atualiza YouTube Channel ID (se disponível)
+        if (request.getYoutubeChannelId() != null && !request.getYoutubeChannelId().isBlank()) {
+            user.youtubeChannelId = request.getYoutubeChannelId();
+            log.infof("✅ Updated YouTube Channel ID: %s", user.youtubeChannelId);
+        } else {
+            log.warnf("⚠️ YouTube Channel ID is null or blank - NOT updating");
         }
 
         // Atualiza YouTube Channel Title (se disponível)
         if (request.getYoutubeChannelTitle() != null && !request.getYoutubeChannelTitle().isBlank()) {
             user.youtubeChannelTitle = request.getYoutubeChannelTitle();
-            log.debugf("✅ Updated YouTube Channel Title: %s", user.youtubeChannelTitle);
+            log.infof("✅ Updated YouTube Channel Title: %s", user.youtubeChannelTitle);
+        } else {
+            log.warnf("⚠️ YouTube Channel Title is null or blank - NOT updating");
         }
 
         // Nota: Se os campos vierem como null, mantém o valor anterior no banco

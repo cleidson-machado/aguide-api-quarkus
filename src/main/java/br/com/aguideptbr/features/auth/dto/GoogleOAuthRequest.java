@@ -56,6 +56,12 @@ public class GoogleOAuthRequest {
     private String youtubeUserId;
 
     /**
+     * YouTube Channel ID (opcional).
+     * Formato: UCxxxxx
+     */
+    private String youtubeChannelId;
+
+    /**
      * Título do canal YouTube do usuário (opcional).
      * Null se o usuário não tiver canal YouTube.
      */
@@ -141,6 +147,14 @@ public class GoogleOAuthRequest {
 
     public void setYoutubeUserId(String youtubeUserId) {
         this.youtubeUserId = youtubeUserId;
+    }
+
+    public String getYoutubeChannelId() {
+        return youtubeChannelId;
+    }
+
+    public void setYoutubeChannelId(String youtubeChannelId) {
+        this.youtubeChannelId = youtubeChannelId;
     }
 
     public String getYoutubeChannelTitle() {
