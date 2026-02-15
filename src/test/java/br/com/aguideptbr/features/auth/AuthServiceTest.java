@@ -105,4 +105,81 @@ class AuthServiceTest {
         assertNotNull(found.passwordHash, "Password hash não deve ser nulo");
         assertTrue(found.passwordHash.startsWith("$2a$"), "Hash deve ser BCrypt");
     }
+
+    @Test
+    @Transactional
+    void testUserWithYoutubeData_ShouldPersistCorrectly() {
+        // Cria usuário com dados do YouTube
+        UserModel user = new UserModel();
+        user.name = "YouTuber";
+        user.surname = "Test";
+        user.email = "youtuber-test-auth@example.com";
+        user.passwordHash = passwordEncoder.hashPassword("senha123");
+        user.role = UserRole.FREE;
+        user.youtubeUserId = "UCUXeX3iLBjsWbc_1bCrEdCQ";
+        user.youtubeChannelTitle = "Test Channel";
+        user.persist();
+
+        // Busca usuário e verifica dados do YouTube
+        UserModel found = UserModel.findByEmail("youtuber-test-auth@example.com");
+
+        assertNotNull(found, "Usuário deve ser encontrado");
+        assertNotNull(found.youtubeUserId, "YouTube User ID não deve ser nulo");
+        assertNotNull(found.youtubeChannelTitle, "YouTube Channel Title não deve ser nulo");
+        assertTrue(found.youtubeUserId.equals("UCUXeX3iLBjsWbc_1bCrEdCQ"),
+                "YouTube User ID deve estar correto");
+        assertTrue(found.youtubeChannelTitle.equals("Test Channel"),
+                "YouTube Channel Title deve estar correto");
+    }
+
+    @Test
+    @Transactional
+    void testUserWithoutYoutubeData_ShouldAcceptNull() {
+        // Cria usuário sem dados do YouTube
+        UserModel user = new UserModel();
+        user.name = "Regular";
+        user.surname = "User";
+        user.email = "regular-test-auth@example.com";
+        user.passwordHash = passwordEncoder.hashPassword("senha123");
+        user.role = UserRole.FREE;
+        user.youtubeUserId = null;
+        user.youtubeChannelTitle = null;
+        user.persist();
+
+        // Busca usuário e verifica que campos são null
+        UserModel found = UserModel.findByEmail("regular-test-auth@example.com");
+
+        assertNotNull(found, "Usuário deve ser encontrado");
+        assertNull(found.youtubeUserId, "YouTube User ID deve ser null");
+        assertNull(found.youtubeChannelTitle, "YouTube Channel Title deve ser null");
+    }
+
+    @Test
+    @Transactional
+    void testOAuthUserWithYoutubeData_ShouldPersistCorrectly() {
+        // Cria usuário OAuth com dados do YouTube
+        UserModel user = new UserModel();
+        user.name = "Google";
+        user.surname = "User";
+        user.email = "google-test-auth@example.com";
+        user.oauthProvider = "GOOGLE";
+        user.oauthId = "112072455526965200736";
+        user.passwordHash = null; // OAuth users não têm senha local
+        user.role = UserRole.FREE;
+        user.youtubeUserId = "UCTestChannelId123";
+        user.youtubeChannelTitle = "My YouTube Channel";
+        user.persist();
+
+        // Busca usuário e verifica dados OAuth + YouTube
+        UserModel found = UserModel.findByEmail("google-test-auth@example.com");
+
+        assertNotNull(found, "Usuário deve ser encontrado");
+        assertTrue(found.isOAuthUser(), "Usuário deve ser OAuth");
+        assertNotNull(found.youtubeUserId, "YouTube User ID não deve ser nulo");
+        assertNotNull(found.youtubeChannelTitle, "YouTube Channel Title não deve ser nulo");
+        assertTrue(found.youtubeUserId.equals("UCTestChannelId123"),
+                "YouTube User ID deve estar correto");
+        assertTrue(found.youtubeChannelTitle.equals("My YouTube Channel"),
+                "YouTube Channel Title deve estar correto");
+    }
 }
