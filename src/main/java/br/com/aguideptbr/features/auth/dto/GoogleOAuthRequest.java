@@ -18,6 +18,8 @@ import jakarta.validation.constraints.NotBlank;
  * <li><b>oauthId:</b> ID único do usuário no Google</li>
  * <li><b>accessToken:</b> Token de acesso do Google</li>
  * <li><b>idToken:</b> Token JWT do Google com informações do usuário</li>
+ * <li><b>youtubeUserId:</b> YouTube User ID ou Channel ID (opcional)</li>
+ * <li><b>youtubeChannelTitle:</b> Título do canal YouTube (opcional)</li>
  * </ul>
  *
  * @author Cleidson Machado
@@ -32,7 +34,7 @@ public class GoogleOAuthRequest {
     @NotBlank(message = "Name is required")
     private String name;
 
-    @NotBlank(message = "Surname is required")
+    // Surname é opcional (alguns usuários podem não ter sobrenome no Google)
     private String surname;
 
     @NotBlank(message = "OAuth provider is required")
@@ -44,8 +46,20 @@ public class GoogleOAuthRequest {
     @NotBlank(message = "Access token is required")
     private String accessToken;
 
-    @NotBlank(message = "ID token is required")
+    // ID Token é opcional (nem todos os fluxos OAuth fornecem)
     private String idToken;
+
+    /**
+     * YouTube User ID ou Channel ID (opcional).
+     * Formato: UCxxxxx ou UXxxxxx
+     */
+    private String youtubeUserId;
+
+    /**
+     * Título do canal YouTube do usuário (opcional).
+     * Null se o usuário não tiver canal YouTube.
+     */
+    private String youtubeChannelTitle;
 
     // ========== Construtores ==========
 
@@ -119,5 +133,21 @@ public class GoogleOAuthRequest {
 
     public void setIdToken(String idToken) {
         this.idToken = idToken;
+    }
+
+    public String getYoutubeUserId() {
+        return youtubeUserId;
+    }
+
+    public void setYoutubeUserId(String youtubeUserId) {
+        this.youtubeUserId = youtubeUserId;
+    }
+
+    public String getYoutubeChannelTitle() {
+        return youtubeChannelTitle;
+    }
+
+    public void setYoutubeChannelTitle(String youtubeChannelTitle) {
+        this.youtubeChannelTitle = youtubeChannelTitle;
     }
 }

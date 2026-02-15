@@ -102,6 +102,21 @@ public class UserModel extends PanacheEntityBase {
     public String oauthId;
 
     /**
+     * YouTube User ID ou Channel ID (formato: UCxxxxx ou UXxxxxx).
+     * Capturado durante login OAuth com Google.
+     * Null se o usuário não tiver canal YouTube.
+     */
+    @Column(name = "youtube_user_id", length = 50)
+    public String youtubeUserId;
+
+    /**
+     * Título do canal YouTube do usuário.
+     * Null se o usuário não tiver canal YouTube.
+     */
+    @Column(name = "youtube_channel_title", length = 255)
+    public String youtubeChannelTitle;
+
+    /**
      * Telefones do usuário.
      * Um usuário pode ter múltiplos telefones (Brasil, Portugal, trabalho, etc).
      * IMPORTANTE: Não serializado no JSON por padrão (@JsonIgnore).
