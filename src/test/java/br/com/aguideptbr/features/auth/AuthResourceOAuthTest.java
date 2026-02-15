@@ -55,6 +55,7 @@ class AuthResourceOAuthTest {
         request.setAccessToken("ya29.mock_access_token");
         request.setIdToken("mock_id_token");
         request.setYoutubeUserId("UCUXeX3iLBjsWbc_1bCrEdCQ");
+        request.setYoutubeChannelId("UCUXeX3iLBjsWbc_1bCrEdCQ");
         request.setYoutubeChannelTitle("Test Channel");
 
         // Act
@@ -102,6 +103,7 @@ class AuthResourceOAuthTest {
         request.setAccessToken("ya29.mock_access_token");
         request.setIdToken("mock_id_token");
         request.setYoutubeUserId("UCTestPersistChannel");
+        request.setYoutubeChannelId("UCTestPersistChannel");
         request.setYoutubeChannelTitle("Persist Channel");
 
         // Act - Faz login OAuth
@@ -113,6 +115,8 @@ class AuthResourceOAuthTest {
         assertNotNull(user, "Usuário deve estar no banco");
         assertEquals("UCTestPersistChannel", user.youtubeUserId,
                 "YouTube User ID deve estar persistido");
+        assertEquals("UCTestPersistChannel", user.youtubeChannelId,
+                "YouTube Channel ID deve estar persistido");
         assertEquals("Persist Channel", user.youtubeChannelTitle,
                 "YouTube Channel Title deve estar persistido");
     }
@@ -139,6 +143,7 @@ class AuthResourceOAuthTest {
 
         assertNotNull(user, "Usuário deve estar no banco");
         assertNull(user.youtubeUserId, "YouTube User ID deve ser null");
+        assertNull(user.youtubeChannelId, "YouTube Channel ID deve ser null");
         assertNull(user.youtubeChannelTitle, "YouTube Channel Title deve ser null");
     }
 
@@ -155,6 +160,7 @@ class AuthResourceOAuthTest {
         firstLogin.setAccessToken("ya29.mock_access_token");
         firstLogin.setIdToken("mock_id_token");
         firstLogin.setYoutubeUserId("UCOriginalChannel");
+        firstLogin.setYoutubeChannelId("UCOriginalChannel");
         firstLogin.setYoutubeChannelTitle("Original Channel");
 
         // First login
@@ -179,6 +185,8 @@ class AuthResourceOAuthTest {
         assertNotNull(user, "Usuário deve estar no banco");
         assertEquals("UCOriginalChannel", user.youtubeUserId,
                 "YouTube User ID deve ser preservado do primeiro login");
+        assertEquals("UCOriginalChannel", user.youtubeChannelId,
+                "YouTube Channel ID deve ser preservado do primeiro login");
         assertEquals("Original Channel", user.youtubeChannelTitle,
                 "YouTube Channel Title deve ser preservado do primeiro login");
     }
