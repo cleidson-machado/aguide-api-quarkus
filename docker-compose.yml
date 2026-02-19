@@ -17,6 +17,12 @@ services:
       DB_PROD_USERNAME: quarkus
       DB_PROD_PASSWORD: quarkus123
 
+      # 🔒 SEGURANÇA: Chave secreta para validação de propriedade
+      OWNERSHIP_VALIDATION_SECRET: b8e75a1106e8e13740ea7082f31ef5d550f8787e2eafad2b9fbb5d23c2771c41
+
+      # 🔐 SSL KEYSTORE (se necessário em produção)
+      KEYSTORE_PASSWORD: quarkus
+
       # ⚠️ CRÍTICO: SEMPRE usar profile 'prod' no VPS!
       # prod = Não limpa banco, usa quarkus_db
       # NUNCA usar 'dev' em produção (causaria perda de dados)
