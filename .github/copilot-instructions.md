@@ -120,7 +120,8 @@ docker compose exec aguide-api env | grep QUARKUS_PROFILE
 
 ### 📖 Documentação Adicional
 - [.env.example](.env.example) - Template de configuração
-- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Incidente que motivou essas mudanças
+- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Incidente que motivou separação de bancos de dados
+- [INCIDENT_CONTAINER_RESTART_LOOP_2026-02-19.md](a_error_log_temp/INCIDENT_CONTAINER_RESTART_LOOP_2026-02-19.md) - Incidente de loop de restart por SSL misconfiguration
 
 ---
 
@@ -845,6 +846,313 @@ docker system prune -f
 
 ---
 
+## 🔐 Configuração Docker e SSL/TLS (CRÍTICO)
+
+### 🔴 PROBLEMA HISTÓRICO: Container em Loop de Restart (19/02/2026)
+Este projeto sofreu **FALHA CRÍTICA DE SERVIÇO** no VPS de produção devido a configuração SSL inconsistente:
+- **Sintoma:** Container `aguide-api` em loop de restart, NGINX retornando Bad Gateway 502
+- **Causa raiz:** Arquivo `security/keystore.p12` ausente + SSL habilitado internamente no container
+- **Impacto:** API indisponível para clientes, downtime de ~30 minutos
+
+### ✅ SOLUÇÃO IMPLEMENTADA: SSL Externo no NGINX
+
+A arquitetura correta de SSL/TLS para este projeto:
+```
+Cliente (HTTPS) → NGINX Proxy Manager (SSL termination) → aguide-api (HTTP interno)
+```
+
+**NUNCA configurar SSL dentro do container Quarkus em produção!**
+
+---
+
+### Regras Críticas para docker-compose.yml (Produção VPS)
+
+#### 1. SSL Interno DEVE Estar Desabilitado
+
+Container Quarkus **SEMPRE** roda em HTTP interno (porta 8083). NGINX Proxy Manager gerencia SSL/TLS externamente.
+
+**Variáveis de ambiente obrigatórias:**
+```yaml
+environment:
+  QUARKUS_HTTP_PORT: 8083
+  QUARKUS_HTTP_SSL_PORT:              # VAZIO - desabilita SSL
+  QUARKUS_HTTP_INSECURE_REQUESTS: enabled
+```
+
+**❌ NUNCA:**
+- Habilitar SSL dentro do container em produção
+- Configurar `QUARKUS_HTTP_SSL_PORT` com valor diferente de vazio
+- Usar porta 8443 (HTTPS) no container de produção
+
+**✅ SEMPRE:**
+- SSL gerenciado externamente pelo NGINX
+- Container responde em HTTP na porta 8083
+- NGINX encaminha HTTPS (443) → HTTP (8083)
+
+---
+
+#### 2. Arquivos de Segurança Obrigatórios
+
+O diretório `security/` DEVE conter:
+- ✅ **jwt-private.pem** - Chave privada JWT (obrigatório)
+- ✅ **jwt-public.pem** - Chave pública JWT (obrigatório)
+- ⚠️ **keystore.p12** - Certificado SSL (apenas se necessário para dev local)
+
+**Verificação ANTES de build/restart:**
+```bash
+# No VPS, verificar se arquivos existem
+ls -la security/
+# Esperado: jwt-private.pem, jwt-public.pem
+
+# LOCAL (MacBook), verificar se keystore existe (se usar HTTPS local)
+ls -la security/keystore.p12
+```
+
+**Volume montado como read-only:**
+```yaml
+volumes:
+  - ./security:/deployments/security:ro
+```
+
+**⚠️ IMPORTANTE:**
+- `keystore.p12` **NÃO é necessário** em produção (SSL desabilitado)
+- Se logs mostrarem "NoSuchFileException: security/keystore.p12", verificar se SSL está realmente desabilitado via env vars
+- **NUNCA commitar arquivos do diretório `security/` no Git** (protegido pelo `.gitignore`)
+
+---
+
+#### 3. Profile de Produção Obrigatório
+
+**SEMPRE usar QUARKUS_PROFILE: prod no VPS**
+
+```yaml
+environment:
+  QUARKUS_PROFILE: prod
+```
+
+**Profile 'prod' configurado em `application-prod.properties`:**
+- ✅ SSL desabilitado (configurações comentadas ou ausentes)
+- ✅ Flyway `clean-at-start: false` (proteção contra perda de dados)
+- ✅ Porta HTTP: 8083
+- ✅ Banco de dados: `quarkus_db` (produção)
+
+**❌ NUNCA usar profile 'dev' em produção:**
+- Profile 'dev' limpa o banco de dados (`clean-at-start=true`)
+- Pode habilitar SSL internamente (porta 8443)
+- Aponta para `quarkus_dev` (banco de desenvolvimento)
+
+---
+
+#### 4. Mapeamento de Portas Correto
+
+**Configuração obrigatória:**
+```yaml
+ports:
+  - "127.0.0.1:8083:8083"
+```
+
+**Explicação:**
+- `127.0.0.1:8083` - Bind no localhost (não expõe publicamente)
+- `:8083` - Porta interna do container (HTTP)
+- NGINX encaminha de 443 (HTTPS público) → 8083 (HTTP interno)
+
+**❌ NUNCA:**
+- Expor porta 8083 publicamente sem localhost: `"8083:8083"`
+- Usar porta 8443 (HTTPS) no container de produção
+- Mapear múltiplas portas (8080, 8083, 8443) simultaneamente
+
+**✅ SEMPRE:**
+- Bind exclusivo no localhost
+- Porta única 8083 (HTTP)
+- NGINX como único ponto de entrada HTTPS
+
+---
+
+#### 5. Validação Antes de Deploy
+
+**Checklist obrigatório:**
+
+```bash
+# 1. Verificar logs do container
+docker logs aguide-api --tail 50
+
+# 2. Erro comum: "NoSuchFileException: security/keystore.p12"
+# Solução: Desabilitar SSL via variáveis de ambiente (veja item 1)
+
+# 3. Testar health check interno
+curl http://localhost:8083/api/v1/auth/health
+# Esperado: HTTP 200 OK
+
+# 4. Verificar se SSL está desabilitado
+docker exec aguide-api env | grep QUARKUS_HTTP_SSL_PORT
+# Esperado: QUARKUS_HTTP_SSL_PORT= (vazio)
+
+# 5. Confirmar profile de produção
+docker exec aguide-api env | grep QUARKUS_PROFILE
+# Esperado: QUARKUS_PROFILE=prod
+```
+
+---
+
+#### 6. Checklist de Troubleshooting
+
+**Container em loop restart?**
+- [ ] Verificar logs: `docker logs aguide-api --tail 100`
+- [ ] Procurar por "NoSuchFileException: security/keystore.p12"
+- [ ] Confirmar se SSL está desabilitado via env vars
+
+**Bad Gateway 502 do NGINX?**
+- [ ] Container está UP? `docker ps | grep aguide-api`
+- [ ] Health check interno OK? `curl http://localhost:8083/api/v1/auth/health`
+- [ ] NGINX pode acessar porta 8083? `docker exec nginx curl http://aguide-api:8083/api/v1/auth/health`
+
+**SSL error no container?**
+- [ ] Verificar se `QUARKUS_HTTP_SSL_PORT` está vazio
+- [ ] Verificar se `QUARKUS_HTTP_INSECURE_REQUESTS=enabled`
+- [ ] Confirmar profile prod: `docker exec aguide-api env | grep QUARKUS_PROFILE`
+
+**Arquivos security/ existem?**
+- [ ] `ls -la security/jwt-private.pem` - Deve existir
+- [ ] `ls -la security/jwt-public.pem` - Deve existir
+- [ ] `ls -la security/keystore.p12` - OPCIONAL (não necessário em prod)
+
+**Profile prod está ativo?**
+- [ ] `docker exec aguide-api env | grep QUARKUS_PROFILE`
+- [ ] Resultado esperado: `QUARKUS_PROFILE=prod`
+
+**Porta 8083 está mapeada corretamente?**
+- [ ] `docker ps | grep aguide-api` - Deve mostrar `127.0.0.1:8083->8083/tcp`
+- [ ] `curl http://localhost:8083/api/v1/auth/health` - Deve retornar 200
+
+---
+
+### Exemplo de docker-compose.yml CORRETO (Produção VPS)
+
+```yaml
+services:
+  aguide-api:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: aguide-api
+    restart: unless-stopped
+    environment:
+      # Database
+      DB_PROD_HOST: quarkus_postgres
+      DB_PROD_PORT: 5432
+      DB_PROD_NAME: quarkus_db
+      DB_PROD_USERNAME: quarkus
+      DB_PROD_PASSWORD: quarkus123
+
+      # Security
+      OWNERSHIP_VALIDATION_SECRET: ${OWNERSHIP_SECRET}
+
+      # 🔐 SSL DESABILITADO - NGINX gerencia SSL externamente
+      QUARKUS_HTTP_PORT: 8083
+      QUARKUS_HTTP_SSL_PORT:                    # VAZIO - desabilita SSL
+      QUARKUS_HTTP_INSECURE_REQUESTS: enabled
+
+      # Profile
+      QUARKUS_PROFILE: prod
+    ports:
+      - "127.0.0.1:8083:8083"
+    volumes:
+      - ./security:/deployments/security:ro
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    external: true
+```
+
+---
+
+### ⚠️ IMPORTANTE: Diferença Dev vs Prod
+
+#### **Desenvolvimento Local (MacBook):**
+- **Profile:** `dev`
+- **SSL:** Pode estar habilitado (porta 8443) para testes HTTPS locais
+- **Banco:** `quarkus_dev` (pode ser limpo com `clean-at-start=true`)
+- **Keystore:** Necessário se testar HTTPS local
+- **Execução:** Via terminal `./mvnw quarkus:dev` (NÃO usa Docker)
+- **Porta:** `https://localhost:8443` (HTTPS direto)
+
+**Configuração local (application-dev.properties):**
+```properties
+quarkus.http.port=8080
+quarkus.http.ssl-port=8443
+quarkus.http.ssl.certificate.key-store-file=security/keystore.p12
+quarkus.http.ssl.certificate.key-store-password=quarkus
+```
+
+#### **Produção VPS:**
+- **Profile:** `prod`
+- **SSL:** DESABILITADO (NGINX gerencia)
+- **Banco:** `quarkus_db` (NUNCA limpa, `clean-at-start=false`)
+- **Keystore:** OPCIONAL (não usado porque SSL desabilitado)
+- **Execução:** Via Docker Compose
+- **Porta:** `http://localhost:8083` (HTTP interno)
+
+**Configuração VPS (application-prod.properties):**
+```properties
+quarkus.http.port=8083
+# SSL desabilitado - linhas comentadas ou ausentes:
+# quarkus.http.ssl-port=8443
+# quarkus.http.ssl.certificate.key-store-file=...
+```
+
+---
+
+### 📋 Validação Final Antes de Modificar Arquivos de Configuração
+
+Ao fazer modificações em arquivos de configuração, **SEMPRE validar compatibilidade:**
+
+**Arquivos a verificar:**
+- [ ] `application-prod.properties` - SSL desabilitado, `clean-at-start=false`
+- [ ] `docker-compose.yml` - `QUARKUS_PROFILE=prod`, SSL vars corretas
+- [ ] `security/` - jwt-private.pem e jwt-public.pem existem
+- [ ] `.env` (local) - Variáveis apontam para bancos corretos
+
+**Comandos de validação:**
+```bash
+# 1. Verificar configuração de produção
+grep -E "quarkus.http.ssl|quarkus.flyway.clean" src/main/resources/application-prod.properties
+
+# 2. Verificar docker-compose.yml
+grep -E "QUARKUS_PROFILE|QUARKUS_HTTP_SSL_PORT" docker-compose.yml
+
+# 3. Verificar arquivos de segurança
+ls -la security/
+
+# 4. Executar script de validação
+./validate-production-safety.sh
+```
+
+**Resultado esperado:**
+- ✅ `application-prod.properties` NÃO tem `quarkus.http.ssl-port` ativo
+- ✅ `application-prod.properties` tem `quarkus.flyway.clean-at-start=false`
+- ✅ `docker-compose.yml` tem `QUARKUS_PROFILE: prod`
+- ✅ `docker-compose.yml` tem `QUARKUS_HTTP_SSL_PORT:` (vazio)
+- ✅ `security/jwt-private.pem` e `security/jwt-public.pem` existem
+
+---
+
+### 🚨 Incidentes Documentados
+
+**Referências de incidentes passados:**
+- [INCIDENT_PROD_DB_RESET_2026-02-09.md](a_error_log_temp/INCIDENT_PROD_DB_RESET_2026-02-09.md) - Perda de dados por profile incorreto
+- **INCIDENT_CONTAINER_RESTART_LOOP_2026-02-19.md** - Container em loop por SSL misconfiguration (este documento)
+
+**Lições aprendidas:**
+1. **NUNCA assumir** que o profile correto está ativo - sempre verificar
+2. **NUNCA habilitar SSL** dentro do container em produção (NGINX gerencia)
+3. **SEMPRE validar** configurações antes de deploy
+4. **SEMPRE verificar logs** antes de assumir que o problema foi resolvido
+5. **SEMPRE documentar** incidentes para prevenir reincidência
+
+---
+
 ## Git Commands and User Interaction
 
 - Whenever the agent is about to suggest Git commands that can alter the state of local or remote branch, such as `git commit`, `git push`, `git reset`, `git rebase`, `git pull --rebase`, `git push --force` or similar, it must **mandatorily ask the developer user** if it can proceed with executing these commands.
@@ -888,7 +1196,35 @@ git commit -m "feat(user): implement new feature X"
 ---
 
 ## WHAT NOT TO DO (COMPREHENSIVE)
+
+### 🔴 Configuração e Infraestrutura
 ❌ Create temporary files in project root (use `a_error_log_temp/`)
+❌ **NEVER** commit `.env` file to Git
+❌ **NEVER** commit files do diretório `security/` no Git
+❌ **NEVER** assume the correct profile will be used automatically
+❌ **NEVER** run `./mvnw quarkus:dev` without `source .env` first
+❌ Using `QUARKUS_PROFILE=prod` locally (connects to production DB!)
+
+### 🔴 Docker e SSL/TLS (CRÍTICO - Causa downtime)
+❌ **NEVER** habilitar SSL dentro do container Quarkus em produção
+❌ **NEVER** configurar `QUARKUS_HTTP_SSL_PORT` no VPS (deve estar vazio)
+❌ **NEVER** usar porta 8443 (HTTPS) no container de produção
+❌ **NEVER** fazer deploy sem verificar `QUARKUS_PROFILE=prod`
+❌ **NEVER** assumir que arquivos `security/` existem sem verificar
+❌ **NEVER** expor porta 8083 publicamente (usar `127.0.0.1:8083:8083`)
+❌ **NEVER** fazer `docker compose down` em produção sem verificar volumes persistentes
+
+### 🔴 Banco de Dados (CRÍTICO - Causa perda de dados)
+❌ **NEVER** use `quarkus.flyway.clean-at-start=true` in production
+❌ **NEVER** use `quarkus.hibernate-orm.database.generation` different from `none` in production
+❌ **NEVER** create destructive migrations (`DROP TABLE`, `TRUNCATE`) for production
+❌ **NEVER** merge develop→main without checking database configurations
+❌ **NEVER** modify existing Flyway migrations
+❌ Use real database (PostgreSQL) in unit tests
+❌ Conectar em `quarkus_db` localmente (só no VPS!)
+❌ Usar `clean-at-start=true` com `QUARKUS_PROFILE=prod`
+
+### 🔴 Código e Arquitetura
 ❌ Put business logic in Controllers or Repositories
 ❌ Use Spring annotations (use Quarkus CDI)
 ❌ Forget `@Transactional` in methods that modify data
@@ -896,19 +1232,11 @@ git commit -m "feat(user): implement new feature X"
 ❌ Ignore exception handling
 ❌ Log sensitive information (passwords, tokens)
 ❌ Hardcoded credentials/tokens in tests
-❌ Skip tests in CI/CD with `-DskipTests`
-❌ Use real database (PostgreSQL) in unit tests
-❌ **NEVER** use `quarkus.flyway.clean-at-start=true` in production
-❌ **NEVER** use `quarkus.hibernate-orm.database.generation` different from `none` in production
-❌ **NEVER** create destructive migrations (`DROP TABLE`, `TRUNCATE`) for production
-❌ **NEVER** merge develop→main without checking database configurations
-❌ **NEVER** assume the correct profile will be used automatically
-❌ **NEVER** run `./mvnw quarkus:dev` without `source .env` first
-❌ **NEVER** commit `.env` file to Git
-❌ **NEVER** modify existing Flyway migrations
-❌ Using `QUARKUS_PROFILE=prod` locally (connects to production DB!)
 ❌ Putting business logic in controllers (violates separation of concerns)
 ❌ Direct repository access from controllers (always go through services)
+
+### 🔴 CI/CD e Testes
+❌ Skip tests in CI/CD with `-DskipTests`
 ❌ Use batch git add commands (`git add .`, `git add -A`)
 
 ---
