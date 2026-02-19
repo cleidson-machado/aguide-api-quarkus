@@ -25,6 +25,8 @@ services:
       QUARKUS_HTTP_PORT: 8083
       QUARKUS_HTTP_SSL_PORT:
       QUARKUS_HTTP_INSECURE_REQUESTS: enabled
+      # 🔐 SSL KEYSTORE (se necessário em produção)
+      KEYSTORE_PASSWORD: quarkus
 
       # ⚠️ CRÍTICO: SEMPRE usar profile 'prod' no VPS!
       # prod = Não limpa banco, usa quarkus_db
