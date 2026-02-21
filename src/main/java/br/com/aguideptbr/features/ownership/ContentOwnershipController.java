@@ -17,6 +17,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -109,11 +110,17 @@ public class ContentOwnershipController {
      * Returns content records where ownership has been verified.
      * Includes both content details and ownership information.
      *
+     * Returns 404 if:
+     * - User not found
+     * - User has no verified content
+     *
      * Example:
      * GET /api/v1/ownership/user/550e8400-e29b-41d4-a716-446655440000/content
      *
      * @param userId User ID
      * @return List of UserContentResponse with verified content
+     * @throws WebApplicationException 404 if user not found or has no verified
+     *                                 content
      */
     @GET
     @Path("/user/{userId}/content")

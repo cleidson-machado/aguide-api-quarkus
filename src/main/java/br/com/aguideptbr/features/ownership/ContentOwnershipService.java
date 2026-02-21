@@ -211,13 +211,33 @@ public class ContentOwnershipService {
      *
      * @param userId User ID
      * @return List of UserContentResponse with verified content
+     * @throws WebApplicationException if user not found or has no verified content
      */
     public List<UserContentResponse> getUserVerifiedContent(UUID userId) {
         log.infof("ℹ️ Getting verified content for user: %s", userId);
 
+        // 1. Verify user exists
+        UserModel user = UserModel.findById(userId);
+        if (user == null || user.deletedAt != null) {
+            log.warnf("⚠️ User not found or deleted: %s", userId);
+            throw new WebApplicationException(
+                    "User not found",
+                    Status.NOT_FOUND);
+        }
+
+        // 2. Find verified ownerships for this user
         List<ContentOwnershipModel> verifiedOwnerships = ContentOwnershipModel
                 .findVerifiedByUserId(userId);
 
+        // 3. Check if user has any verified content
+        if (verifiedOwnerships.isEmpty()) {
+            log.warnf("⚠️ User %s has no verified content", userId);
+            throw new WebApplicationException(
+                    "No verified content found for this user",
+                    Status.NOT_FOUND);
+        }
+
+        // 4. Build response list
         List<UserContentResponse> contentList = new ArrayList<>();
 
         for (ContentOwnershipModel ownership : verifiedOwnerships) {

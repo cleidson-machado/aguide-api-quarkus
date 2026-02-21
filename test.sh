@@ -2,81 +2,69 @@
 # Script para executar testes com output limpo (similar ao Jest/NestJS)
 # Uso: ./test.sh
 
-set -euo pipefail
-
 # Cores
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 GRAY='\033[0;90m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 BOLD='\033[1m'
 
-# Limpar tela
 clear
 
 echo -e "${BOLD}🧪 Executando testes...${NC}\n"
 
-# Executar testes e capturar saída
-OUTPUT=$(./mvnw test 2>&1)
+# Arquivo temporário
+TMPFILE="/tmp/maven-test-$$.txt"
 
-# Extrair informações
-echo "$OUTPUT" | grep -E "Running br.com.aguideptbr" | while read -r line; do
-    TEST_CLASS=$(echo "$line" | sed 's/.*Running //')
-    TEST_NAME=$(echo "$TEST_CLASS" | sed 's/.*\.//' | sed 's/Test$//')
-    echo -e "${GRAY}  ○${NC} ${TEST_NAME}"
+# Executar testes
+./mvnw test -B > "$TMPFILE" 2>&1
+
+# Processar classes testadas
+grep "Running br.com.aguideptbr" "$TMPFILE" | while read -r line; do
+    CLASS=$(echo "$line" | sed 's/.*Running //' | sed 's/.*\.//' | sed 's/Test$//')
+    echo -e "${GRAY}  ○${NC} ${CLASS}"
 done
 
 echo ""
 
-# Resultado de cada suite
-echo "$OUTPUT" | grep -E "Tests run:" | while read -r line; do
+# Processar resultados
+grep "Tests run:" "$TMPFILE" | while read -r line; do
+    CLASS=$(echo "$line" | sed -n 's/.*in \(.*\)/\1/p' | sed 's/.*\.//' | sed 's/Test$//')
+    TOTAL=$(echo "$line" | sed -n 's/.*Tests run: \([0-9]*\).*/\1/p')
+    SKIPPED=$(echo "$line" | sed -n 's/.*Skipped: \([0-9]*\).*/\1/p')
+
     if echo "$line" | grep -q "Failures: 0, Errors: 0"; then
-        # Extrair nome da classe
-        CLASS=$(echo "$line" | sed -n 's/.*in \(.*\)/\1/p')
-        TEST_NAME=$(echo "$CLASS" | sed 's/.*\.//' | sed 's/Test$//')
-
-        # Extrair números
-        TOTAL=$(echo "$line" | sed -n 's/.*Tests run: \([0-9]*\).*/\1/p')
-        SKIPPED=$(echo "$line" | sed -n 's/.*Skipped: \([0-9]*\).*/\1/p')
-
-        if [ "$SKIPPED" != "0" ]; then
-            echo -e "${GREEN}  ✓${NC} ${TEST_NAME} ${GRAY}(${TOTAL} tests, ${SKIPPED} skipped)${NC}"
+        if [ -n "$SKIPPED" ] && [ "$SKIPPED" != "0" ]; then
+            echo -e "${GREEN}  ✓${NC} ${CLASS} ${GRAY}(${TOTAL} tests, ${SKIPPED} skipped)${NC}"
         else
-            echo -e "${GREEN}  ✓${NC} ${TEST_NAME} ${GRAY}(${TOTAL} tests)${NC}"
+            echo -e "${GREEN}  ✓${NC} ${CLASS} ${GRAY}(${TOTAL} tests)${NC}"
         fi
     else
-        CLASS=$(echo "$line" | sed -n 's/.*in \(.*\)/\1/p')
-        TEST_NAME=$(echo "$CLASS" | sed 's/.*\.//' | sed 's/Test$//')
-
-        FAILURES=$(echo "$line" | sed -n 's/.*Failures: \([0-9]*\).*/\1/p')
-        ERRORS=$(echo "$line" | sed -n 's/.*Errors: \([0-9]*\).*/\1/p')
-
-        echo -e "${RED}  ✗${NC} ${TEST_NAME} ${RED}(${FAILURES} failures, ${ERRORS} errors)${NC}"
+        FAIL=$(echo "$line" | sed -n 's/.*Failures: \([0-9]*\).*/\1/p')
+        ERR=$(echo "$line" | sed -n 's/.*Errors: \([0-9]*\).*/\1/p')
+        echo -e "${RED}  ✗${NC} ${CLASS} ${RED}(${FAIL} failures, ${ERR} errors)${NC}"
     fi
 done
 
 echo ""
 
-# Resumo final
-if echo "$OUTPUT" | grep -q "BUILD SUCCESS"; then
-    TOTAL_TESTS=$(echo "$OUTPUT" | grep "Tests run:" | tail -1 | sed -n 's/.*Tests run: \([0-9]*\).*/\1/p')
-    TOTAL_SKIPPED=$(echo "$OUTPUT" | grep "Skipped:" | tail -1 | sed -n 's/.*Skipped: \([0-9]*\).*/\1/p')
-    TIME=$(echo "$OUTPUT" | grep "Total time:" | sed -n 's/.*Total time: *\([0-9.]*\) s/\1/p')
+# Resumo
+if grep -q "BUILD SUCCESS" "$TMPFILE"; then
+    TOTAL=$(grep "Tests run:" "$TMPFILE" | tail -1 | sed -n 's/.*Tests run: \([0-9]*\).*/\1/p')
+    SKIP=$(grep "Tests run:" "$TMPFILE" | tail -1 | sed -n 's/.*Skipped: \([0-9]*\).*/\1/p')
+    SUITES=$(grep -c "Tests run:" "$TMPFILE")
+    TIME=$(grep "Total time:" "$TMPFILE" | sed -n 's/.*Total time: *\(.*\)/\1/p')
 
-    # Contar test suites dinamicamente
-    TOTAL_SUITES=$(echo "$OUTPUT" | grep -c "Tests run:")
-
-    echo -e "${BOLD}${GREEN}✓ Test Suites:${NC} ${BOLD}${TOTAL_SUITES} passed${NC}, ${TOTAL_SUITES} total"
-    echo -e "${BOLD}${GREEN}✓ Tests:${NC}       ${BOLD}${TOTAL_TESTS} passed${NC}${GRAY} (${TOTAL_SKIPPED} skipped)${NC}, ${TOTAL_TESTS} total"
-    echo -e "${BOLD}Time:${NC}        ${TIME}s"
+    echo -e "${BOLD}${GREEN}✓ Test Suites:${NC} ${BOLD}${SUITES} passed${NC}, ${SUITES} total"
+    echo -e "${BOLD}${GREEN}✓ Tests:${NC}       ${BOLD}${TOTAL} passed${NC}${GRAY} (${SKIP} skipped)${NC}, ${TOTAL} total"
+    echo -e "${BOLD}Time:${NC}        ${TIME}"
     echo ""
     echo -e "${BOLD}${GREEN}✨ Todos os testes passaram!${NC}"
+    rm -f "$TMPFILE"
     exit 0
 else
-    echo -e "${BOLD}${RED}✗ Alguns testes falharam${NC}"
-    echo ""
-    echo "$OUTPUT" | grep -A 20 "FAILURE"
+    echo -e "${BOLD}${RED}✗ Alguns testes falharam${NC}\n"
+    grep -A 20 "FAILURE" "$TMPFILE"
+    rm -f "$TMPFILE"
     exit 1
 fi
