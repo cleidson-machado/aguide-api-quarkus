@@ -17,12 +17,24 @@ services:
       DB_PROD_USERNAME: quarkus
       DB_PROD_PASSWORD: quarkus123
 
+      # 🔒 SEGURANÇA: Chave secreta para validação de propriedade
+      OWNERSHIP_VALIDATION_SECRET: b8e75a1106e8e13740ea7082f31ef5d550f8787e2eafad2b9fbb5d23c2771c41
+
+      # 🔐 SSL DESABILITADO - NGINX gerencia SSL externamente
+      # Força HTTP interno na porta 8083 (sem SSL)
+      QUARKUS_HTTP_PORT: 8083
+      QUARKUS_HTTP_SSL_PORT:
+      QUARKUS_HTTP_INSECURE_REQUESTS: enabled
+      
+      # 🔐 SSL KEYSTORE (se necessário em produção)
+      KEYSTORE_PASSWORD: quarkus
+
       # ⚠️ CRÍTICO: SEMPRE usar profile 'prod' no VPS!
       # prod = Não limpa banco, usa quarkus_db
       # NUNCA usar 'dev' em produção (causaria perda de dados)
       QUARKUS_PROFILE: prod
     ports:
-      - "127.0.0.1:8083:8080"
+      - "127.0.0.1:8083:8083"
     # - "8083:8083" # Se quiser expor para toda a rede local, mas bloqueado para impedir acesso externo
     # Volume para chaves JWT (security/)
     # A pasta security/ deve existir no host VPS com jwt-private.pem e jwt-public.pem

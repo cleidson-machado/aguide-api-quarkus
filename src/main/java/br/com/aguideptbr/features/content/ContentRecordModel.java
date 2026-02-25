@@ -102,6 +102,18 @@ public class ContentRecordModel extends PanacheEntityBase {
     @Column(name = "default_audio_language", length = 10)
     public String defaultAudioLanguage;
 
+    // ========== VALIDAÇÃO DE PROPRIEDADE ==========
+    /**
+     * HMAC-SHA256 hash de validação de propriedade.
+     * NULL = sem propriedade validada
+     * != NULL = propriedade reconhecida
+     *
+     * Este campo evita requests extras do Flutter para verificar ownership.
+     * Ao carregar lista de conteúdo, o app já sabe quais têm dono.
+     */
+    @Column(name = "validation_hash", length = 512)
+    public String validationHash;
+
     // ========== AUDITORIA - DATA E HORA DE CRIAÇÃO E ATUALIZAÇÃO ============
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
