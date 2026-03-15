@@ -1,6 +1,8 @@
 package br.com.aguideptbr.features.userchoice;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,8 +10,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import br.com.aguideptbr.features.userchoice.enuns.ChannelAgeRange;
 import br.com.aguideptbr.features.userchoice.enuns.CommercialIntent;
+import br.com.aguideptbr.features.userchoice.enuns.ContentFormat;
 import br.com.aguideptbr.features.userchoice.enuns.CurrentSituation;
 import br.com.aguideptbr.features.userchoice.enuns.ImmigrationTimeframe;
+import br.com.aguideptbr.features.userchoice.enuns.InfoSource;
 import br.com.aguideptbr.features.userchoice.enuns.KnowledgeLevel;
 import br.com.aguideptbr.features.userchoice.enuns.MainDifficulty;
 import br.com.aguideptbr.features.userchoice.enuns.MainObjective;
@@ -20,8 +24,10 @@ import br.com.aguideptbr.features.userchoice.enuns.ServiceHiringIntent;
 import br.com.aguideptbr.features.userchoice.enuns.SubscriberRange;
 import br.com.aguideptbr.features.userchoice.enuns.UserProfileType;
 import br.com.aguideptbr.features.userchoice.enuns.VisaTypeInterest;
+import br.com.aguideptbr.util.StringListJsonConverter;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -136,16 +142,35 @@ public class UserChoiceModel extends PanacheEntityBase {
     public UserProfileType profileType;
 
     /**
-     * Nicho principal de interesse ou atuação do usuário.
+     * Nicho principal de interesse ou atuação do usuário (escopo macro da
+     * plataforma).
      *
      * EXEMPLOS:
-     * - "Imigração Portugal"
-     * - "Tecnologia"
-     * - "Educação Financeira"
-     * - "Lifestyle"
+     * - "Imigração Portugal" (nicho atual da plataforma)
+     * - "Tecnologia" (nicho futuro)
+     * - "Educação Financeira" (nicho futuro)
+     * - "Lifestyle" (nicho futuro)
      *
-     * FUTURO: Escalar para múltiplos nichos ou associar a uma tabela de nichos
-     * predefinidos.
+     * DIFERENÇA EM RELAÇÃO A 'mainNiche' (CREATOR):
+     * - nicheContext: Nicho MACRO da plataforma (ex: "Imigração Portugal")
+     * - mainNiche: Tema ESPECÍFICO do canal do criador (ex: "Visto D7 para
+     * aposentados")
+     *
+     * Exemplo prático:
+     * - nicheContext = "Imigração Portugal" (todos os usuários do nicho)
+     * - mainNiche = "Golden Visa e investimentos" (tema específico do canal
+     * CREATOR)
+     *
+     * IMPORTANTE:
+     * Este campo determina quais campos específicos de nicho são obrigatórios.
+     * Para nicho "Imigração Portugal", campos como visaTypeInterest e
+     * immigrationTimeframe
+     * são obrigatórios para CONSUMER. Para outros nichos futuros, esses campos
+     * podem
+     * ser opcionais.
+     *
+     * @see #mainNiche Para o tema específico do canal (CREATOR)
+     * @see #isImmigrationNiche() Helper para validação condicional por nicho
      */
     @Column(name = "niche_context", length = 200, nullable = false)
     public String nicheContext;
@@ -217,15 +242,35 @@ public class UserChoiceModel extends PanacheEntityBase {
     public MonetizationStatus monetizationStatus;
 
     /**
-     * Tema central do conteúdo produzido (texto livre).
+     * Tema central/específico do conteúdo produzido pelo criador (texto livre).
      *
-     * EXEMPLOS:
-     * - "Imigração para Portugal"
-     * - "Programação e tecnologia"
-     * - "Viagens e lifestyle"
-     * - "Educação financeira"
+     * EXEMPLOS (para nicho "Imigração Portugal"):
+     * - "Visto D7 para aposentados e pessoas com renda passiva"
+     * - "Golden Visa e investimentos imobiliários"
+     * - "Vida de brasileiro em Lisboa"
+     * - "Processo de reagrupamento familiar"
      *
-     * REGRA: Obrigatório se profileType = CREATOR, nulo se CONSUMER.
+     * DIFERENÇA EM RELAÇÃO A 'nicheContext':
+     * - nicheContext: Nicho MACRO da plataforma (ex: "Imigração Portugal") - Campo
+     * comum
+     * - mainNiche: Tema ESPECÍFICO do canal do criador (ex: "Visto D7") - Campo
+     * CREATOR
+     *
+     * Exemplo prático:
+     * - nicheContext = "Imigração Portugal" (mesmo para todos os usuários do nicho)
+     * - mainNiche = "Golden Visa e investimentos" (específico deste canal CREATOR)
+     *
+     * IMPORTANTE:
+     * - nicheContext é preenchido para CREATOR e CONSUMER (é o escopo da
+     * plataforma)
+     * - mainNiche é preenchido APENAS para CREATOR (é o tema do canal)
+     *
+     * @see #nicheContext Para o nicho macro da plataforma
+     * @since 1.0.0
+     * @apiNote Este campo auxilia no matching CONSUMER → CREATOR (match por tema
+     *          específico)
+     *
+     *          REGRA: Obrigatório se profileType = CREATOR, nulo se CONSUMER.
      */
     @Column(name = "main_niche", length = 200)
     public String mainNiche;
@@ -233,23 +278,31 @@ public class UserChoiceModel extends PanacheEntityBase {
     /**
      * Formatos de conteúdo produzidos (array serializado em JSON).
      *
-     * VALORES DE REFERÊNCIA (enviados pelo app Flutter):
-     * - VLOG
-     * - TUTORIAL
-     * - INTERVIEW
-     * - NEWS_ANALYSIS
-     * - SHORTS
-     * - OTHER
+     * VALORES PERMITIDOS: Definidos no enum ContentFormat
+     * - VLOG (vídeos estilo diário)
+     * - TUTORIAL (conteúdo educacional passo a passo)
+     * - INTERVIEW (entrevistas com especialistas)
+     * - NEWS_ANALYSIS (análise de notícias)
+     * - SHORTS (vídeos curtos)
+     * - OTHER (outros formatos)
      *
      * FORMATO ARMAZENADO:
      * '["VLOG", "TUTORIAL", "SHORTS"]'
      *
-     * FUTURO: Considerar usar PostgreSQL JSON/JSONB column ou tabela associativa.
+     * CONVERSÃO: Automática via StringListJsonConverter (List<String> ↔ JSON).
      *
-     * REGRA: Obrigatório se profileType = CREATOR, nulo se CONSUMER.
+     * VALIDAÇÃO: Use ContentFormat.isValidStringList(values) para validar valores
+     * antes de persistir no banco.
+     *
+     * @see ContentFormat Enum com valores permitidos e métodos de conversão
+     * @see StringListJsonConverter Conversor JPA utilizado
+     * @apiNote Criar validator @ValidContentFormats no DTO CreateUserChoiceRequest
+     *
+     *          REGRA: Obrigatório se profileType = CREATOR, nulo/vazio se CONSUMER.
      */
     @Column(name = "content_formats", columnDefinition = "TEXT")
-    public String contentFormats;
+    @Convert(converter = StringListJsonConverter.class)
+    public List<String> contentFormats;
 
     /**
      * Intenção comercial do criador na plataforma.
@@ -380,23 +433,31 @@ public class UserChoiceModel extends PanacheEntityBase {
     /**
      * Fontes de informação atuais do consumidor (array serializado em JSON).
      *
-     * VALORES DE REFERÊNCIA (enviados pelo app Flutter):
-     * - YOUTUBE
-     * - WHATSAPP_TELEGRAM
-     * - BLOGS
-     * - LAWYERS_CONSULTANTS
-     * - FORUMS
-     * - SOCIAL_MEDIA
+     * VALORES PERMITIDOS: Definidos no enum InfoSource
+     * - YOUTUBE (vídeos e canais)
+     * - WHATSAPP_TELEGRAM (grupos)
+     * - BLOGS (sites especializados)
+     * - LAWYERS_CONSULTANTS (profissionais especializados)
+     * - FORUMS (comunidades online)
+     * - SOCIAL_MEDIA (redes sociais)
      *
      * FORMATO ARMAZENADO:
      * '["YOUTUBE", "BLOGS", "FORUMS"]'
      *
-     * FUTURO: Considerar usar PostgreSQL JSON/JSONB column ou tabela associativa.
+     * CONVERSÃO: Automática via StringListJsonConverter (List<String> ↔ JSON).
      *
-     * REGRA: Obrigatório se profileType = CONSUMER, nulo se CREATOR.
+     * VALIDAÇÃO: Use InfoSource.isValidStringList(values) para validar valores
+     * antes de persistir no banco.
+     *
+     * @see InfoSource Enum com valores permitidos e métodos de conversão
+     * @see StringListJsonConverter Conversor JPA utilizado
+     * @apiNote Criar validator @ValidInfoSources no DTO CreateUserChoiceRequest
+     *
+     *          REGRA: Obrigatório se profileType = CONSUMER, nulo/vazio se CREATOR.
      */
     @Column(name = "current_info_sources", columnDefinition = "TEXT")
-    public String currentInfoSources;
+    @Convert(converter = StringListJsonConverter.class)
+    public List<String> currentInfoSources;
 
     /**
      * Maior dificuldade ao buscar informações sobre imigração.
@@ -540,36 +601,301 @@ public class UserChoiceModel extends PanacheEntityBase {
     }
 
     /**
+     * Verifica se o nicho atual é relacionado a imigração.
+     *
+     * CONTEXTO:
+     * Campos de imigração (visaTypeInterest, immigrationTimeframe) são
+     * obrigatórios APENAS para o nicho "Imigração Portugal".
+     * Quando a plataforma escalar para outros nichos (ex: "Tecnologia",
+     * "Investimentos"), esses campos serão opcionais.
+     *
+     * IMPLEMENTAÇÃO:
+     * Busca case-insensitive por "Imigração" ou "Immigration" no nicheContext.
+     *
+     * @return true se nicheContext indica nicho de imigração
+     * @apiNote Usado em validateConsumerFields() para validação condicional
+     */
+    private boolean isImmigrationNiche() {
+        if (nicheContext == null) {
+            return false;
+        }
+        String lowerNiche = nicheContext.toLowerCase();
+        return lowerNiche.contains("imigração") || lowerNiche.contains("immigration");
+    }
+
+    /**
      * Valida se campos obrigatórios do perfil CREATOR estão preenchidos.
      *
-     * IMPLEMENTAÇÃO FUTURA:
-     * public boolean validateCreatorFields() {
-     * if (profileType != UserProfileType.CREATOR) return false;
-     * return channelName != null && !channelName.isBlank()
-     * && channelHandle != null && !channelHandle.isBlank()
-     * && channelAgeRange != null
-     * && subscriberRange != null
-     * && monetizationStatus != null
-     * && publishingFrequency != null;
-     * }
+     * @return true se todos os campos obrigatórios de CREATOR estão válidos
      */
+    public boolean validateCreatorFields() {
+        if (profileType != UserProfileType.CREATOR) {
+            return false;
+        }
+
+        return channelName != null && !channelName.isBlank()
+                && channelHandle != null && !channelHandle.isBlank()
+                && channelAgeRange != null
+                && subscriberRange != null
+                && monetizationStatus != null
+                && mainNiche != null && !mainNiche.isBlank()
+                && contentFormats != null && !contentFormats.isEmpty()
+                && commercialIntent != null
+                && publishingFrequency != null;
+    }
 
     /**
      * Valida se campos obrigatórios do perfil CONSUMER estão preenchidos.
      *
-     * IMPLEMENTAÇÃO FUTURA:
-     * public boolean validateConsumerFields() {
-     * if (profileType != UserProfileType.CONSUMER) return false;
-     * return currentSituation != null
-     * && mainObjective != null
-     * && visaTypeInterest != null
-     * && knowledgeLevel != null
-     * && mainDifficulty != null
-     * && preferredContentType != null
-     * && serviceHiringIntent != null
-     * && immigrationTimeframe != null;
-     * }
+     * CAMPOS SEMPRE OBRIGATÓRIOS (qualquer nicho):
+     * - current Situation
+     * - mainObjective
+     * - knowledgeLevel
+     * - currentInfoSources
+     * - mainDifficulty
+     * - preferredContentType
+     * - serviceHiringIntent
+     *
+     * CAMPOS CONDICIONAIS (apenas para nicho de imigração):
+     * - visaTypeInterest (obrigatório se isImmigrationNiche())
+     * - immigrationTimeframe (obrigatório se isImmigrationNiche())
+     *
+     * ESCALABILIDADE:
+     * Quando adicionar nichos "Tecnologia", "Investimentos", etc., apenas
+     * os campos genéricos serão validados (visaTypeInterest e immigrationTimeframe
+     * ficam opcionais).
+     *
+     * @return true se todos os campos obrigatórios de CONSUMER estão válidos
      */
+    public boolean validateConsumerFields() {
+        if (profileType != UserProfileType.CONSUMER) {
+            return false;
+        }
+
+        // Validar campos genéricos (obrigatórios para qualquer nicho)
+        boolean genericFieldsValid = currentSituation != null
+                && mainObjective != null
+                && knowledgeLevel != null
+                && currentInfoSources != null && !currentInfoSources.isEmpty()
+                && mainDifficulty != null
+                && preferredContentType != null
+                && serviceHiringIntent != null;
+
+        if (!genericFieldsValid) {
+            return false;
+        }
+
+        // Validar campos específicos de imigração (se aplicável)
+        if (isImmigrationNiche()) {
+            boolean immigrationFieldsValid = visaTypeInterest != null
+                    && immigrationTimeframe != null;
+            return immigrationFieldsValid;
+        }
+
+        // Se não for nicho de imigração, campos genéricos são suficientes
+        return true;
+    }
+
+    /**
+     * Valida coerência lógica entre campos do perfil CONSUMER (nicho imigração).
+     *
+     * VALIDAÇÕES IMPLEMENTADAS:
+     * 1. ALREADY_IN_PORTUGAL: immigrationTimeframe deve ser NOT_PLANNING ou null
+     * (quem já está lá não planeja ir)
+     * 2. VISA_IN_PROGRESS: immigrationTimeframe NÃO pode ser NOT_PLANNING ou null
+     * (quem tem visto em processo está planejando)
+     * 3. NOT_PLANNING: currentSituation NÃO pode ser PLANNING_TO_IMMIGRATE ou
+     * VISA_IN_PROGRESS
+     * (sem planos não pode estar planejando ou com visto em processo)
+     * 4. ALREADY_IN_PORTUGAL + NOT_SURE_YET (visaTypeInterest): INCONSISTENTE
+     * (quem já está lá não pode estar indeciso sobre visto)
+     *
+     * CONTEXTO:
+     * Flutter permite combinações impossíveis se não houver validação condicional.
+     * Exemplo: Usuário seleciona "Já estou em Portugal" mas depois diz "Pretendo
+     * ir em menos de 6 meses".
+     *
+     * ESCALABILIDADE:
+     * Esta validação é específica do nicho "Imigração Portugal".
+     * Outros nichos (Tecnologia, Investimentos) não terão esses campos, então
+     * este método retornará lista vazia.
+     *
+     * @return Lista de erros lógicos (vazia se tudo ok)
+     * @apiNote Chamar em isValid() e getValidationErrors() para garantir coerência
+     */
+    public List<String> validateConsumerLogicalConsistency() {
+        List<String> logicalErrors = new ArrayList<>();
+
+        // Validação só aplica para CONSUMER no nicho imigração
+        if (profileType != UserProfileType.CONSUMER || !isImmigrationNiche()) {
+            return logicalErrors; // Lista vazia = sem erros
+        }
+
+        // VALIDAÇÃO 1: Já em Portugal → timeframe deve ser NOT_PLANNING ou null
+        if (currentSituation == CurrentSituation.ALREADY_IN_PORTUGAL) {
+            if (immigrationTimeframe != null && immigrationTimeframe != ImmigrationTimeframe.NOT_PLANNING) {
+                logicalErrors.add(
+                        "Inconsistência: currentSituation=ALREADY_IN_PORTUGAL mas immigrationTimeframe indica planejamento futuro ("
+                                + immigrationTimeframe + "). Esperado: NOT_PLANNING ou null.");
+            }
+        }
+
+        // VALIDAÇÃO 2: Visto em processo → timeframe NÃO pode ser NOT_PLANNING
+        if (currentSituation == CurrentSituation.VISA_IN_PROGRESS) {
+            if (immigrationTimeframe == null || immigrationTimeframe == ImmigrationTimeframe.NOT_PLANNING) {
+                logicalErrors.add(
+                        "Inconsistência: currentSituation=VISA_IN_PROGRESS mas immigrationTimeframe=" +
+                                immigrationTimeframe + ". Esperado: prazo definido (LESS_THAN_6_MONTHS, etc.).");
+            }
+        }
+
+        // VALIDAÇÃO 3: Timeframe NOT_PLANNING → currentSituation coerente
+        if (immigrationTimeframe == ImmigrationTimeframe.NOT_PLANNING) {
+            if (currentSituation == CurrentSituation.PLANNING_TO_IMMIGRATE
+                    || currentSituation == CurrentSituation.VISA_IN_PROGRESS) {
+                logicalErrors.add(
+                        "Inconsistência: immigrationTimeframe=NOT_PLANNING mas currentSituation indica planejamento ativo ("
+                                + currentSituation + ").");
+            }
+        }
+
+        // VALIDAÇÃO 4: Já em Portugal → visto NÃO pode ser NOT_SURE_YET
+        if (currentSituation == CurrentSituation.ALREADY_IN_PORTUGAL) {
+            if (visaTypeInterest == VisaTypeInterest.NOT_SURE_YET) {
+                logicalErrors.add(
+                        "Inconsistência: currentSituation=ALREADY_IN_PORTUGAL mas visaTypeInterest=NOT_SURE_YET. "
+                                + "Quem já está em Portugal deveria saber o tipo de visto de interesse.");
+            }
+        }
+
+        return logicalErrors;
+    }
+
+    /**
+     * Valida se a entidade está completa (campos comuns + campos específicos do
+     * perfil).
+     *
+     * VALIDAÇÕES REALIZADAS:
+     * 1. Campos comuns (userId, profileType, nicheContext)
+     * 2. Campos específicos por perfil
+     * (validateCreatorFields/validateConsumerFields)
+     * 3. Coerência lógica CONSUMER (validateConsumerLogicalConsistency)
+     *
+     * @return true se a entidade está válida
+     */
+    public boolean isValid() {
+        // Validar campos comuns
+        if (userId == null || profileType == null || nicheContext == null || nicheContext.isBlank()) {
+            return false;
+        }
+
+        // Validar campos específicos por perfil
+        if (profileType == UserProfileType.CREATOR) {
+            return validateCreatorFields();
+        } else if (profileType == UserProfileType.CONSUMER) {
+            // Validar presença de campos obrigatórios
+            if (!validateConsumerFields()) {
+                return false;
+            }
+            // Validar coerência lógica (CONSUMER no nicho imigração)
+            return validateConsumerLogicalConsistency().isEmpty();
+        }
+
+        return false;
+    }
+
+    /**
+     * Retorna lista de erros de validação (útil para debugging).
+     *
+     * TIPOS DE ERROS RETORNADOS:
+     * 1. Campos obrigatórios ausentes/vazios
+     * 2. Erros lógicos (CONSUMER: validateConsumerLogicalConsistency)
+     *
+     * @return Lista de campos inválidos e inconsistências lógicas
+     */
+    public List<String> getValidationErrors() {
+        List<String> errors = new ArrayList<>();
+
+        // Validar campos comuns
+        if (userId == null) {
+            errors.add("userId is required");
+        }
+        if (profileType == null) {
+            errors.add("profileType is required");
+        }
+        if (nicheContext == null || nicheContext.isBlank()) {
+            errors.add("nicheContext is required");
+        }
+
+        // Validar campos específicos por perfil
+        if (profileType == UserProfileType.CREATOR) {
+            if (channelName == null || channelName.isBlank()) {
+                errors.add("channelName is required for CREATOR");
+            }
+            if (channelHandle == null || channelHandle.isBlank()) {
+                errors.add("channelHandle is required for CREATOR");
+            }
+            if (channelAgeRange == null) {
+                errors.add("channelAgeRange is required for CREATOR");
+            }
+            if (subscriberRange == null) {
+                errors.add("subscriberRange is required for CREATOR");
+            }
+            if (monetizationStatus == null) {
+                errors.add("monetizationStatus is required for CREATOR");
+            }
+            if (mainNiche == null || mainNiche.isBlank()) {
+                errors.add("mainNiche is required for CREATOR");
+            }
+            if (contentFormats == null || contentFormats.isEmpty()) {
+                errors.add("contentFormats is required for CREATOR");
+            }
+            if (commercialIntent == null) {
+                errors.add("commercialIntent is required for CREATOR");
+            }
+            if (publishingFrequency == null) {
+                errors.add("publishingFrequency is required for CREATOR");
+            }
+        } else if (profileType == UserProfileType.CONSUMER) {
+            // Validar campos genéricos (obrigatórios para qualquer nicho)
+            if (currentSituation == null) {
+                errors.add("currentSituation is required for CONSUMER");
+            }
+            if (mainObjective == null) {
+                errors.add("mainObjective is required for CONSUMER");
+            }
+            if (knowledgeLevel == null) {
+                errors.add("knowledgeLevel is required for CONSUMER");
+            }
+            if (currentInfoSources == null || currentInfoSources.isEmpty()) {
+                errors.add("currentInfoSources is required for CONSUMER");
+            }
+            if (mainDifficulty == null) {
+                errors.add("mainDifficulty is required for CONSUMER");
+            }
+            if (preferredContentType == null) {
+                errors.add("preferredContentType is required for CONSUMER");
+            }
+            if (serviceHiringIntent == null) {
+                errors.add("serviceHiringIntent is required for CONSUMER");
+            }
+
+            // Validar campos específicos de imigração (condicionais)
+            if (isImmigrationNiche()) {
+                if (visaTypeInterest == null) {
+                    errors.add("visaTypeInterest is required for CONSUMER in immigration niche");
+                }
+                if (immigrationTimeframe == null) {
+                    errors.add("immigrationTimeframe is required for CONSUMER in immigration niche");
+                }
+            }
+
+            // Adicionar erros de coerência lógica
+            errors.addAll(validateConsumerLogicalConsistency());
+        }
+
+        return errors;
+    }
 
     // ========== QUERIES ÚTEIS (IMPLEMENTAR EM UserChoiceRepository) ==========
 
