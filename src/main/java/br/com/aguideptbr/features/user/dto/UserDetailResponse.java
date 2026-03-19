@@ -28,6 +28,9 @@ public class UserDetailResponse {
     private Boolean active;
     private String fullName;
     private List<PhoneSummaryDTO> phones;
+    private String youtubeUserId;
+    private String youtubeChannelId;
+    private String youtubeChannelTitle;
 
     public UserDetailResponse(UserModel user) {
         this.id = user.id;
@@ -45,6 +48,9 @@ public class UserDetailResponse {
         this.phones = user.phoneNumbers.stream()
                 .map(PhoneSummaryDTO::new)
                 .toList();
+        this.youtubeUserId = user.youtubeUserId;
+        this.youtubeChannelId = user.youtubeChannelId;
+        this.youtubeChannelTitle = user.youtubeChannelTitle;
     }
 
     // Getters e Setters
@@ -151,5 +157,29 @@ public class UserDetailResponse {
 
     public void setPhones(List<PhoneSummaryDTO> phones) {
         this.phones = phones;
+    }
+
+    public String getYoutubeUserId() {
+        return youtubeUserId;
+    }
+
+    public void setYoutubeUserId(String youtubeUserId) {
+        this.youtubeUserId = youtubeUserId;
+    }
+
+    public String getYoutubeChannelId() {
+        return youtubeChannelId;
+    }
+
+    public void setYoutubeChannelId(String youtubeChannelId) {
+        this.youtubeChannelId = youtubeChannelId;
+    }
+
+    public String getYoutubeChannelTitle() {
+        return youtubeChannelTitle;
+    }
+
+    public void setYoutubeChannelTitle(String youtubeChannelTitle) {
+        this.youtubeChannelTitle = youtubeChannelTitle;
     }
 }
