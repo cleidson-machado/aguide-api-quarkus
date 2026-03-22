@@ -19,177 +19,144 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
 /**
- * Represents a user engagement record with content in the database.
- * Tracks interactions such as views, likes, shares, bookmarks, and comments.
- * This class utilizes the Active Record pattern provided by Panache.
+ * Entidade para armazenar HISTÓRICO DE NAVEGAÇÃO e INTERAÇÕES do usuário com
+ * conteúdos.
+ *
+ * 🎯 OBJETIVO PRINCIPAL:
+ * - Rastrear TODOS os vídeos que o usuário clicou e navegou no app Flutter
+ * - Medir tempo de visualização e percentual de conclusão
+ * - Identificar padrões de consumo de conteúdo
+ * - Suportar algoritmos de recomendação baseados no histórico
+ *
+ * 📱 CASOS DE USO NO APP FLUTTER:
+ * 1. Histórico de "Vídeos Assistidos Recentemente"
+ * 2. Analytics de comportamento do usuário (tempo médio de visualização)
+ * 3. Controle de "quantas vezes o usuário assistiu este vídeo" (repeatCount)
+ * 4. Likes/Dislikes/Bookmarks/Compartilhamentos
+ * 5. Sistema de comentários com engagementType=COMMENT
+ *
+ * 🔗 RELACIONAMENTOS:
+ * - userId → FK para tabela users
+ * - contentId → FK para tabela content_records
+ *
+ * @author Cleidson Machado
+ * @since 1.0
  */
 @Entity
 @Table(name = "content_engagement_log")
 public class ContentEngagementModel extends PanacheEntityBase {
 
-    // ========== IDENTIFICAÇÃO ============
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    public UUID id;
+    public UUID id; // PK do registro de engajamento
 
-    // ========== REFERÊNCIAS (sem relacionamento JPA por enquanto) ==========
-    /**
-     * ID do usuário que realizou o engajamento
-     */
-    @Column(name = "user_id", nullable = false)
-    public UUID userId;
+    // ══════════════════════════════════════════════════════════════
+    // 🔗 RELACIONAMENTOS (Foreign Keys)
+    // ══════════════════════════════════════════════════════════════
+    @Column(name = "user_id", nullable = true)
+    public UUID userId; // FK → users (qual usuário interagiu) - Aceita nulo
 
-    /**
-     * ID do conteúdo com o qual houve engajamento
-     */
-    @Column(name = "content_id", nullable = false)
-    public UUID contentId;
+    @Column(name = "content_id", nullable = true)
+    public UUID contentId; // FK → content_records (qual vídeo/conteúdo foi acessado) - Aceita nulo
 
-    // ========== TIPO E STATUS DO ENGAJAMENTO ==========
-    /**
-     * Tipo de engajamento (VIEW, LIKE, SHARE, etc.)
-     */
+    // ══════════════════════════════════════════════════════════════
+    // 📊 TIPO E STATUS DA INTERAÇÃO
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "engagement_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    public EngagementType engagementType;
+    public EngagementType engagementType; // VIEW, LIKE, DISLIKE, SHARE, BOOKMARK, COMMENT, COMPLETE, PARTIAL_VIEW,
+                                          // CLICK_TO_VIEW
 
-    /**
-     * Status do engajamento (ACTIVE, REMOVED, EXPIRED, FLAGGED)
-     */
     @Column(name = "engagement_status", nullable = false)
     @Enumerated(EnumType.STRING)
-    public EngagementStatus engagementStatus;
+    public EngagementStatus engagementStatus; // ACTIVE, REMOVED, EXPIRED, FLAGGED
 
-    // ========== MÉTRICAS DE ENGAJAMENTO ==========
-    /**
-     * Duração de visualização em segundos (para VIEW e PARTIAL_VIEW)
-     */
+    // ══════════════════════════════════════════════════════════════
+    // 🎥 DADOS DE VISUALIZAÇÃO DE VÍDEO (Histórico de Navegação)
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "view_duration_seconds")
-    public Integer viewDurationSeconds;
+    public Integer viewDurationSeconds; // Tempo que assistiu em segundos (ex: 300s = 5 minutos)
 
-    /**
-     * Percentual de conclusão do conteúdo (0-100)
-     */
     @Column(name = "completion_percentage")
-    public Integer completionPercentage;
+    public Integer completionPercentage; // Percentual de conclusão (0-100%, ex: 75% = assistiu até 75%)
 
-    /**
-     * Quantidade de vezes que este engajamento foi repetido
-     * Exemplo: usuário assiste o vídeo 3 vezes
-     */
     @Column(name = "repeat_count", columnDefinition = "INT DEFAULT 1")
-    public Integer repeatCount = 1;
+    public Integer repeatCount = 1; // Quantas vezes clicou/assistiu esse vídeo
 
-    // ========== INFORMAÇÕES CONTEXTUAIS ==========
-    /**
-     * Dispositivo usado (MOBILE, WEB, TABLET, TV)
-     */
+    // ══════════════════════════════════════════════════════════════
+    // 📱 CONTEXTO TÉCNICO DO ACESSO (Device/Platform)
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "device_type", length = 20)
-    public String deviceType;
+    public String deviceType; // Tipo de dispositivo (mobile, tablet, web)
 
-    /**
-     * Plataforma do dispositivo (ANDROID, IOS, WEB)
-     */
     @Column(name = "platform", length = 20)
-    public String platform;
+    public String platform; // Sistema operacional (Android, iOS, web)
 
-    /**
-     * Origem do engajamento (FEED, SEARCH, RECOMMENDATION, DIRECT, SHARE)
-     */
     @Column(name = "source", length = 50)
-    public String source;
+    public String source; // De onde veio (home, search, recommendations, profile)
 
-    /**
-     * IP do usuário (para análise de fraude)
-     */
     @Column(name = "user_ip", length = 45)
-    public String userIp;
+    public String userIp; // IP do usuário (IPv4 ou IPv6)
 
-    /**
-     * User agent do navegador/app
-     */
     @Column(name = "user_agent", columnDefinition = "TEXT")
-    public String userAgent;
+    public String userAgent; // User agent do navegador/app Flutter
 
-    // ========== DADOS ADICIONAIS ==========
-    /**
-     * Campo livre para metadados em JSON
-     * Exemplo: localização geográfica, configurações de qualidade, etc.
-     */
+    // ══════════════════════════════════════════════════════════════
+    // 💬 DADOS ADICIONAIS DE ENGAJAMENTO
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "metadata", columnDefinition = "TEXT")
-    public String metadata;
+    public String metadata; // Dados extras em JSON (informações customizadas)
 
-    /**
-     * Texto do comentário (se engagementType = COMMENT)
-     */
     @Column(name = "comment_text", columnDefinition = "TEXT")
-    public String commentText;
+    public String commentText; // Texto do comentário (usado quando engagementType = COMMENT)
 
-    /**
-     * Rating/nota dada ao conteúdo (1-5 estrelas, se aplicável)
-     */
     @Column(name = "rating")
-    public Integer rating;
+    public Integer rating; // Avaliação numérica (ex: 1-5 estrelas)
 
-    // ========== TIMESTAMPS DE EVENTOS ==========
-    /**
-     * Data/hora em que o engajamento começou
-     */
+    // ══════════════════════════════════════════════════════════════
+    // ⏱️ TIMESTAMPS DE ENGAJAMENTO
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "engaged_at", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime engagedAt;
+    private LocalDateTime engagedAt; // Quando começou a interação (clicou no vídeo)
 
-    /**
-     * Data/hora em que o engajamento foi finalizado/removido
-     */
     @Column(name = "ended_at")
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime endedAt;
+    private LocalDateTime endedAt; // Quando terminou/saiu do vídeo
 
-    // ========== AUDITORIA - DATA E HORA DE CRIAÇÃO E ATUALIZAÇÃO ============
+    // ══════════════════════════════════════════════════════════════
+    // 📝 AUDITORIA (timestamps automáticos)
+    // ══════════════════════════════════════════════════════════════
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // Data de criação do registro
 
     @Column(name = "updated_at")
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // Última atualização do registro
 
-    /**
-     * Automatically sets the creation timestamp before persisting the entity.
-     * This method is called by JPA before the entity is inserted into the database.
-     */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
 
-        // Se engaged_at não foi definido, usar o momento da criação
         if (engagedAt == null) {
             engagedAt = LocalDateTime.now();
         }
 
-        // Status padrão como ACTIVE se não definido
         if (engagementStatus == null) {
             engagementStatus = EngagementStatus.ACTIVE;
         }
 
-        // Repeat count padrão
         if (repeatCount == null) {
             repeatCount = 1;
         }
     }
 
-    /**
-     * Automatically updates the modification timestamp before updating the entity.
-     * This method is called by JPA before the entity is updated in the database.
-     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    // ========== GETTERS E SETTERS PARA TIMESTAMPS ==========
 
     public LocalDateTime getEngagedAt() {
         return engagedAt;
@@ -215,92 +182,35 @@ public class ContentEngagementModel extends PanacheEntityBase {
         return updatedAt;
     }
 
-    // ========== MÉTODOS DE BUSCA ==========
-
-    /**
-     * Finds all engagements by user ID.
-     *
-     * @param userId The user ID to search for.
-     * @return A list of ContentEngagementModel matching the user.
-     */
     public static List<ContentEngagementModel> findByUserId(UUID userId) {
         return list("userId", userId);
     }
 
-    /**
-     * Finds all engagements by content ID.
-     *
-     * @param contentId The content ID to search for.
-     * @return A list of ContentEngagementModel matching the content.
-     */
     public static List<ContentEngagementModel> findByContentId(UUID contentId) {
         return list("contentId", contentId);
     }
 
-    /**
-     * Finds all engagements by user and content.
-     *
-     * @param userId    The user ID.
-     * @param contentId The content ID.
-     * @return A list of ContentEngagementModel matching both user and content.
-     */
     public static List<ContentEngagementModel> findByUserAndContent(UUID userId, UUID contentId) {
         return list("userId = ?1 and contentId = ?2", userId, contentId);
     }
 
-    /**
-     * Finds all active engagements by user and content.
-     *
-     * @param userId    The user ID.
-     * @param contentId The content ID.
-     * @return A list of active ContentEngagementModel.
-     */
     public static List<ContentEngagementModel> findActiveByUserAndContent(UUID userId, UUID contentId) {
         return list("userId = ?1 and contentId = ?2 and engagementStatus = ?3",
                 userId, contentId, EngagementStatus.ACTIVE);
     }
 
-    /**
-     * Finds engagements by type.
-     *
-     * @param engagementType The engagement type to search for.
-     * @return A list of ContentEngagementModel matching the type.
-     */
     public static List<ContentEngagementModel> findByType(EngagementType engagementType) {
         return list("engagementType", engagementType);
     }
 
-    /**
-     * Finds engagements by user and type.
-     *
-     * @param userId         The user ID.
-     * @param engagementType The engagement type.
-     * @return A list of ContentEngagementModel matching user and type.
-     */
     public static List<ContentEngagementModel> findByUserAndType(UUID userId, EngagementType engagementType) {
         return list("userId = ?1 and engagementType = ?2", userId, engagementType);
     }
 
-    /**
-     * Finds engagements by content and type.
-     *
-     * @param contentId      The content ID.
-     * @param engagementType The engagement type.
-     * @return A list of ContentEngagementModel matching content and type.
-     */
     public static List<ContentEngagementModel> findByContentAndType(UUID contentId, EngagementType engagementType) {
         return list("contentId = ?1 and engagementType = ?2", contentId, engagementType);
     }
 
-    /**
-     * Finds active engagements by user, content, and type.
-     * Useful to check if a specific engagement already exists.
-     *
-     * @param userId         The user ID.
-     * @param contentId      The content ID.
-     * @param engagementType The engagement type.
-     * @return The found ContentEngagementModel, or null if not found.
-     */
     public static ContentEngagementModel findActiveEngagement(UUID userId, UUID contentId,
             EngagementType engagementType) {
         return find("userId = ?1 and contentId = ?2 and engagementType = ?3 and engagementStatus = ?4",
@@ -308,45 +218,19 @@ public class ContentEngagementModel extends PanacheEntityBase {
                 .firstResult();
     }
 
-    /**
-     * Counts total engagements for a specific content.
-     *
-     * @param contentId The content ID.
-     * @return The count of engagements.
-     */
     public static long countByContent(UUID contentId) {
         return count("contentId = ?1 and engagementStatus = ?2", contentId, EngagementStatus.ACTIVE);
     }
 
-    /**
-     * Counts engagements of a specific type for a content.
-     *
-     * @param contentId      The content ID.
-     * @param engagementType The engagement type.
-     * @return The count of engagements.
-     */
     public static long countByContentAndType(UUID contentId, EngagementType engagementType) {
         return count("contentId = ?1 and engagementType = ?2 and engagementStatus = ?3",
                 contentId, engagementType, EngagementStatus.ACTIVE);
     }
 
-    /**
-     * Finds all engagements by status.
-     *
-     * @param status The engagement status to search for.
-     * @return A list of ContentEngagementModel matching the status.
-     */
     public static List<ContentEngagementModel> findByStatus(EngagementStatus status) {
         return list("engagementStatus", status);
     }
 
-    /**
-     * Finds engagements created within a date range.
-     *
-     * @param startDate The start date.
-     * @param endDate   The end date.
-     * @return A list of ContentEngagementModel within the date range.
-     */
     public static List<ContentEngagementModel> findByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         return list("createdAt >= ?1 and createdAt <= ?2", startDate, endDate);
     }
