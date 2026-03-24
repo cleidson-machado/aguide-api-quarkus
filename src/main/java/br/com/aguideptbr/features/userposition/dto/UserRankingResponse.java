@@ -1,118 +1,81 @@
-package br.com.aguideptbr.features.userposition;
+package br.com.aguideptbr.features.userposition.dto;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import br.com.aguideptbr.features.userposition.UserRankingModel;
 
-import br.com.aguideptbr.features.userposition.enuns.ConversionPotential;
-import br.com.aguideptbr.features.userposition.enuns.EngagementLevel;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+/**
+ * DTO de resposta para dados de ranking de usuário.
+ * Inclui todas as métricas de engajamento e conversão.
+ */
+public class UserRankingResponse {
 
-@Entity
-@Table(name = "app_user_ranking")
-public class UserRankingModel extends PanacheEntityBase {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-
-    @Column(name = "user_id", nullable = false)
     private UUID userId;
-
-    @Column(name = "total_score", nullable = false)
-    private Integer totalScore = 0;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "engagement_level", length = 20, nullable = false)
-    private EngagementLevel engagementLevel = EngagementLevel.LOW;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "conversion_potential", length = 20, nullable = false)
-    private ConversionPotential conversionPotential = ConversionPotential.VERY_LOW;
-
-    @Column(name = "total_content_views", nullable = false)
-    private Long totalContentViews = 0L;
-
-    @Column(name = "unique_content_views", nullable = false)
-    private Long uniqueContentViews = 0L;
-
-    @Column(name = "avg_daily_usage_minutes", nullable = false)
-    private Integer avgDailyUsageMinutes = 0;
-
-    @Column(name = "consecutive_days_streak", nullable = false)
-    private Integer consecutiveDaysStreak = 0;
-
-    @Column(name = "total_active_days", nullable = false)
-    private Long totalActiveDays = 0L;
-
-    @Column(name = "total_messages_sent", nullable = false)
-    private Long totalMessagesSent = 0L;
-
-    @Column(name = "total_conversations_started", nullable = false)
-    private Long totalConversationsStarted = 0L;
-
-    @Column(name = "unique_contacts_messaged", nullable = false)
-    private Long uniqueContactsMessaged = 0L;
-
-    @Column(name = "active_conversations", nullable = false)
-    private Integer activeConversations = 0;
-
-    @Column(name = "has_phones", nullable = false)
-    private Boolean hasPhones = false;
-
-    @Column(name = "total_phones", nullable = false)
-    private Integer totalPhones = 0;
-
-    @Column(name = "has_whatsapp", nullable = false)
-    private Boolean hasWhatsapp = false;
-
-    @Column(name = "has_telegram", nullable = false)
-    private Boolean hasTelegram = false;
-
-    @Column(name = "last_activity_at")
+    private Integer totalScore;
+    private String engagementLevel;
+    private String conversionPotential;
+    private Long totalContentViews;
+    private Long uniqueContentViews;
+    private Integer avgDailyUsageMinutes;
+    private Integer consecutiveDaysStreak;
+    private Long totalActiveDays;
+    private Long totalMessagesSent;
+    private Long totalConversationsStarted;
+    private Long uniqueContactsMessaged;
+    private Integer activeConversations;
+    private Boolean hasPhones;
+    private Integer totalPhones;
+    private Boolean hasWhatsapp;
+    private Boolean hasTelegram;
     private LocalDateTime lastActivityAt;
-
-    @Column(name = "last_content_view_at")
     private LocalDateTime lastContentViewAt;
-
-    @Column(name = "last_message_sent_at")
     private LocalDateTime lastMessageSentAt;
-
-    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
-
-    @Column(name = "favorite_category", length = 100)
     private String favoriteCategory;
-
-    @Column(name = "favorite_content_type", length = 50)
     private String favoriteContentType;
-
-    @Column(name = "preferred_usage_time", length = 20)
     private String preferredUsageTime;
-
-    @Column(name = "score_updated_at")
     private LocalDateTime scoreUpdatedAt;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    private Boolean active;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    public UserRankingResponse() {
+    }
+
+    public UserRankingResponse(UserRankingModel model) {
+        this.id = model.getId();
+        this.userId = model.getUserId();
+        this.totalScore = model.getTotalScore();
+        this.engagementLevel = model.getEngagementLevel() != null ? model.getEngagementLevel().name() : null;
+        this.conversionPotential = model.getConversionPotential() != null ? model.getConversionPotential().name()
+                : null;
+        this.totalContentViews = model.getTotalContentViews();
+        this.uniqueContentViews = model.getUniqueContentViews();
+        this.avgDailyUsageMinutes = model.getAvgDailyUsageMinutes();
+        this.consecutiveDaysStreak = model.getConsecutiveDaysStreak();
+        this.totalActiveDays = model.getTotalActiveDays();
+        this.totalMessagesSent = model.getTotalMessagesSent();
+        this.totalConversationsStarted = model.getTotalConversationsStarted();
+        this.uniqueContactsMessaged = model.getUniqueContactsMessaged();
+        this.activeConversations = model.getActiveConversations();
+        this.hasPhones = model.getHasPhones();
+        this.totalPhones = model.getTotalPhones();
+        this.hasWhatsapp = model.getHasWhatsapp();
+        this.hasTelegram = model.getHasTelegram();
+        this.lastActivityAt = model.getLastActivityAt();
+        this.lastContentViewAt = model.getLastContentViewAt();
+        this.lastMessageSentAt = model.getLastMessageSentAt();
+        this.lastLoginAt = model.getLastLoginAt();
+        this.favoriteCategory = model.getFavoriteCategory();
+        this.favoriteContentType = model.getFavoriteContentType();
+        this.preferredUsageTime = model.getPreferredUsageTime();
+        this.scoreUpdatedAt = model.getScoreUpdatedAt();
+        this.createdAt = model.getCreatedAt();
+        this.updatedAt = model.getUpdatedAt();
+        this.active = model.isActive();
+    }
 
     // Getters and Setters
 
@@ -140,19 +103,19 @@ public class UserRankingModel extends PanacheEntityBase {
         this.totalScore = totalScore;
     }
 
-    public EngagementLevel getEngagementLevel() {
+    public String getEngagementLevel() {
         return engagementLevel;
     }
 
-    public void setEngagementLevel(EngagementLevel engagementLevel) {
+    public void setEngagementLevel(String engagementLevel) {
         this.engagementLevel = engagementLevel;
     }
 
-    public ConversionPotential getConversionPotential() {
+    public String getConversionPotential() {
         return conversionPotential;
     }
 
-    public void setConversionPotential(ConversionPotential conversionPotential) {
+    public void setConversionPotential(String conversionPotential) {
         this.conversionPotential = conversionPotential;
     }
 
@@ -340,25 +303,11 @@ public class UserRankingModel extends PanacheEntityBase {
         this.updatedAt = updatedAt;
     }
 
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
+    public Boolean getActive() {
+        return active;
     }
 
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
-    // Business methods
-
-    public boolean isActive() {
-        return deletedAt == null;
-    }
-
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public void restore() {
-        this.deletedAt = null;
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 }
