@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.userposition.enuns.ConversionPotential;
 import br.com.aguideptbr.features.userposition.enuns.EngagementLevel;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -31,10 +32,22 @@ public class UserRankingService {
 
     private final Logger log;
     private final UserRankingRepository userRankingRepository;
+    private final UserRankingAuditRepository auditRepository;
 
-    public UserRankingService(Logger log, UserRankingRepository userRankingRepository) {
+    // Constantes de validação
+    private static final int MAX_TOTAL_SCORE = 9_999_999;
+    private static final int MAX_STREAK_DAYS = 9999; // ~27 anos
+    private static final int MAX_POINTS_PER_REQUEST = 1000;
+    private static final long TIMESTAMP_TOLERANCE_MINUTES = 5; // 5 minutos no futuro
+    private static final long TIMESTAMP_MAX_PAST_HOURS = 24; // 24 horas no passado
+
+    public UserRankingService(
+            Logger log,
+            UserRankingRepository userRankingRepository,
+            UserRankingAuditRepository auditRepository) {
         this.log = log;
         this.userRankingRepository = userRankingRepository;
+        this.auditRepository = auditRepository;
     }
 
     /**
@@ -95,6 +108,19 @@ public class UserRankingService {
     public Optional<UserRankingModel> findByUserId(UUID userId) {
         log.infof("🔍 Finding ranking by userId: %s", userId);
         return userRankingRepository.findByUserId(userId);
+    }
+
+    /**
+     * Busca o histórico de adição de pontos de um usuário.
+     *
+     * @param userId ID do usuário
+     * @param limit  Quantidade máxima de registros (default: 10)
+     * @return Lista de registros de pontos ordenados por data (mais recente
+     *         primeiro)
+     */
+    public List<UserRankingAuditModel> findPointsHistory(UUID userId, int limit) {
+        log.infof("📜 Finding points history for userId=%s, limit=%d", userId, limit);
+        return auditRepository.findPointsHistoryByUserId(userId, limit);
     }
 
     /**
@@ -176,6 +202,7 @@ public class UserRankingService {
             existing.setAvgDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
         }
         if (updatedData.getConsecutiveDaysStreak() != null) {
+            validateConsecutiveDaysStreak(updatedData.getConsecutiveDaysStreak());
             existing.setConsecutiveDaysStreak(updatedData.getConsecutiveDaysStreak());
         }
         if (updatedData.getTotalActiveDays() != null) {
@@ -206,15 +233,19 @@ public class UserRankingService {
             existing.setHasTelegram(updatedData.getHasTelegram());
         }
         if (updatedData.getLastActivityAt() != null) {
+            validateTimestamp(updatedData.getLastActivityAt(), "lastActivityAt");
             existing.setLastActivityAt(updatedData.getLastActivityAt());
         }
         if (updatedData.getLastContentViewAt() != null) {
+            validateTimestamp(updatedData.getLastContentViewAt(), "lastContentViewAt");
             existing.setLastContentViewAt(updatedData.getLastContentViewAt());
         }
         if (updatedData.getLastMessageSentAt() != null) {
+            validateTimestamp(updatedData.getLastMessageSentAt(), "lastMessageSentAt");
             existing.setLastMessageSentAt(updatedData.getLastMessageSentAt());
         }
         if (updatedData.getLastLoginAt() != null) {
+            validateTimestamp(updatedData.getLastLoginAt(), "lastLoginAt");
             existing.setLastLoginAt(updatedData.getLastLoginAt());
         }
         if (updatedData.getFavoriteCategory() != null) {
@@ -348,18 +379,68 @@ public class UserRankingService {
     }
 
     /**
-     * Incrementa a pontuação de um usuário.
+     * Incrementa a pontuação de um usuário com proteção contra race conditions.
      *
      * @param userId ID do usuário
-     * @param points Pontos a adicionar
+     * @param points Pontos a adicionar (deve ser positivo)
      * @return UserRankingModel atualizado
      * @throws WebApplicationException (404) se ranking não encontrado
+     * @throws WebApplicationException (400) se pontos inválidos ou limites
+     *                                 excedidos
      */
     @Transactional
     public UserRankingModel addPoints(UUID userId, int points) {
-        log.infof("➕ Adding %d points to user: userId=%s", points, userId);
+        return addPoints(userId, points, null, null, null, null);
+    }
 
-        UserRankingModel ranking = userRankingRepository.findByUserId(userId)
+    /**
+     * Incrementa a pontuação de um usuário com auditoria completa.
+     *
+     * @param userId       ID do usuário
+     * @param points       Pontos a adicionar (deve ser positivo)
+     * @param pointsReason Motivo da adição (daily_login, 7day_bonus, etc.)
+     * @param ipAddress    IP do cliente (para auditoria)
+     * @param userAgent    User-Agent do cliente (para auditoria)
+     * @param requestId    Correlation ID (para rastreamento)
+     * @return UserRankingModel atualizado
+     * @throws WebApplicationException (404) se ranking não encontrado
+     * @throws WebApplicationException (400) se pontos inválidos ou limites
+     *                                 excedidos
+     */
+    @Transactional
+    public UserRankingModel addPoints(
+            UUID userId,
+            int points,
+            String pointsReason,
+            String ipAddress,
+            String userAgent,
+            String requestId) {
+        log.infof("➕ Adding %d points to user: userId=%s, reason=%s", points, userId, pointsReason);
+
+        // Validação 1: Pontos devem ser positivos
+        if (points <= 0) {
+            log.warnf("⚠️ Attempt to add non-positive points: %d", points);
+            throw new WebApplicationException(
+                    "Points must be positive",
+                    Response.Status.BAD_REQUEST);
+        }
+
+        // Validação 2: Pontos por requisição não podem exceder o limite
+        if (points > MAX_POINTS_PER_REQUEST) {
+            log.warnf("⚠️ Points exceed maximum allowed per request: %d > %d", points, MAX_POINTS_PER_REQUEST);
+            throw new WebApplicationException(
+                    String.format("Points per request cannot exceed %d", MAX_POINTS_PER_REQUEST),
+                    Response.Status.BAD_REQUEST);
+        }
+
+        // Buscar ranking com PESSIMISTIC_WRITE lock (previne race conditions)
+        UserRankingModel ranking = userRankingRepository.getEntityManager()
+                .createQuery("SELECT r FROM UserRankingModel r WHERE r.userId = :userId AND r.deletedAt IS NULL",
+                        UserRankingModel.class)
+                .setParameter("userId", userId)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultStream()
+                .findFirst()
                 .orElseThrow(() -> {
                     log.warnf("⚠️ Ranking not found for userId: %s", userId);
                     return new WebApplicationException(
@@ -367,15 +448,99 @@ public class UserRankingService {
                             Response.Status.NOT_FOUND);
                 });
 
-        ranking.setTotalScore(ranking.getTotalScore() + points);
+        // Validação 3: Score total não pode exceder o limite
+        int oldScore = ranking.getTotalScore();
+        int newScore = oldScore + points;
+        if (newScore > MAX_TOTAL_SCORE) {
+            log.warnf("⚠️ Total score would exceed maximum: %d + %d = %d > %d",
+                    oldScore, points, newScore, MAX_TOTAL_SCORE);
+            throw new WebApplicationException(
+                    String.format("Total score cannot exceed %,d", MAX_TOTAL_SCORE),
+                    Response.Status.BAD_REQUEST);
+        }
+
+        ranking.setTotalScore(newScore);
         calculateEngagementLevel(ranking);
         calculateConversionPotential(ranking);
         ranking.setScoreUpdatedAt(LocalDateTime.now());
 
         userRankingRepository.persist(ranking);
 
-        log.infof("✅ Points added: userId=%s, newScore=%d", userId, ranking.getTotalScore());
+        // Registrar auditoria
+        UserRankingAuditModel audit = UserRankingAuditModel.forAddPoints(
+                ranking.getId(),
+                userId,
+                points,
+                pointsReason,
+                ipAddress,
+                userAgent,
+                requestId);
+        auditRepository.persist(audit);
+
+        log.infof("✅ Points added: userId=%s, oldScore=%d, newScore=%d, reason=%s",
+                userId, oldScore, newScore, pointsReason);
 
         return ranking;
+    }
+
+    /**
+     * Valida timestamps para garantir que estão dentro de limites razoáveis.
+     *
+     * @param timestamp Timestamp a validar
+     * @param fieldName Nome do campo (para mensagem de erro)
+     * @throws WebApplicationException (400) se timestamp inválido
+     */
+    private void validateTimestamp(LocalDateTime timestamp, String fieldName) {
+        if (timestamp == null) {
+            return; // Null é permitido (campo opcional)
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime maxFuture = now.plusMinutes(TIMESTAMP_TOLERANCE_MINUTES);
+        LocalDateTime minPast = now.minusHours(TIMESTAMP_MAX_PAST_HOURS);
+
+        if (timestamp.isAfter(maxFuture)) {
+            log.warnf("⚠️ Timestamp is too far in the future: %s = %s (max: %s)",
+                    fieldName, timestamp, maxFuture);
+            throw new WebApplicationException(
+                    String.format("%s cannot be in the future (received: %s)", fieldName, timestamp),
+                    Response.Status.BAD_REQUEST);
+        }
+
+        if (timestamp.isBefore(minPast)) {
+            log.warnf("⚠️ Timestamp is too far in the past: %s = %s (min: %s)",
+                    fieldName, timestamp, minPast);
+            throw new WebApplicationException(
+                    String.format("%s cannot be more than %d hours in the past",
+                            fieldName, TIMESTAMP_MAX_PAST_HOURS),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida consecutiveDaysStreak para garantir que está dentro de limites
+     * razoáveis.
+     *
+     * @param streak Streak a validar
+     * @throws WebApplicationException (400) se streak inválido
+     */
+    private void validateConsecutiveDaysStreak(Integer streak) {
+        if (streak == null) {
+            return; // Null é tratado como 0
+        }
+
+        if (streak < 0) {
+            log.warnf("⚠️ Negative streak not allowed: %d", streak);
+            throw new WebApplicationException(
+                    "Consecutive days streak cannot be negative",
+                    Response.Status.BAD_REQUEST);
+        }
+
+        if (streak > MAX_STREAK_DAYS) {
+            log.warnf("⚠️ Streak exceeds maximum allowed: %d > %d", streak, MAX_STREAK_DAYS);
+            throw new WebApplicationException(
+                    String.format("Consecutive days streak cannot exceed %d days", MAX_STREAK_DAYS),
+                    Response.Status.BAD_REQUEST);
+        }
     }
 }

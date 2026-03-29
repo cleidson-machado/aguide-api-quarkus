@@ -6,10 +6,12 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.userposition.dto.CreateUserRankingRequest;
+import br.com.aguideptbr.features.userposition.dto.PointsHistoryResponse;
 import br.com.aguideptbr.features.userposition.dto.UpdateUserRankingRequest;
 import br.com.aguideptbr.features.userposition.dto.UserRankingResponse;
 import br.com.aguideptbr.features.userposition.enuns.ConversionPotential;
 import br.com.aguideptbr.features.userposition.enuns.EngagementLevel;
+import br.com.aguideptbr.util.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -22,6 +24,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -109,13 +113,22 @@ public class UserRankingController {
      *
      * GET /api/v1/user-rankings/user/{userId}
      *
-     * @param userId ID do usuário
+     * SECURITY: Valida que userId corresponde ao usuário autenticado no JWT.
+     *
+     * @param userId  ID do usuário
+     * @param headers HTTP headers (para extração do JWT)
      * @return Ranking do usuário
      */
     @GET
     @Path("/user/{userId}")
-    public Response findByUserId(@PathParam("userId") UUID userId) {
+    public Response findByUserId(
+            @PathParam("userId") UUID userId,
+            @Context HttpHeaders headers) {
         log.infof("GET /api/v1/user-rankings/user/%s", userId);
+
+        // Validação de segurança: userId deve corresponder ao token JWT
+        String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        SecurityUtils.validateUserIdMatchesToken(userId, authHeader);
 
         return userRankingService.findByUserId(userId)
                 .map(UserRankingResponse::new)
@@ -292,16 +305,24 @@ public class UserRankingController {
      *
      * POST /api/v1/user-rankings/user/{userId}/add-points?points=50
      *
-     * @param userId ID do usuário
-     * @param points Pontos a adicionar (pode ser negativo para remover)
+     * SECURITY: Valida que userId corresponde ao usuário autenticado no JWT.
+     *
+     * @param userId  ID do usuário
+     * @param points  Pontos a adicionar (deve ser positivo)
+     * @param headers HTTP headers (para extração do JWT)
      * @return Ranking atualizado
      */
     @POST
     @Path("/user/{userId}/add-points")
     public Response addPoints(
             @PathParam("userId") UUID userId,
-            @QueryParam("points") @DefaultValue("0") int points) {
+            @QueryParam("points") @DefaultValue("0") int points,
+            @Context HttpHeaders headers) {
         log.infof("POST /api/v1/user-rankings/user/%s/add-points?points=%d", userId, points);
+
+        // Validação de segurança: userId deve corresponder ao token JWT
+        String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        SecurityUtils.validateUserIdMatchesToken(userId, authHeader);
 
         if (points == 0) {
             throw new WebApplicationException(
@@ -322,6 +343,62 @@ public class UserRankingController {
             throw e;
         } catch (Exception e) {
             log.errorf(e, "❌ Error adding points: %s", e.getMessage());
+            throw new WebApplicationException(
+                    "Internal server error",
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Busca histórico de adição de pontos de um usuário.
+     *
+     * GET /api/v1/user-rankings/user/{userId}/points-history?limit=10
+     *
+     * Retorna lista de todas as adições de pontos com timestamp, motivo e score
+     * após cada adição.
+     * SECURITY: Valida que userId corresponde ao usuário autenticado no JWT.
+     *
+     * @param userId  ID do usuário
+     * @param limit   Quantidade máxima de registros (default: 10, max: 100)
+     * @param headers HTTP headers (para extração do JWT)
+     * @return Lista de histórico de pontos
+     */
+    @GET
+    @Path("/user/{userId}/points-history")
+    public Response getPointsHistory(
+            @PathParam("userId") UUID userId,
+            @QueryParam("limit") @DefaultValue("10") int limit,
+            @Context HttpHeaders headers) {
+        log.infof("GET /api/v1/user-rankings/user/%s/points-history?limit=%d", userId, limit);
+
+        // Validação de segurança: userId deve corresponder ao token JWT
+        String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        SecurityUtils.validateUserIdMatchesToken(userId, authHeader);
+
+        // Limitar query entre 1 e 100 registros
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+
+        try {
+            List<UserRankingAuditModel> auditRecords = userRankingService.findPointsHistory(userId, safeLimit);
+
+            // Converter para DTO de resposta
+            List<PointsHistoryResponse> history = auditRecords.stream()
+                    .map(audit -> new PointsHistoryResponse(
+                            audit.getCreatedAt(),
+                            audit.getPointsAdded(),
+                            audit.getPointsReason(),
+                            null, // totalScoreAfter - seria necessário buscar do ranking no momento
+                            audit.getIpAddress()))
+                    .toList();
+
+            log.infof("✅ Found %d points history records for userId=%s", history.size(), userId);
+            return Response.ok(history).build();
+
+        } catch (WebApplicationException e) {
+            log.warnf("⚠️ Failed to fetch points history: %s", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.errorf(e, "❌ Error fetching points history: %s", e.getMessage());
             throw new WebApplicationException(
                     "Internal server error",
                     Response.Status.INTERNAL_SERVER_ERROR);
