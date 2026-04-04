@@ -196,13 +196,14 @@ public class UserRankingService {
                             Response.Status.NOT_FOUND);
                 });
 
-        // Atualizar campos
-        if (updatedData.getTotalScore() != null) {
-            existing.setTotalScore(updatedData.getTotalScore());
-        }
+        // Score é gerenciado separadamente (addPoints, milestones) - não atualizar
+        // diretamente
 
-        // Capturar valor anterior de totalContentViews para detecção de milestones
+        // Capturar valores anteriores para detecção de milestones
         Long previousContentViews = existing.getTotalContentViews();
+        Integer previousProfileCompletion = existing.getProfileCompletionPercentage() != null
+                ? existing.getProfileCompletionPercentage()
+                : 0;
 
         if (updatedData.getTotalContentViews() != null) {
             validateNonNegative(updatedData.getTotalContentViews(), "totalContentViews");
@@ -294,6 +295,57 @@ public class UserRankingService {
             checkContentViewsMilestones(existing.getUserId(), previousContentViews, existing.getTotalContentViews());
         }
 
+        // Verificar milestones de completude de perfil (após persistência)
+        if (updatedData.getProfileCompletionPercentage() != null) {
+            Integer previousPercentage = previousProfileCompletion;
+            int currentPercentage = updatedData.getProfileCompletionPercentage();
+            int totalPointsAdded = 0;
+
+            // Verificar milestone de 50%
+            if (previousPercentage < 50 && currentPercentage >= 50) {
+                existing.setTotalScore(existing.getTotalScore() + 3);
+                existing.setScoreUpdatedAt(LocalDateTime.now());
+                totalPointsAdded += 3;
+
+                // Criar auditoria específica para milestone 50%
+                UserRankingAuditModel audit50 = UserRankingAuditModel.forAddPoints(
+                        existing.getId(),
+                        existing.getUserId(),
+                        3,
+                        "PROFILE_50_PERCENT",
+                        null, null, null);
+                auditRepository.persist(audit50);
+
+                log.infof("🎯 Profile 50%% milestone reached: +3 points (totalScore: %d)",
+                        existing.getTotalScore());
+            }
+
+            // Verificar milestone de 100%
+            if (previousPercentage < 100 && currentPercentage >= 100) {
+                existing.setTotalScore(existing.getTotalScore() + 10);
+                existing.setScoreUpdatedAt(LocalDateTime.now());
+                totalPointsAdded += 10;
+
+                // Criar auditoria específica para milestone 100%
+                UserRankingAuditModel audit100 = UserRankingAuditModel.forAddPoints(
+                        existing.getId(),
+                        existing.getUserId(),
+                        10,
+                        "PROFILE_100_PERCENT",
+                        null, null, null);
+                auditRepository.persist(audit100);
+
+                log.infof("🎯 Profile 100%% milestone reached: +10 points (totalScore: %d)",
+                        existing.getTotalScore());
+            }
+
+            // Persistir se houve alguma alteração de pontos
+            if (totalPointsAdded > 0) {
+                userRankingRepository.persist(existing);
+                log.infof("🎯 Profile completion milestones applied: +%d total points", totalPointsAdded);
+            }
+        }
+
         log.infof("✅ Ranking updated successfully: id=%s, totalScore=%d", id, existing.getTotalScore());
 
         return existing;
@@ -305,6 +357,7 @@ public class UserRankingService {
      * @param id ID do ranking
      * @throws WebApplicationException (404) se ranking não encontrado
      */
+
     @Transactional
     public void softDelete(UUID id) {
         log.infof("🗑️ Soft deleting ranking: id=%s", id);
@@ -730,5 +783,66 @@ public class UserRankingService {
             log.infof("🎯 Milestone reached: 100 content views for userId=%s", userId);
             addPoints(userId, 25, "CONTENT_VIEWS_100", null, null, null);
         }
+    }
+
+    /**
+     * Verifica se o usuário atingiu milestones de completude de perfil
+     * e adiciona pontos automaticamente quando thresholds são cruzados.
+     *
+     * Milestones (Phase B):
+     * - 50% de completude: +3 pontos
+     * - 100% de completude: +10 pontos
+     *
+     * IMPORTANTE: Pontos são adicionados apenas em transições ASCENDENTES
+     * /**
+     * Calcula quantos pontos devem ser adicionados baseado em milestones de
+     * completude de perfil.
+     *
+     * Milestones (Phase B):
+     * - 50% de completude: +3 pontos
+     * - 100% de completude: +10 pontos
+     *
+     * IMPORTANTE: Pontos são adicionados apenas em transições ASCENDENTES
+     * (old < threshold AND new >= threshold). Se o percentual diminuir,
+     * nenhum ponto é adicionado.
+     *
+     * @param previousPercentage Percentual anterior de completude (0-100)
+     * @param currentPercentage  Percentual atual de completude (0-100)
+     * @return Total de pontos a adicionar (0, 3, 10 ou 13)
+     */
+    private int calculateProfileCompletionMilestonePoints(
+            Integer previousPercentage,
+            Integer currentPercentage) {
+        if (previousPercentage == null) {
+            previousPercentage = 0;
+        }
+        if (currentPercentage == null) {
+            currentPercentage = 0;
+        }
+
+        log.debugf("📊 Checking profile completion milestones: previous=%d%%, current=%d%%",
+                previousPercentage, currentPercentage);
+
+        int pointsToAdd = 0;
+
+        // Milestone: 50% de completude → +3 pontos
+        if (previousPercentage < 50 && currentPercentage >= 50) {
+            log.infof("🎯 Milestone reached: 50%% profile completion (+3 points)");
+            pointsToAdd += 3;
+        }
+
+        // Milestone: 100% de completude → +10 pontos
+        if (previousPercentage < 100 && currentPercentage >= 100) {
+            log.infof("🎯 Milestone reached: 100%% profile completion (+10 points)");
+            pointsToAdd += 10;
+        }
+
+        // Detectar inconsistências (opcional, apenas para debug)
+        if (currentPercentage < previousPercentage) {
+            log.warnf("⚠️ Profile completion percentage decreased: %d%% → %d%% (no points removed)",
+                    previousPercentage, currentPercentage);
+        }
+
+        return pointsToAdd;
     }
 }
