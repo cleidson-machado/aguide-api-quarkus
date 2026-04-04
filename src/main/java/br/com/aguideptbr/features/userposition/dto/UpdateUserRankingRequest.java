@@ -2,6 +2,9 @@ package br.com.aguideptbr.features.userposition.dto;
 
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+
 /**
  * DTO para atualização de ranking de usuário.
  * Todos os campos são opcionais (atualização parcial).
@@ -30,6 +33,10 @@ public class UpdateUserRankingRequest {
     private String favoriteCategory;
     private String favoriteContentType;
     private String preferredUsageTime;
+
+    @Min(value = 0, message = "Profile completion percentage must be at least 0")
+    @Max(value = 100, message = "Profile completion percentage must not exceed 100")
+    private Integer profileCompletionPercentage;
 
     // Getters and Setters
 
@@ -199,5 +206,13 @@ public class UpdateUserRankingRequest {
 
     public void setPreferredUsageTime(String preferredUsageTime) {
         this.preferredUsageTime = preferredUsageTime;
+    }
+
+    public Integer getProfileCompletionPercentage() {
+        return profileCompletionPercentage;
+    }
+
+    public void setProfileCompletionPercentage(Integer profileCompletionPercentage) {
+        this.profileCompletionPercentage = profileCompletionPercentage;
     }
 }

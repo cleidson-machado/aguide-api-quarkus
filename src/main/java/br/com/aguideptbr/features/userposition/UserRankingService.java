@@ -3,6 +3,7 @@ package br.com.aguideptbr.features.userposition;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.jboss.logging.Logger;
@@ -40,6 +41,13 @@ public class UserRankingService {
     private static final int MAX_POINTS_PER_REQUEST = 1000;
     private static final long TIMESTAMP_TOLERANCE_MINUTES = 5; // 5 minutos no futuro
     private static final long TIMESTAMP_MAX_PAST_HOURS = 24; // 24 horas no passado
+    private static final int MAX_DAILY_USAGE_MINUTES = 1440; // 24 horas * 60 minutos
+    private static final int MAX_PROFILE_COMPLETION_PERCENTAGE = 100;
+    private static final int MIN_PROFILE_COMPLETION_PERCENTAGE = 0;
+
+    // Enum de tipos de conteúdo permitidos (Phase B)
+    private static final Set<String> VALID_CONTENT_TYPES = Set.of(
+            "video", "article", "course", "tutorial", "guide");
 
     public UserRankingService(
             Logger log,
@@ -192,13 +200,20 @@ public class UserRankingService {
         if (updatedData.getTotalScore() != null) {
             existing.setTotalScore(updatedData.getTotalScore());
         }
+
+        // Capturar valor anterior de totalContentViews para detecção de milestones
+        Long previousContentViews = existing.getTotalContentViews();
+
         if (updatedData.getTotalContentViews() != null) {
+            validateNonNegative(updatedData.getTotalContentViews(), "totalContentViews");
             existing.setTotalContentViews(updatedData.getTotalContentViews());
         }
         if (updatedData.getUniqueContentViews() != null) {
+            validateNonNegative(updatedData.getUniqueContentViews(), "uniqueContentViews");
             existing.setUniqueContentViews(updatedData.getUniqueContentViews());
         }
         if (updatedData.getAvgDailyUsageMinutes() != null) {
+            validateDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
             existing.setAvgDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
         }
         if (updatedData.getConsecutiveDaysStreak() != null) {
@@ -249,13 +264,20 @@ public class UserRankingService {
             existing.setLastLoginAt(updatedData.getLastLoginAt());
         }
         if (updatedData.getFavoriteCategory() != null) {
+            validateStringLength(updatedData.getFavoriteCategory(), 100, "favoriteCategory");
             existing.setFavoriteCategory(updatedData.getFavoriteCategory());
         }
         if (updatedData.getFavoriteContentType() != null) {
+            validateStringLength(updatedData.getFavoriteContentType(), 50, "favoriteContentType");
+            validateContentType(updatedData.getFavoriteContentType());
             existing.setFavoriteContentType(updatedData.getFavoriteContentType());
         }
         if (updatedData.getPreferredUsageTime() != null) {
             existing.setPreferredUsageTime(updatedData.getPreferredUsageTime());
+        }
+        if (updatedData.getProfileCompletionPercentage() != null) {
+            validateProfileCompletionPercentage(updatedData.getProfileCompletionPercentage());
+            existing.setProfileCompletionPercentage(updatedData.getProfileCompletionPercentage());
         }
 
         // Recalcular métricas
@@ -264,6 +286,13 @@ public class UserRankingService {
         existing.setScoreUpdatedAt(LocalDateTime.now());
 
         userRankingRepository.persist(existing);
+
+        // Verificar milestones de visualização de conteúdo (após persistência para
+        // evitar duplicação)
+        if (updatedData.getTotalContentViews() != null
+                && !updatedData.getTotalContentViews().equals(previousContentViews)) {
+            checkContentViewsMilestones(existing.getUserId(), previousContentViews, existing.getTotalContentViews());
+        }
 
         log.infof("✅ Ranking updated successfully: id=%s, totalScore=%d", id, existing.getTotalScore());
 
@@ -333,18 +362,23 @@ public class UserRankingService {
      * - LOW: demais casos
      */
     private void calculateEngagementLevel(UserRankingModel ranking) {
-        if (ranking.getTotalScore() >= 1000 || ranking.getConsecutiveDaysStreak() >= 30) {
+        // Garantir valores não-nulos para evitar NullPointerException
+        int totalScore = ranking.getTotalScore() != null ? ranking.getTotalScore() : 0;
+        int consecutiveDaysStreak = ranking.getConsecutiveDaysStreak() != null ? ranking.getConsecutiveDaysStreak() : 0;
+        long totalContentViews = ranking.getTotalContentViews() != null ? ranking.getTotalContentViews() : 0L;
+
+        if (totalScore >= 1000 || consecutiveDaysStreak >= 30) {
             ranking.setEngagementLevel(EngagementLevel.VERY_HIGH);
-        } else if (ranking.getTotalScore() >= 500 || ranking.getConsecutiveDaysStreak() >= 14) {
+        } else if (totalScore >= 500 || consecutiveDaysStreak >= 14) {
             ranking.setEngagementLevel(EngagementLevel.HIGH);
-        } else if (ranking.getTotalScore() >= 100 || ranking.getTotalContentViews() >= 50) {
+        } else if (totalScore >= 100 || totalContentViews >= 50) {
             ranking.setEngagementLevel(EngagementLevel.MEDIUM);
         } else {
             ranking.setEngagementLevel(EngagementLevel.LOW);
         }
 
-        log.debugf("Calculated engagement level: %s (score=%d, streak=%d)",
-                ranking.getEngagementLevel(), ranking.getTotalScore(), ranking.getConsecutiveDaysStreak());
+        log.debugf("Calculated engagement level: %s (score=%d, streak=%d, views=%d)",
+                ranking.getEngagementLevel(), totalScore, consecutiveDaysStreak, totalContentViews);
     }
 
     /**
@@ -541,6 +575,160 @@ public class UserRankingService {
             throw new WebApplicationException(
                     String.format("Consecutive days streak cannot exceed %d days", MAX_STREAK_DAYS),
                     Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida valores não-negativos (totalContentViews, uniqueContentViews, etc.).
+     *
+     * @param value     Valor a validar
+     * @param fieldName Nome do campo (para mensagem de erro)
+     * @throws WebApplicationException (400) se valor for negativo
+     */
+    private void validateNonNegative(Long value, String fieldName) {
+        if (value == null) {
+            return; // Null é permitido
+        }
+
+        if (value < 0) {
+            log.warnf("⚠️ Negative value not allowed for %s: %d", fieldName, value);
+            throw new WebApplicationException(
+                    String.format("%s cannot be negative", fieldName),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida avgDailyUsageMinutes (0 a 1440 minutos).
+     *
+     * @param minutes Minutos de uso diário
+     * @throws WebApplicationException (400) se valor inválido
+     */
+    private void validateDailyUsageMinutes(Integer minutes) {
+        if (minutes == null) {
+            return; // Null é permitido
+        }
+
+        if (minutes < 0) {
+            log.warnf("⚠️ Negative usage minutes not allowed: %d", minutes);
+            throw new WebApplicationException(
+                    "Average daily usage minutes cannot be negative",
+                    Response.Status.BAD_REQUEST);
+        }
+
+        if (minutes > MAX_DAILY_USAGE_MINUTES) {
+            log.warnf("⚠️ Usage minutes exceed 24 hours: %d > %d", minutes, MAX_DAILY_USAGE_MINUTES);
+            throw new WebApplicationException(
+                    String.format("Average daily usage minutes cannot exceed %d (24 hours)", MAX_DAILY_USAGE_MINUTES),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida profileCompletionPercentage (0 a 100).
+     *
+     * @param percentage Percentual de conclusão do perfil
+     * @throws WebApplicationException (400) se valor inválido
+     */
+    private void validateProfileCompletionPercentage(Integer percentage) {
+        if (percentage == null) {
+            return; // Null é permitido
+        }
+
+        if (percentage < MIN_PROFILE_COMPLETION_PERCENTAGE || percentage > MAX_PROFILE_COMPLETION_PERCENTAGE) {
+            log.warnf("⚠️ Profile completion percentage out of range: %d (allowed: %d-%d)",
+                    percentage, MIN_PROFILE_COMPLETION_PERCENTAGE, MAX_PROFILE_COMPLETION_PERCENTAGE);
+            throw new WebApplicationException(
+                    String.format("Profile completion percentage must be between %d and %d",
+                            MIN_PROFILE_COMPLETION_PERCENTAGE, MAX_PROFILE_COMPLETION_PERCENTAGE),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida comprimento de strings.
+     *
+     * @param value     String a validar
+     * @param maxLength Comprimento máximo permitido
+     * @param fieldName Nome do campo (para mensagem de erro)
+     * @throws WebApplicationException (400) se string exceder o limite
+     */
+    private void validateStringLength(String value, int maxLength, String fieldName) {
+        if (value == null) {
+            return; // Null é permitido
+        }
+
+        if (value.length() > maxLength) {
+            log.warnf("⚠️ String length exceeds maximum for %s: %d > %d", fieldName, value.length(), maxLength);
+            throw new WebApplicationException(
+                    String.format("%s must not exceed %d characters", fieldName, maxLength),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Valida se o tipo de conteúdo favorito é um dos valores permitidos.
+     *
+     * PHASE B: Frontend solicitou validação enum para favoriteContentType.
+     * Valores válidos: video, article, course, tutorial, guide
+     *
+     * @param contentType Tipo de conteúdo a validar
+     * @throws WebApplicationException (400) se tipo inválido
+     */
+    private void validateContentType(String contentType) {
+        if (contentType == null) {
+            return; // Null é permitido
+        }
+
+        String normalizedType = contentType.toLowerCase().trim();
+        if (!VALID_CONTENT_TYPES.contains(normalizedType)) {
+            log.warnf("⚠️ Invalid content type: %s (allowed: %s)", contentType, VALID_CONTENT_TYPES);
+            throw new WebApplicationException(
+                    String.format("favoriteContentType must be one of: %s", String.join(", ", VALID_CONTENT_TYPES)),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Verifica se o usuário atingiu milestones de visualização de conteúdo
+     * e adiciona pontos automaticamente quando thresholds são cruzados.
+     *
+     * Milestones:
+     * - 10 visualizações: +2 pontos
+     * - 50 visualizações: +10 pontos
+     * - 100 visualizações: +25 pontos
+     *
+     * @param userId        ID do usuário
+     * @param previousViews Quantidade anterior de visualizações
+     * @param currentViews  Quantidade atual de visualizações
+     */
+    private void checkContentViewsMilestones(UUID userId, Long previousViews, Long currentViews) {
+        if (previousViews == null) {
+            previousViews = 0L;
+        }
+        if (currentViews == null) {
+            currentViews = 0L;
+        }
+
+        log.debugf("📊 Checking content views milestones: userId=%s, previous=%d, current=%d",
+                userId, previousViews, currentViews);
+
+        // Milestone: 10 visualizações
+        if (previousViews < 10 && currentViews >= 10) {
+            log.infof("🎯 Milestone reached: 10 content views for userId=%s", userId);
+            addPoints(userId, 2, "CONTENT_VIEWS_10", null, null, null);
+        }
+
+        // Milestone: 50 visualizações
+        if (previousViews < 50 && currentViews >= 50) {
+            log.infof("🎯 Milestone reached: 50 content views for userId=%s", userId);
+            addPoints(userId, 10, "CONTENT_VIEWS_50", null, null, null);
+        }
+
+        // Milestone: 100 visualizações
+        if (previousViews < 100 && currentViews >= 100) {
+            log.infof("🎯 Milestone reached: 100 content views for userId=%s", userId);
+            addPoints(userId, 25, "CONTENT_VIEWS_100", null, null, null);
         }
     }
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
+import br.com.aguideptbr.features.userposition.dto.AddPointsRequest;
 import br.com.aguideptbr.features.userposition.dto.CreateUserRankingRequest;
 import br.com.aguideptbr.features.userposition.dto.PointsHistoryResponse;
 import br.com.aguideptbr.features.userposition.dto.UpdateUserRankingRequest;
@@ -303,39 +304,90 @@ public class UserRankingController {
     /**
      * Adiciona pontos ao ranking de um usuário.
      *
-     * POST /api/v1/user-rankings/user/{userId}/add-points?points=50
+     * POST /api/v1/user-rankings/user/{userId}/add-points
+     *
+     * BACKWARD COMPATIBILITY: Suporta dois formatos:
+     * 1. Body JSON (Phase B): {"points": 50, "reason": "DAILY_LOGIN"}
+     * 2. Query param (Phase A): ?points=50 (reason será "UNSPECIFIED")
      *
      * SECURITY: Valida que userId corresponde ao usuário autenticado no JWT.
      *
-     * @param userId  ID do usuário
-     * @param points  Pontos a adicionar (deve ser positivo)
-     * @param headers HTTP headers (para extração do JWT)
+     * @param userId           ID do usuário
+     * @param request          Requisição com pontos e motivo (reason opcional, pode
+     *                         ser null se usar query param)
+     * @param pointsQueryParam Pontos via query param (para compatibilidade com
+     *                         Phase A)
+     * @param headers          HTTP headers (para extração do JWT, IP e User-Agent)
      * @return Ranking atualizado
      */
     @POST
     @Path("/user/{userId}/add-points")
     public Response addPoints(
             @PathParam("userId") UUID userId,
-            @QueryParam("points") @DefaultValue("0") int points,
+            AddPointsRequest request,
+            @QueryParam("points") Integer pointsQueryParam,
             @Context HttpHeaders headers) {
-        log.infof("POST /api/v1/user-rankings/user/%s/add-points?points=%d", userId, points);
+
+        // BACKWARD COMPATIBILITY: Aceita query param ou body JSON
+        Integer points;
+        String reason;
+
+        if (pointsQueryParam != null) {
+            // Formato antigo (Phase A): query param
+            points = pointsQueryParam;
+            reason = "UNSPECIFIED";
+            log.infof("POST /api/v1/user-rankings/user/%s/add-points (legacy format: points=%d)",
+                    userId, points);
+        } else if (request != null && request.getPoints() != null) {
+            // Formato novo (Phase B): body JSON
+            points = request.getPoints();
+            reason = request.getReason();
+            log.infof("POST /api/v1/user-rankings/user/%s/add-points (points=%d, reason=%s)",
+                    userId, points, reason);
+        } else {
+            log.warn("⚠️ No points provided in query param or body");
+            throw new WebApplicationException(
+                    "Points must be provided either in query param (?points=50) or body JSON ({\"points\": 50, \"reason\": \"DAILY_LOGIN\"})",
+                    Response.Status.BAD_REQUEST);
+        }
+
+        // Validação Jakarta Bean Validation (quando usar body JSON)
+        if (request != null && pointsQueryParam == null) {
+            // Validar points range (1-1000)
+            if (points < 1 || points > 1000) {
+                throw new WebApplicationException(
+                        "Points must be between 1 and 1000",
+                        Response.Status.BAD_REQUEST);
+            }
+            // Validar reason length (max 100)
+            if (reason != null && reason.length() > 100) {
+                throw new WebApplicationException(
+                        "Reason must not exceed 100 characters",
+                        Response.Status.BAD_REQUEST);
+            }
+        }
 
         // Validação de segurança: userId deve corresponder ao token JWT
         String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
         SecurityUtils.validateUserIdMatchesToken(userId, authHeader);
 
-        if (points == 0) {
-            throw new WebApplicationException(
-                    "Points parameter is required and must be non-zero",
-                    Response.Status.BAD_REQUEST);
-        }
+        // Extrair metadata HTTP para auditoria
+        String ipAddress = extractIpAddress(headers);
+        String userAgent = headers.getHeaderString(HttpHeaders.USER_AGENT);
+        String requestId = UUID.randomUUID().toString();
 
         try {
-            UserRankingModel updated = userRankingService.addPoints(userId, points);
+            UserRankingModel updated = userRankingService.addPoints(
+                    userId,
+                    points,
+                    reason,
+                    ipAddress,
+                    userAgent,
+                    requestId);
             UserRankingResponse response = new UserRankingResponse(updated);
 
-            log.infof("✅ Points added successfully: userId=%s, points=%d, newScore=%d",
-                    userId, points, updated.getTotalScore());
+            log.infof("✅ Points added successfully: userId=%s, points=%d, reason=%s, newScore=%d, requestId=%s",
+                    userId, points, reason, updated.getTotalScore(), requestId);
             return Response.ok(response).build();
 
         } catch (WebApplicationException e) {
@@ -347,6 +399,33 @@ public class UserRankingController {
                     "Internal server error",
                     Response.Status.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Extrai o endereço IP do cliente a partir dos headers HTTP.
+     * Verifica primeiro X-Forwarded-For (para proxies/load balancers),
+     * depois X-Real-IP, e finalmente usa o IP da conexão direta.
+     *
+     * @param headers HTTP headers
+     * @return Endereço IP do cliente ou "unknown"
+     */
+    private String extractIpAddress(HttpHeaders headers) {
+        // Verificar X-Forwarded-For (usado por proxies/load balancers)
+        String xForwardedFor = headers.getHeaderString("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            // Pegar o primeiro IP da lista (cliente original)
+            return xForwardedFor.split(",")[0].trim();
+        }
+
+        // Verificar X-Real-IP (usado por alguns proxies)
+        String xRealIp = headers.getHeaderString("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp.trim();
+        }
+
+        // Fallback: IP desconhecido (não há forma confiável de obter via JAX-RS sem
+        // injetar ServletRequest)
+        return "unknown";
     }
 
     /**

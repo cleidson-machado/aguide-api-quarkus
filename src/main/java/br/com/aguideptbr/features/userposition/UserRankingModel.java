@@ -100,6 +100,9 @@ public class UserRankingModel extends PanacheEntityBase {
     @Column(name = "preferred_usage_time", length = 20)
     private String preferredUsageTime;
 
+    @Column(name = "profile_completion_percentage", nullable = false)
+    private Integer profileCompletionPercentage = 0;
+
     @Column(name = "score_updated_at")
     private LocalDateTime scoreUpdatedAt;
 
@@ -314,6 +317,14 @@ public class UserRankingModel extends PanacheEntityBase {
 
     public void setPreferredUsageTime(String preferredUsageTime) {
         this.preferredUsageTime = preferredUsageTime;
+    }
+
+    public Integer getProfileCompletionPercentage() {
+        return profileCompletionPercentage;
+    }
+
+    public void setProfileCompletionPercentage(Integer profileCompletionPercentage) {
+        this.profileCompletionPercentage = profileCompletionPercentage;
     }
 
     public LocalDateTime getScoreUpdatedAt() {
