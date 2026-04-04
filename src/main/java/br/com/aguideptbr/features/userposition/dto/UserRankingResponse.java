@@ -36,6 +36,7 @@ public class UserRankingResponse {
     private String favoriteCategory;
     private String favoriteContentType;
     private String preferredUsageTime;
+    private Integer profileCompletionPercentage;
     private LocalDateTime scoreUpdatedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -71,6 +72,7 @@ public class UserRankingResponse {
         this.favoriteCategory = model.getFavoriteCategory();
         this.favoriteContentType = model.getFavoriteContentType();
         this.preferredUsageTime = model.getPreferredUsageTime();
+        this.profileCompletionPercentage = model.getProfileCompletionPercentage();
         this.scoreUpdatedAt = model.getScoreUpdatedAt();
         this.createdAt = model.getCreatedAt();
         this.updatedAt = model.getUpdatedAt();
@@ -277,6 +279,14 @@ public class UserRankingResponse {
 
     public void setPreferredUsageTime(String preferredUsageTime) {
         this.preferredUsageTime = preferredUsageTime;
+    }
+
+    public Integer getProfileCompletionPercentage() {
+        return profileCompletionPercentage;
+    }
+
+    public void setProfileCompletionPercentage(Integer profileCompletionPercentage) {
+        this.profileCompletionPercentage = profileCompletionPercentage;
     }
 
     public LocalDateTime getScoreUpdatedAt() {
