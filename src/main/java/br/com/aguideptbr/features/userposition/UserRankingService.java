@@ -362,6 +362,57 @@ public class UserRankingService {
             }
         }
 
+        // Verificar milestones de completude de perfil (após persistência)
+        if (updatedData.getProfileCompletionPercentage() != null) {
+            Integer previousPercentage = previousProfileCompletion;
+            int currentPercentage = updatedData.getProfileCompletionPercentage();
+            int totalPointsAdded = 0;
+
+            // Verificar milestone de 50%
+            if (previousPercentage < 50 && currentPercentage >= 50) {
+                existing.setTotalScore(existing.getTotalScore() + 3);
+                existing.setScoreUpdatedAt(LocalDateTime.now());
+                totalPointsAdded += 3;
+
+                // Criar auditoria específica para milestone 50%
+                UserRankingAuditModel audit50 = UserRankingAuditModel.forAddPoints(
+                        existing.getId(),
+                        existing.getUserId(),
+                        3,
+                        "PROFILE_50_PERCENT",
+                        null, null, null);
+                auditRepository.persist(audit50);
+
+                log.infof("🎯 Profile 50%% milestone reached: +3 points (totalScore: %d)",
+                        existing.getTotalScore());
+            }
+
+            // Verificar milestone de 100%
+            if (previousPercentage < 100 && currentPercentage >= 100) {
+                existing.setTotalScore(existing.getTotalScore() + 10);
+                existing.setScoreUpdatedAt(LocalDateTime.now());
+                totalPointsAdded += 10;
+
+                // Criar auditoria específica para milestone 100%
+                UserRankingAuditModel audit100 = UserRankingAuditModel.forAddPoints(
+                        existing.getId(),
+                        existing.getUserId(),
+                        10,
+                        "PROFILE_100_PERCENT",
+                        null, null, null);
+                auditRepository.persist(audit100);
+
+                log.infof("🎯 Profile 100%% milestone reached: +10 points (totalScore: %d)",
+                        existing.getTotalScore());
+            }
+
+            // Persistir se houve alguma alteração de pontos
+            if (totalPointsAdded > 0) {
+                userRankingRepository.persist(existing);
+                log.infof("🎯 Profile completion milestones applied: +%d total points", totalPointsAdded);
+            }
+        }
+
         log.infof("✅ Ranking updated successfully: id=%s, totalScore=%d", id, existing.getTotalScore());
 
         return existing;
@@ -373,6 +424,7 @@ public class UserRankingService {
      * @param id ID do ranking
      * @throws WebApplicationException (404) se ranking não encontrado
      */
+
     @Transactional
     public void softDelete(UUID id) {
         log.infof("🗑️ Soft deleting ranking: id=%s", id);
