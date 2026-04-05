@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -237,7 +236,7 @@ public class ContentEngagementService {
         List<ContentEngagementModel> engagements = engagementRepository.findByUserId(userId);
         return engagements.stream()
                 .map(EngagementResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -252,7 +251,7 @@ public class ContentEngagementService {
         List<ContentEngagementModel> engagements = engagementRepository.findByContentId(contentId);
         return engagements.stream()
                 .map(EngagementResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -327,6 +326,6 @@ public class ContentEngagementService {
         List<ContentEngagementModel> engagements = engagementRepository.findRecentByUser(userId, days);
         return engagements.stream()
                 .map(EngagementResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

@@ -122,4 +122,21 @@ public class UserRankingAuditRepository implements PanacheRepositoryBase<UserRan
                 .page(0, limit)
                 .list();
     }
+
+    /**
+     * Verifica se já existe um registro de auditoria com o requestId especificado.
+     *
+     * Usado para implementar idempotência em addPoints(): previne que o mesmo
+     * requestId seja processado duas vezes (ex: retries de cliente, duplicação de
+     * requisições).
+     *
+     * @param requestId Correlation ID da requisição original
+     * @return true se já existir auditoria com este requestId
+     */
+    public boolean existsByRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return false;
+        }
+        return count("requestId = ?1", requestId) > 0;
+    }
 }
