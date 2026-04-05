@@ -8,6 +8,7 @@ import br.com.aguideptbr.features.userposition.enuns.ConversionPotential;
 import br.com.aguideptbr.features.userposition.enuns.EngagementLevel;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 
 /**
  * Repository para operações de banco de dados com rankings de usuários.
@@ -28,6 +29,27 @@ public class UserRankingRepository implements PanacheRepositoryBase<UserRankingM
      */
     public Optional<UserRankingModel> findByUserId(UUID userId) {
         return find("userId = ?1 and deletedAt is null", userId).firstResultOptional();
+    }
+
+    /**
+     * Busca o ranking de um usuário específico com lock para prevenir race
+     * conditions.
+     *
+     * Usado em operações críticas como addPoints() para garantir atomicidade.
+     *
+     * @param userId   ID do usuário
+     * @param lockMode Tipo de lock (PESSIMISTIC_WRITE, PESSIMISTIC_READ, etc.)
+     * @return Optional contendo o ranking do usuário ou vazio se não encontrado
+     */
+    public Optional<UserRankingModel> findByUserIdWithLock(UUID userId, LockModeType lockMode) {
+        var results = getEntityManager()
+                .createQuery("SELECT r FROM UserRankingModel r WHERE r.userId = :userId AND r.deletedAt IS NULL",
+                        UserRankingModel.class)
+                .setParameter("userId", userId)
+                .setLockMode(lockMode)
+                .getResultList();
+
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
     /**
