@@ -1,15 +1,18 @@
 package br.com.aguideptbr.features.userposition;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.userposition.enuns.ConversionPotential;
 import br.com.aguideptbr.features.userposition.enuns.EngagementLevel;
+import br.com.aguideptbr.features.userposition.services.UserRankingMetricsService;
+import br.com.aguideptbr.features.userposition.services.UserRankingMilestoneService;
+import br.com.aguideptbr.features.userposition.services.UserRankingValidationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
@@ -20,13 +23,22 @@ import jakarta.ws.rs.core.Response;
  * Service para lógica de negócio relacionada a rankings de usuários.
  * Gerencia criação, atualização, busca e remoção de dados de ranking.
  *
- * Responsabilidades:
- * - Calcular níveis de engajamento e potencial de conversão
- * - Atualizar pontuações e métricas de usuários
- * - Validar regras de negócio específicas de ranking
+ * REFATORAÇÃO SOLID (2026-04-05):
+ * Responsabilidades extraídas para services especializados:
+ * - UserRankingValidationService: validações de entrada
+ * - UserRankingMetricsService: cálculos de engagement e conversion
+ * - UserRankingMilestoneService: detecção e premiação de milestones
+ *
+ * Responsabilidades mantidas:
+ * - Orquestração de CRUD operations
+ * - Gerenciamento de transações
+ * - Coordenação entre services
  *
  * @see UserRankingModel
  * @see UserRankingRepository
+ * @see UserRankingValidationService
+ * @see UserRankingMetricsService
+ * @see UserRankingMilestoneService
  */
 @ApplicationScoped
 public class UserRankingService {
@@ -34,28 +46,27 @@ public class UserRankingService {
     private final Logger log;
     private final UserRankingRepository userRankingRepository;
     private final UserRankingAuditRepository auditRepository;
+    private final UserRankingValidationService validationService;
+    private final UserRankingMetricsService metricsService;
+    private final UserRankingMilestoneService milestoneService;
 
-    // Constantes de validação
+    // Constantes de validação (mantidas para compatibilidade com addPoints)
     private static final int MAX_TOTAL_SCORE = 9_999_999;
-    private static final int MAX_STREAK_DAYS = 9999; // ~27 anos
     private static final int MAX_POINTS_PER_REQUEST = 1000;
-    private static final long TIMESTAMP_TOLERANCE_MINUTES = 5; // 5 minutos no futuro
-    private static final long TIMESTAMP_MAX_PAST_HOURS = 24; // 24 horas no passado
-    private static final int MAX_DAILY_USAGE_MINUTES = 1440; // 24 horas * 60 minutos
-    private static final int MAX_PROFILE_COMPLETION_PERCENTAGE = 100;
-    private static final int MIN_PROFILE_COMPLETION_PERCENTAGE = 0;
-
-    // Enum de tipos de conteúdo permitidos (Phase B)
-    private static final Set<String> VALID_CONTENT_TYPES = Set.of(
-            "video", "article", "course", "tutorial", "guide");
 
     public UserRankingService(
             Logger log,
             UserRankingRepository userRankingRepository,
-            UserRankingAuditRepository auditRepository) {
+            UserRankingAuditRepository auditRepository,
+            UserRankingValidationService validationService,
+            UserRankingMetricsService metricsService,
+            UserRankingMilestoneService milestoneService) {
         this.log = log;
         this.userRankingRepository = userRankingRepository;
         this.auditRepository = auditRepository;
+        this.validationService = validationService;
+        this.metricsService = metricsService;
+        this.milestoneService = milestoneService;
     }
 
     /**
@@ -82,10 +93,10 @@ public class UserRankingService {
                     Response.Status.CONFLICT);
         }
 
-        // Calcular métricas iniciais
-        calculateEngagementLevel(userRanking);
-        calculateConversionPotential(userRanking);
-        userRanking.setScoreUpdatedAt(LocalDateTime.now());
+        // Calcular métricas iniciais (delegado para MetricsService)
+        metricsService.calculateEngagementLevel(userRanking);
+        metricsService.calculateConversionPotential(userRanking);
+        userRanking.setScoreUpdatedAt(LocalDateTime.now(ZoneOffset.UTC)); // Correction #3: UTC timestamp
 
         userRankingRepository.persist(userRanking);
 
@@ -178,6 +189,14 @@ public class UserRankingService {
     /**
      * Atualiza um ranking existente.
      *
+     * REFATORAÇÃO (2026-04-05):
+     * - Validações delegadas para ValidationService
+     * - Métricas delegadas para MetricsService
+     * - Milestones delegados para MilestoneService (incluindo NOVO: phone
+     * milestones)
+     * - Timestamps com UTC (Correction #3)
+     * - Remoção de persist() redundantes (Correction #6)
+     *
      * @param id          ID do ranking
      * @param updatedData Dados atualizados
      * @return UserRankingModel atualizado
@@ -204,21 +223,25 @@ public class UserRankingService {
         Integer previousProfileCompletion = existing.getProfileCompletionPercentage() != null
                 ? existing.getProfileCompletionPercentage()
                 : 0;
+        Integer previousTotalPhones = existing.getTotalPhones() != null ? existing.getTotalPhones() : 0;
+        Boolean previousHasWhatsapp = existing.getHasWhatsapp() != null ? existing.getHasWhatsapp() : false;
+        Boolean previousHasTelegram = existing.getHasTelegram() != null ? existing.getHasTelegram() : false;
 
+        // Atualizar campos com validação delegada
         if (updatedData.getTotalContentViews() != null) {
-            validateNonNegative(updatedData.getTotalContentViews(), "totalContentViews");
+            validationService.validateNonNegative(updatedData.getTotalContentViews(), "totalContentViews");
             existing.setTotalContentViews(updatedData.getTotalContentViews());
         }
         if (updatedData.getUniqueContentViews() != null) {
-            validateNonNegative(updatedData.getUniqueContentViews(), "uniqueContentViews");
+            validationService.validateNonNegative(updatedData.getUniqueContentViews(), "uniqueContentViews");
             existing.setUniqueContentViews(updatedData.getUniqueContentViews());
         }
         if (updatedData.getAvgDailyUsageMinutes() != null) {
-            validateDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
+            validationService.validateDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
             existing.setAvgDailyUsageMinutes(updatedData.getAvgDailyUsageMinutes());
         }
         if (updatedData.getConsecutiveDaysStreak() != null) {
-            validateConsecutiveDaysStreak(updatedData.getConsecutiveDaysStreak());
+            validationService.validateConsecutiveDaysStreak(updatedData.getConsecutiveDaysStreak());
             existing.setConsecutiveDaysStreak(updatedData.getConsecutiveDaysStreak());
         }
         if (updatedData.getTotalActiveDays() != null) {
@@ -249,50 +272,94 @@ public class UserRankingService {
             existing.setHasTelegram(updatedData.getHasTelegram());
         }
         if (updatedData.getLastActivityAt() != null) {
-            validateTimestamp(updatedData.getLastActivityAt(), "lastActivityAt");
+            validationService.validateTimestamp(updatedData.getLastActivityAt(), "lastActivityAt");
             existing.setLastActivityAt(updatedData.getLastActivityAt());
         }
         if (updatedData.getLastContentViewAt() != null) {
-            validateTimestamp(updatedData.getLastContentViewAt(), "lastContentViewAt");
+            validationService.validateTimestamp(updatedData.getLastContentViewAt(), "lastContentViewAt");
             existing.setLastContentViewAt(updatedData.getLastContentViewAt());
         }
         if (updatedData.getLastMessageSentAt() != null) {
-            validateTimestamp(updatedData.getLastMessageSentAt(), "lastMessageSentAt");
+            validationService.validateTimestamp(updatedData.getLastMessageSentAt(), "lastMessageSentAt");
             existing.setLastMessageSentAt(updatedData.getLastMessageSentAt());
         }
         if (updatedData.getLastLoginAt() != null) {
-            validateTimestamp(updatedData.getLastLoginAt(), "lastLoginAt");
+            validationService.validateTimestamp(updatedData.getLastLoginAt(), "lastLoginAt");
             existing.setLastLoginAt(updatedData.getLastLoginAt());
         }
         if (updatedData.getFavoriteCategory() != null) {
-            validateStringLength(updatedData.getFavoriteCategory(), 100, "favoriteCategory");
+            validationService.validateStringLength(updatedData.getFavoriteCategory(), 100, "favoriteCategory");
             existing.setFavoriteCategory(updatedData.getFavoriteCategory());
         }
         if (updatedData.getFavoriteContentType() != null) {
-            validateStringLength(updatedData.getFavoriteContentType(), 50, "favoriteContentType");
-            validateContentType(updatedData.getFavoriteContentType());
+            validationService.validateStringLength(updatedData.getFavoriteContentType(), 50, "favoriteContentType");
+            validationService.validateContentType(updatedData.getFavoriteContentType());
             existing.setFavoriteContentType(updatedData.getFavoriteContentType());
         }
         if (updatedData.getPreferredUsageTime() != null) {
             existing.setPreferredUsageTime(updatedData.getPreferredUsageTime());
         }
         if (updatedData.getProfileCompletionPercentage() != null) {
-            validateProfileCompletionPercentage(updatedData.getProfileCompletionPercentage());
+            validationService.validateProfileCompletionPercentage(updatedData.getProfileCompletionPercentage());
             existing.setProfileCompletionPercentage(updatedData.getProfileCompletionPercentage());
         }
 
-        // Recalcular métricas
-        calculateEngagementLevel(existing);
-        calculateConversionPotential(existing);
-        existing.setScoreUpdatedAt(LocalDateTime.now());
+        // Recalcular métricas (delegado para MetricsService)
+        metricsService.calculateEngagementLevel(existing);
+        metricsService.calculateConversionPotential(existing);
+        existing.setScoreUpdatedAt(LocalDateTime.now(ZoneOffset.UTC)); // Correction #3: UTC timestamp
 
-        userRankingRepository.persist(existing);
+        // Correction #6: Remover persist() redundante - JPA dirty checking automático
+        // em entidade gerenciada
+        // userRankingRepository.persist(existing); <- REMOVIDO
 
-        // Verificar milestones de visualização de conteúdo (após persistência para
-        // evitar duplicação)
+        // Verificar milestones de visualização de conteúdo (delegado para
+        // MilestoneService)
         if (updatedData.getTotalContentViews() != null
                 && !updatedData.getTotalContentViews().equals(previousContentViews)) {
-            checkContentViewsMilestones(existing.getUserId(), previousContentViews, existing.getTotalContentViews());
+            milestoneService.checkContentViewsMilestones(existing.getUserId(), previousContentViews,
+                    existing.getTotalContentViews());
+        }
+
+        // Verificar milestones de completude de perfil (delegado para MilestoneService)
+        if (updatedData.getProfileCompletionPercentage() != null) {
+            int totalPointsAdded = milestoneService.checkProfileCompletionMilestones(
+                    existing,
+                    previousProfileCompletion,
+                    updatedData.getProfileCompletionPercentage());
+
+            if (totalPointsAdded > 0) {
+                existing.setScoreUpdatedAt(LocalDateTime.now(ZoneOffset.UTC)); // Correction #3: UTC timestamp
+                // Correction #6: Remover persist() redundante
+                log.infof("🎯 Profile completion milestones applied: +%d total points", totalPointsAdded);
+            }
+        }
+
+        // Correction #7: Verificar milestones de telefones (NOVO - delegado para
+        // MilestoneService)
+        boolean phoneFieldsChanged = updatedData.getTotalPhones() != null
+                || updatedData.getHasWhatsapp() != null
+                || updatedData.getHasTelegram() != null;
+
+        if (phoneFieldsChanged) {
+            Integer currentTotalPhones = existing.getTotalPhones() != null ? existing.getTotalPhones() : 0;
+            Boolean currentHasWhatsapp = existing.getHasWhatsapp() != null ? existing.getHasWhatsapp() : false;
+            Boolean currentHasTelegram = existing.getHasTelegram() != null ? existing.getHasTelegram() : false;
+
+            int phoneMilestonePoints = milestoneService.checkPhoneMilestones(
+                    existing,
+                    previousTotalPhones,
+                    currentTotalPhones,
+                    previousHasWhatsapp,
+                    currentHasWhatsapp,
+                    previousHasTelegram,
+                    currentHasTelegram);
+
+            if (phoneMilestonePoints > 0) {
+                existing.setScoreUpdatedAt(LocalDateTime.now(ZoneOffset.UTC)); // Correction #3: UTC timestamp
+                // Correction #6: Remover persist() redundante
+                log.infof("🎯 Phone milestones applied: +%d total points", phoneMilestonePoints);
+            }
         }
 
         // Verificar milestones de completude de perfil (após persistência)
@@ -372,7 +439,7 @@ public class UserRankingService {
                 });
 
         ranking.softDelete();
-        userRankingRepository.persist(ranking);
+        // Correction #6: Remover persist() redundante - JPA dirty checking automático
 
         log.infof("✅ Ranking soft deleted successfully: id=%s", id);
     }
@@ -397,72 +464,13 @@ public class UserRankingService {
                 });
 
         ranking.restore();
-        calculateEngagementLevel(ranking);
-        calculateConversionPotential(ranking);
-        userRankingRepository.persist(ranking);
+        metricsService.calculateEngagementLevel(ranking);
+        metricsService.calculateConversionPotential(ranking);
+        // Correction #6: Remover persist() redundante - JPA dirty checking automático
 
         log.infof("✅ Ranking restored successfully: id=%s", id);
 
         return ranking;
-    }
-
-    /**
-     * Calcula o nível de engajamento baseado em métricas.
-     * Regras de negócio para classificação:
-     * - VERY_HIGH: score >= 1000 OU streak >= 30 dias
-     * - HIGH: score >= 500 OU streak >= 14 dias
-     * - MEDIUM: score >= 100 OU 50+ visualizações
-     * - LOW: demais casos
-     */
-    private void calculateEngagementLevel(UserRankingModel ranking) {
-        // Garantir valores não-nulos para evitar NullPointerException
-        int totalScore = ranking.getTotalScore() != null ? ranking.getTotalScore() : 0;
-        int consecutiveDaysStreak = ranking.getConsecutiveDaysStreak() != null ? ranking.getConsecutiveDaysStreak() : 0;
-        long totalContentViews = ranking.getTotalContentViews() != null ? ranking.getTotalContentViews() : 0L;
-
-        if (totalScore >= 1000 || consecutiveDaysStreak >= 30) {
-            ranking.setEngagementLevel(EngagementLevel.VERY_HIGH);
-        } else if (totalScore >= 500 || consecutiveDaysStreak >= 14) {
-            ranking.setEngagementLevel(EngagementLevel.HIGH);
-        } else if (totalScore >= 100 || totalContentViews >= 50) {
-            ranking.setEngagementLevel(EngagementLevel.MEDIUM);
-        } else {
-            ranking.setEngagementLevel(EngagementLevel.LOW);
-        }
-
-        log.debugf("Calculated engagement level: %s (score=%d, streak=%d, views=%d)",
-                ranking.getEngagementLevel(), totalScore, consecutiveDaysStreak, totalContentViews);
-    }
-
-    /**
-     * Calcula o potencial de conversão baseado em métricas.
-     * Regras de negócio para classificação:
-     * - VERY_HIGH: tem contatos E engajamento VERY_HIGH/HIGH
-     * - HIGH: tem contatos E engajamento MEDIUM
-     * - MEDIUM: tem contatos OU engajamento >= MEDIUM
-     * - LOW: engajamento LOW sem contatos
-     * - VERY_LOW: sem atividade significativa
-     */
-    private void calculateConversionPotential(UserRankingModel ranking) {
-        boolean hasContacts = ranking.getHasWhatsapp() || ranking.getHasTelegram() || ranking.getTotalPhones() > 0;
-        boolean hasHighEngagement = ranking.getEngagementLevel() == EngagementLevel.VERY_HIGH
-                || ranking.getEngagementLevel() == EngagementLevel.HIGH;
-        boolean hasMediumEngagement = ranking.getEngagementLevel() == EngagementLevel.MEDIUM;
-
-        if (hasContacts && hasHighEngagement) {
-            ranking.setConversionPotential(ConversionPotential.VERY_HIGH);
-        } else if (hasContacts && hasMediumEngagement) {
-            ranking.setConversionPotential(ConversionPotential.HIGH);
-        } else if (hasContacts || hasMediumEngagement) {
-            ranking.setConversionPotential(ConversionPotential.MEDIUM);
-        } else if (ranking.getEngagementLevel() == EngagementLevel.LOW && ranking.getTotalScore() > 0) {
-            ranking.setConversionPotential(ConversionPotential.LOW);
-        } else {
-            ranking.setConversionPotential(ConversionPotential.VERY_LOW);
-        }
-
-        log.debugf("Calculated conversion potential: %s (hasContacts=%b, engagement=%s)",
-                ranking.getConversionPotential(), hasContacts, ranking.getEngagementLevel());
     }
 
     /**
@@ -483,12 +491,20 @@ public class UserRankingService {
     /**
      * Incrementa a pontuação de um usuário com auditoria completa.
      *
+     * REFATORAÇÃO (2026-04-05):
+     * - Correction #1: Lock delegado para Repository (findByUserIdWithLock)
+     * - Correction #2: Idempotência via requestId check
+     * - Correction #3: Timestamps UTC
+     * - Correction #4: Chamada interna com score cap (addPointsInternal)
+     * - Correction #5: Default pointsReason = "SYSTEM"
+     * - Correction #6: Remover persist() redundante
+     *
      * @param userId       ID do usuário
      * @param points       Pontos a adicionar (deve ser positivo)
      * @param pointsReason Motivo da adição (daily_login, 7day_bonus, etc.)
      * @param ipAddress    IP do cliente (para auditoria)
      * @param userAgent    User-Agent do cliente (para auditoria)
-     * @param requestId    Correlation ID (para rastreamento)
+     * @param requestId    Correlation ID (para rastreamento e idempotência)
      * @return UserRankingModel atualizado
      * @throws WebApplicationException (404) se ranking não encontrado
      * @throws WebApplicationException (400) se pontos inválidos ou limites
@@ -502,7 +518,58 @@ public class UserRankingService {
             String ipAddress,
             String userAgent,
             String requestId) {
-        log.infof("➕ Adding %d points to user: userId=%s, reason=%s", points, userId, pointsReason);
+
+        // Correction #5: Default pointsReason to "SYSTEM" when null
+        String effectiveReason = (pointsReason != null && !pointsReason.isBlank()) ? pointsReason : "SYSTEM";
+
+        log.infof("➕ Adding %d points to user: userId=%s, reason=%s", points, userId, effectiveReason);
+
+        // Correction #2: Idempotency check - prevent duplicate processing of same
+        // requestId
+        if (requestId != null && auditRepository.existsByRequestId(requestId)) {
+            log.warnf("⚠️ Duplicate requestId detected, skipping points addition: %s", requestId);
+            return userRankingRepository.findByUserId(userId)
+                    .orElseThrow(() -> {
+                        log.warnf("⚠️ Ranking not found for userId: %s", userId);
+                        return new WebApplicationException(
+                                "Ranking not found for user",
+                                Response.Status.NOT_FOUND);
+                    });
+        }
+
+        // Public API call - strict validation (no score cap)
+        return addPointsInternal(userId, points, effectiveReason, ipAddress, userAgent, requestId, false);
+    }
+
+    /**
+     * Método interno para adicionar pontos com controle de score cap.
+     *
+     * Correction #4: Implementação de score cap para chamadas internas
+     * (milestones).
+     *
+     * Quando capAtMax=true (chamadas de milestones), se o novo score exceder
+     * MAX_TOTAL_SCORE,
+     * o score é limitado ao máximo permitido em vez de lançar exceção.
+     *
+     * Quando capAtMax=false (API pública), lança exceção se exceder o limite.
+     *
+     * @param userId       ID do usuário
+     * @param points       Pontos a adicionar
+     * @param pointsReason Motivo (já tratado como "SYSTEM" se null)
+     * @param ipAddress    IP do cliente
+     * @param userAgent    User-Agent do cliente
+     * @param requestId    Correlation ID
+     * @param capAtMax     Se true, limita score ao máximo; se false, lança exceção
+     * @return UserRankingModel atualizado
+     */
+    private UserRankingModel addPointsInternal(
+            UUID userId,
+            int points,
+            String pointsReason,
+            String ipAddress,
+            String userAgent,
+            String requestId,
+            boolean capAtMax) {
 
         // Validação 1: Pontos devem ser positivos
         if (points <= 0) {
@@ -520,14 +587,9 @@ public class UserRankingService {
                     Response.Status.BAD_REQUEST);
         }
 
-        // Buscar ranking com PESSIMISTIC_WRITE lock (previne race conditions)
-        UserRankingModel ranking = userRankingRepository.getEntityManager()
-                .createQuery("SELECT r FROM UserRankingModel r WHERE r.userId = :userId AND r.deletedAt IS NULL",
-                        UserRankingModel.class)
-                .setParameter("userId", userId)
-                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                .getResultStream()
-                .findFirst()
+        // Correction #1: Buscar ranking com lock delegado para Repository
+        UserRankingModel ranking = userRankingRepository
+                .findByUserIdWithLock(userId, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(() -> {
                     log.warnf("⚠️ Ranking not found for userId: %s", userId);
                     return new WebApplicationException(
@@ -538,20 +600,32 @@ public class UserRankingService {
         // Validação 3: Score total não pode exceder o limite
         int oldScore = ranking.getTotalScore();
         int newScore = oldScore + points;
+
+        // Correction #4: Aplicar score cap se chamada interna
         if (newScore > MAX_TOTAL_SCORE) {
-            log.warnf("⚠️ Total score would exceed maximum: %d + %d = %d > %d",
-                    oldScore, points, newScore, MAX_TOTAL_SCORE);
-            throw new WebApplicationException(
-                    String.format("Total score cannot exceed %,d", MAX_TOTAL_SCORE),
-                    Response.Status.BAD_REQUEST);
+            if (capAtMax) {
+                // Chamada interna (milestone) - limitar ao máximo
+                newScore = MAX_TOTAL_SCORE;
+                int effectivePoints = newScore - oldScore;
+                log.warnf("⚠️ Score capped at maximum: requested=%d, applied=%d (max: %,d)",
+                        points, effectivePoints, MAX_TOTAL_SCORE);
+                points = effectivePoints; // Ajustar para auditoria correta
+            } else {
+                // Chamada pública - lançar exceção
+                log.warnf("⚠️ Total score would exceed maximum: %d + %d = %d > %,d",
+                        oldScore, points, newScore, MAX_TOTAL_SCORE);
+                throw new WebApplicationException(
+                        String.format("Total score cannot exceed %,d", MAX_TOTAL_SCORE),
+                        Response.Status.BAD_REQUEST);
+            }
         }
 
         ranking.setTotalScore(newScore);
-        calculateEngagementLevel(ranking);
-        calculateConversionPotential(ranking);
-        ranking.setScoreUpdatedAt(LocalDateTime.now());
+        metricsService.calculateEngagementLevel(ranking);
+        metricsService.calculateConversionPotential(ranking);
+        ranking.setScoreUpdatedAt(LocalDateTime.now(ZoneOffset.UTC)); // Correction #3: UTC timestamp
 
-        userRankingRepository.persist(ranking);
+        // Correction #6: Remover persist() redundante - JPA dirty checking automático
 
         // Registrar auditoria
         UserRankingAuditModel audit = UserRankingAuditModel.forAddPoints(
@@ -568,281 +642,5 @@ public class UserRankingService {
                 userId, oldScore, newScore, pointsReason);
 
         return ranking;
-    }
-
-    /**
-     * Valida timestamps para garantir que estão dentro de limites razoáveis.
-     *
-     * @param timestamp Timestamp a validar
-     * @param fieldName Nome do campo (para mensagem de erro)
-     * @throws WebApplicationException (400) se timestamp inválido
-     */
-    private void validateTimestamp(LocalDateTime timestamp, String fieldName) {
-        if (timestamp == null) {
-            return; // Null é permitido (campo opcional)
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime maxFuture = now.plusMinutes(TIMESTAMP_TOLERANCE_MINUTES);
-        LocalDateTime minPast = now.minusHours(TIMESTAMP_MAX_PAST_HOURS);
-
-        if (timestamp.isAfter(maxFuture)) {
-            log.warnf("⚠️ Timestamp is too far in the future: %s = %s (max: %s)",
-                    fieldName, timestamp, maxFuture);
-            throw new WebApplicationException(
-                    String.format("%s cannot be in the future (received: %s)", fieldName, timestamp),
-                    Response.Status.BAD_REQUEST);
-        }
-
-        if (timestamp.isBefore(minPast)) {
-            log.warnf("⚠️ Timestamp is too far in the past: %s = %s (min: %s)",
-                    fieldName, timestamp, minPast);
-            throw new WebApplicationException(
-                    String.format("%s cannot be more than %d hours in the past",
-                            fieldName, TIMESTAMP_MAX_PAST_HOURS),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida consecutiveDaysStreak para garantir que está dentro de limites
-     * razoáveis.
-     *
-     * @param streak Streak a validar
-     * @throws WebApplicationException (400) se streak inválido
-     */
-    private void validateConsecutiveDaysStreak(Integer streak) {
-        if (streak == null) {
-            return; // Null é tratado como 0
-        }
-
-        if (streak < 0) {
-            log.warnf("⚠️ Negative streak not allowed: %d", streak);
-            throw new WebApplicationException(
-                    "Consecutive days streak cannot be negative",
-                    Response.Status.BAD_REQUEST);
-        }
-
-        if (streak > MAX_STREAK_DAYS) {
-            log.warnf("⚠️ Streak exceeds maximum allowed: %d > %d", streak, MAX_STREAK_DAYS);
-            throw new WebApplicationException(
-                    String.format("Consecutive days streak cannot exceed %d days", MAX_STREAK_DAYS),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida valores não-negativos (totalContentViews, uniqueContentViews, etc.).
-     *
-     * @param value     Valor a validar
-     * @param fieldName Nome do campo (para mensagem de erro)
-     * @throws WebApplicationException (400) se valor for negativo
-     */
-    private void validateNonNegative(Long value, String fieldName) {
-        if (value == null) {
-            return; // Null é permitido
-        }
-
-        if (value < 0) {
-            log.warnf("⚠️ Negative value not allowed for %s: %d", fieldName, value);
-            throw new WebApplicationException(
-                    String.format("%s cannot be negative", fieldName),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida avgDailyUsageMinutes (0 a 1440 minutos).
-     *
-     * @param minutes Minutos de uso diário
-     * @throws WebApplicationException (400) se valor inválido
-     */
-    private void validateDailyUsageMinutes(Integer minutes) {
-        if (minutes == null) {
-            return; // Null é permitido
-        }
-
-        if (minutes < 0) {
-            log.warnf("⚠️ Negative usage minutes not allowed: %d", minutes);
-            throw new WebApplicationException(
-                    "Average daily usage minutes cannot be negative",
-                    Response.Status.BAD_REQUEST);
-        }
-
-        if (minutes > MAX_DAILY_USAGE_MINUTES) {
-            log.warnf("⚠️ Usage minutes exceed 24 hours: %d > %d", minutes, MAX_DAILY_USAGE_MINUTES);
-            throw new WebApplicationException(
-                    String.format("Average daily usage minutes cannot exceed %d (24 hours)", MAX_DAILY_USAGE_MINUTES),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida profileCompletionPercentage (0 a 100).
-     *
-     * @param percentage Percentual de conclusão do perfil
-     * @throws WebApplicationException (400) se valor inválido
-     */
-    private void validateProfileCompletionPercentage(Integer percentage) {
-        if (percentage == null) {
-            return; // Null é permitido
-        }
-
-        if (percentage < MIN_PROFILE_COMPLETION_PERCENTAGE || percentage > MAX_PROFILE_COMPLETION_PERCENTAGE) {
-            log.warnf("⚠️ Profile completion percentage out of range: %d (allowed: %d-%d)",
-                    percentage, MIN_PROFILE_COMPLETION_PERCENTAGE, MAX_PROFILE_COMPLETION_PERCENTAGE);
-            throw new WebApplicationException(
-                    String.format("Profile completion percentage must be between %d and %d",
-                            MIN_PROFILE_COMPLETION_PERCENTAGE, MAX_PROFILE_COMPLETION_PERCENTAGE),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida comprimento de strings.
-     *
-     * @param value     String a validar
-     * @param maxLength Comprimento máximo permitido
-     * @param fieldName Nome do campo (para mensagem de erro)
-     * @throws WebApplicationException (400) se string exceder o limite
-     */
-    private void validateStringLength(String value, int maxLength, String fieldName) {
-        if (value == null) {
-            return; // Null é permitido
-        }
-
-        if (value.length() > maxLength) {
-            log.warnf("⚠️ String length exceeds maximum for %s: %d > %d", fieldName, value.length(), maxLength);
-            throw new WebApplicationException(
-                    String.format("%s must not exceed %d characters", fieldName, maxLength),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Valida se o tipo de conteúdo favorito é um dos valores permitidos.
-     *
-     * PHASE B: Frontend solicitou validação enum para favoriteContentType.
-     * Valores válidos: video, article, course, tutorial, guide
-     *
-     * @param contentType Tipo de conteúdo a validar
-     * @throws WebApplicationException (400) se tipo inválido
-     */
-    private void validateContentType(String contentType) {
-        if (contentType == null) {
-            return; // Null é permitido
-        }
-
-        String normalizedType = contentType.toLowerCase().trim();
-        if (!VALID_CONTENT_TYPES.contains(normalizedType)) {
-            log.warnf("⚠️ Invalid content type: %s (allowed: %s)", contentType, VALID_CONTENT_TYPES);
-            throw new WebApplicationException(
-                    String.format("favoriteContentType must be one of: %s", String.join(", ", VALID_CONTENT_TYPES)),
-                    Response.Status.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Verifica se o usuário atingiu milestones de visualização de conteúdo
-     * e adiciona pontos automaticamente quando thresholds são cruzados.
-     *
-     * Milestones:
-     * - 10 visualizações: +2 pontos
-     * - 50 visualizações: +10 pontos
-     * - 100 visualizações: +25 pontos
-     *
-     * @param userId        ID do usuário
-     * @param previousViews Quantidade anterior de visualizações
-     * @param currentViews  Quantidade atual de visualizações
-     */
-    private void checkContentViewsMilestones(UUID userId, Long previousViews, Long currentViews) {
-        if (previousViews == null) {
-            previousViews = 0L;
-        }
-        if (currentViews == null) {
-            currentViews = 0L;
-        }
-
-        log.debugf("📊 Checking content views milestones: userId=%s, previous=%d, current=%d",
-                userId, previousViews, currentViews);
-
-        // Milestone: 10 visualizações
-        if (previousViews < 10 && currentViews >= 10) {
-            log.infof("🎯 Milestone reached: 10 content views for userId=%s", userId);
-            addPoints(userId, 2, "CONTENT_VIEWS_10", null, null, null);
-        }
-
-        // Milestone: 50 visualizações
-        if (previousViews < 50 && currentViews >= 50) {
-            log.infof("🎯 Milestone reached: 50 content views for userId=%s", userId);
-            addPoints(userId, 10, "CONTENT_VIEWS_50", null, null, null);
-        }
-
-        // Milestone: 100 visualizações
-        if (previousViews < 100 && currentViews >= 100) {
-            log.infof("🎯 Milestone reached: 100 content views for userId=%s", userId);
-            addPoints(userId, 25, "CONTENT_VIEWS_100", null, null, null);
-        }
-    }
-
-    /**
-     * Verifica se o usuário atingiu milestones de completude de perfil
-     * e adiciona pontos automaticamente quando thresholds são cruzados.
-     *
-     * Milestones (Phase B):
-     * - 50% de completude: +3 pontos
-     * - 100% de completude: +10 pontos
-     *
-     * IMPORTANTE: Pontos são adicionados apenas em transições ASCENDENTES
-     * /**
-     * Calcula quantos pontos devem ser adicionados baseado em milestones de
-     * completude de perfil.
-     *
-     * Milestones (Phase B):
-     * - 50% de completude: +3 pontos
-     * - 100% de completude: +10 pontos
-     *
-     * IMPORTANTE: Pontos são adicionados apenas em transições ASCENDENTES
-     * (old < threshold AND new >= threshold). Se o percentual diminuir,
-     * nenhum ponto é adicionado.
-     *
-     * @param previousPercentage Percentual anterior de completude (0-100)
-     * @param currentPercentage  Percentual atual de completude (0-100)
-     * @return Total de pontos a adicionar (0, 3, 10 ou 13)
-     */
-    private int calculateProfileCompletionMilestonePoints(
-            Integer previousPercentage,
-            Integer currentPercentage) {
-        if (previousPercentage == null) {
-            previousPercentage = 0;
-        }
-        if (currentPercentage == null) {
-            currentPercentage = 0;
-        }
-
-        log.debugf("📊 Checking profile completion milestones: previous=%d%%, current=%d%%",
-                previousPercentage, currentPercentage);
-
-        int pointsToAdd = 0;
-
-        // Milestone: 50% de completude → +3 pontos
-        if (previousPercentage < 50 && currentPercentage >= 50) {
-            log.infof("🎯 Milestone reached: 50%% profile completion (+3 points)");
-            pointsToAdd += 3;
-        }
-
-        // Milestone: 100% de completude → +10 pontos
-        if (previousPercentage < 100 && currentPercentage >= 100) {
-            log.infof("🎯 Milestone reached: 100%% profile completion (+10 points)");
-            pointsToAdd += 10;
-        }
-
-        // Detectar inconsistências (opcional, apenas para debug)
-        if (currentPercentage < previousPercentage) {
-            log.warnf("⚠️ Profile completion percentage decreased: %d%% → %d%% (no points removed)",
-                    previousPercentage, currentPercentage);
-        }
-
-        return pointsToAdd;
     }
 }
