@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.usermessage.dto.ConversationSummaryDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -325,6 +326,37 @@ public class ConversationService {
         } else {
             return conversationRepository.findActiveByUserId(userId);
         }
+    }
+
+    /**
+     * Retorna summaries enriquecidos para inbox com campos usados no frontend.
+     */
+    public List<ConversationSummaryDTO> getUserConversationSummaries(UUID userId, boolean includeArchived) {
+        List<ConversationModel> conversations = getUserConversations(userId, includeArchived);
+
+        return conversations.stream()
+                .map(conversation -> {
+                    ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
+                            conversation.id);
+                    UserMessageModel lastMessage = messageRepository.findLastByConversation(conversation.id);
+                    long unreadCount = messageRepository.countUnreadByUser(userId, conversation.id);
+
+                    String preview = lastMessage != null ? lastMessage.txtContent : null;
+                    if (preview != null && preview.length() > 100) {
+                        preview = preview.substring(0, 100);
+                    }
+
+                    boolean isPinned = participant != null && participant.isPinned;
+                    boolean isArchived = participant != null && participant.isArchived;
+
+                    return new ConversationSummaryDTO(
+                            conversation,
+                            unreadCount,
+                            preview,
+                            isPinned,
+                            isArchived);
+                })
+                .toList();
     }
 
     /**

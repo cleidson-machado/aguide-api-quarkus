@@ -3,6 +3,7 @@ package br.com.aguideptbr.features.usermessage.dto;
 import java.util.UUID;
 
 import br.com.aguideptbr.features.usermessage.MessageType;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -13,6 +14,7 @@ public class SendMessageRequest {
     @NotNull(message = "ID da conversa é obrigatório")
     private UUID conversationId;
 
+    @NotBlank(message = "Conteudo da mensagem e obrigatorio")
     private String content;
 
     @NotNull(message = "Tipo de mensagem é obrigatório")

@@ -71,16 +71,20 @@ public class MessageService {
         // Validar conversa existe
         ConversationModel conversation = conversationRepository.findByIdActive(conversationId);
         if (conversation == null) {
+            log.warnf("Send message denied: conversation %s not found", conversationId);
             throw new NotFoundException("Conversa não encontrada");
         }
 
         // Validar usuário é participante
         if (!participantRepository.isUserParticipant(senderId, conversationId)) {
+            log.warnf("Send message denied: user %s is not participant of conversation %s", senderId, conversationId);
             throw new ForbiddenException("Você não é participante desta conversa");
         }
 
         // Validar conteúdo
         if (messageType == MessageType.TEXT && (content == null || content.trim().isEmpty())) {
+            log.warnf("Send message denied: empty text content for conversation %s by user %s", conversationId,
+                    senderId);
             throw new BadRequestException("Mensagem de texto não pode estar vazia");
         }
 
@@ -253,15 +257,25 @@ public class MessageService {
 
         // Validar conversa existe
         if (conversationRepository.findByIdActive(conversationId) == null) {
+            log.warnf("Get messages denied: conversation %s not found", conversationId);
             throw new NotFoundException("Conversa não encontrada");
         }
 
         // Validar usuário é participante
         if (!participantRepository.isUserParticipant(userId, conversationId)) {
+            log.warnf("Get messages denied: user %s is not participant of conversation %s", userId, conversationId);
             throw new ForbiddenException("Você não é participante desta conversa");
         }
 
         return messageRepository.findByConversation(conversationId, page, size);
+    }
+
+    /**
+     * Conta o total de mensagens ativas em uma conversa.
+     * Usado para metadata de paginação (totalElements/totalPages).
+     */
+    public long countTotalMessages(UUID conversationId) {
+        return messageRepository.countByConversation(conversationId);
     }
 
     /**
