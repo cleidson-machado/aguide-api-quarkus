@@ -26,7 +26,7 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
                 "WHERE p.user.id = ?1 " +
                 "AND p.leftAt IS NULL " +
                 "AND c.deletedAt IS NULL " +
-                "ORDER BY c.lastMessageAt DESC NULLS LAST", userId)
+                "ORDER BY p.isPinned DESC, c.lastMessageAt DESC NULLS LAST", userId)
                 .list();
     }
 
@@ -43,7 +43,7 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
                 "AND p.leftAt IS NULL " +
                 "AND p.isArchived = false " +
                 "AND c.deletedAt IS NULL " +
-                "ORDER BY c.lastMessageAt DESC NULLS LAST", userId)
+                "ORDER BY p.isPinned DESC, c.lastMessageAt DESC NULLS LAST", userId)
                 .list();
     }
 

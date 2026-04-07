@@ -34,7 +34,24 @@ public class ConversationSummaryDTO {
         this.type = conversation.conversationType;
         this.iconUrl = conversation.iconUrl;
         this.lastMessageAt = conversation.lastMessageAt;
+        this.lastMessagePreview = null;
+        this.unreadCount = 0L;
+        this.isPinned = Boolean.FALSE;
+        this.isArchived = Boolean.FALSE;
         this.createdAt = conversation.createdAt;
+    }
+
+    public ConversationSummaryDTO(
+            ConversationModel conversation,
+            Long unreadCount,
+            String lastMessagePreview,
+            Boolean isPinned,
+            Boolean isArchived) {
+        this(conversation);
+        this.unreadCount = unreadCount != null ? unreadCount : 0L;
+        this.lastMessagePreview = lastMessagePreview;
+        this.isPinned = isPinned != null ? isPinned : Boolean.FALSE;
+        this.isArchived = isArchived != null ? isArchived : Boolean.FALSE;
     }
 
     // Getters e Setters

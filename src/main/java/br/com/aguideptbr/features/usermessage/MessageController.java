@@ -11,6 +11,7 @@ import br.com.aguideptbr.features.usermessage.dto.SendMessageRequest;
 import br.com.aguideptbr.util.PaginatedResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
@@ -101,6 +102,15 @@ public class MessageController {
             @QueryParam("size") @DefaultValue("20") int size,
             @Context SecurityContext securityContext) {
 
+        if (page < 0) {
+            log.warnf("Invalid pagination request for conversation %s: page=%d", conversationId, page);
+            throw new BadRequestException("Page must be greater than or equal to 0");
+        }
+        if (size < 1 || size > 100) {
+            log.warnf("Invalid pagination request for conversation %s: size=%d", conversationId, size);
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
         log.infof("GET /api/v1/messages/conversation/%s - page=%d, size=%d", conversationId, page, size);
 
         // TODO: Extrair userId do SecurityContext
@@ -112,8 +122,7 @@ public class MessageController {
                 .toList();
 
         // Calcular total de mensagens para paginação
-        long totalMessages = messageService.countUnreadMessages(userId, conversationId); // FIXME: usar count total, não
-                                                                                         // apenas unread
+        long totalMessages = messageService.countTotalMessages(conversationId);
         int totalPages = (int) Math.ceil((double) totalMessages / size);
 
         PaginatedResponse<MessageResponse> response = new PaginatedResponse<>(
