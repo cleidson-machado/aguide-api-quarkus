@@ -10,12 +10,14 @@ import br.com.aguideptbr.features.usermessage.dto.ConversationDetailResponse;
 import br.com.aguideptbr.features.usermessage.dto.ConversationSummaryDTO;
 import br.com.aguideptbr.features.usermessage.dto.CreateDirectConversationRequest;
 import br.com.aguideptbr.features.usermessage.dto.CreateGroupRequest;
+import br.com.aguideptbr.util.SecurityUtils;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -125,12 +127,12 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getUserConversations(
             @QueryParam("includeArchived") @DefaultValue("false") boolean includeArchived,
+            @HeaderParam("Authorization") String authHeader,
             @Context SecurityContext securityContext) {
 
         log.infof("GET /api/v1/conversations - includeArchived=%b", includeArchived);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         List<ConversationSummaryDTO> response = conversationService.getUserConversationSummaries(userId,
                 includeArchived);
