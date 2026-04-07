@@ -73,15 +73,13 @@ public class JWTService {
                     }
                     """.trim();
 
-            // Payload JWT SIMPLIFICADO
-            // "admin": true apenas para ADMIN, false para todos os outros roles
-            // Dados adicionais (role específico, nome) são buscados do banco quando
-            // necessário
+            // Payload JWT com groups para compatibilidade com @RolesAllowed.
             String payload = String.format("""
                     {
                       "iss": "%s",
                       "sub": "%s",
                       "upn": "%s",
+                                            "groups": ["%s"],
                       "admin": %s,
                       "iat": %d,
                       "exp": %d
@@ -90,6 +88,7 @@ public class JWTService {
                     issuer,
                     user.id.toString(),
                     user.email,
+                    user.role.name(),
                     user.role.isAdmin(), // true apenas para ADMIN, false para outros
                     currentTime,
                     expiresAt);
