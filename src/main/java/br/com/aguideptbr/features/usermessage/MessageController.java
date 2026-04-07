@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import br.com.aguideptbr.features.usermessage.dto.MessageResponse;
 import br.com.aguideptbr.features.usermessage.dto.SendMessageRequest;
 import br.com.aguideptbr.util.PaginatedResponse;
+import br.com.aguideptbr.util.SecurityUtils;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
@@ -16,6 +17,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -66,14 +68,12 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response sendMessage(
             @Valid SendMessageRequest request,
+            @HeaderParam("Authorization") String authHeader,
             @Context SecurityContext securityContext) {
 
         log.infof("POST /api/v1/messages - Sending message to conversation %s", request.getConversationId());
 
-        // TODO: Extrair userId do SecurityContext (JWT)
-        // Por enquanto, usando um placeholder - será implementado na fase de
-        // autenticação
-        UUID senderId = UUID.randomUUID(); // PLACEHOLDER - substituir com JWT
+        UUID senderId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         UserMessageModel message = messageService.sendMessage(
                 senderId,
@@ -100,6 +100,7 @@ public class MessageController {
             @PathParam("conversationId") UUID conversationId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size,
+            @HeaderParam("Authorization") String authHeader,
             @Context SecurityContext securityContext) {
 
         if (page < 0) {
@@ -113,8 +114,7 @@ public class MessageController {
 
         log.infof("GET /api/v1/messages/conversation/%s - page=%d, size=%d", conversationId, page, size);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         List<UserMessageModel> messages = messageService.getMessagesByConversation(conversationId, userId, page, size);
         List<MessageResponse> messageResponses = messages.stream()
