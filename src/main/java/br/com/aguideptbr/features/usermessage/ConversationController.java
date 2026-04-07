@@ -132,10 +132,8 @@ public class ConversationController {
         // TODO: Extrair userId do SecurityContext
         UUID userId = UUID.randomUUID(); // PLACEHOLDER
 
-        List<ConversationModel> conversations = conversationService.getUserConversations(userId, includeArchived);
-        List<ConversationSummaryDTO> response = conversations.stream()
-                .map(ConversationSummaryDTO::new)
-                .toList();
+        List<ConversationSummaryDTO> response = conversationService.getUserConversationSummaries(userId,
+                includeArchived);
 
         log.infof("Found %d conversations for user %s", response.size(), userId);
         return Response.ok(response).build();
