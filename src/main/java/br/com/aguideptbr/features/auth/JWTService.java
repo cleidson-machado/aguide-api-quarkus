@@ -14,6 +14,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.user.UserModel;
+import br.com.aguideptbr.features.user.UserRole;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -73,13 +74,17 @@ public class JWTService {
                     }
                     """.trim();
 
+            // 🔐 Define role padrão se null (tratamento defensivo)
+            UserRole effectiveRole = (user.role != null) ? user.role : UserRole.FREE;
+
             // Payload JWT com groups para compatibilidade com @RolesAllowed.
+            // ⚠️ O claim "groups" é OBRIGATÓRIO para SmallRye JWT parsear @RolesAllowed
             String payload = String.format("""
                     {
                       "iss": "%s",
                       "sub": "%s",
                       "upn": "%s",
-                                            "groups": ["%s"],
+                      "groups": ["%s"],
                       "admin": %s,
                       "iat": %d,
                       "exp": %d
@@ -88,8 +93,8 @@ public class JWTService {
                     issuer,
                     user.id.toString(),
                     user.email,
-                    user.role.name(),
-                    user.role.isAdmin(), // true apenas para ADMIN, false para outros
+                    effectiveRole.name(),
+                    effectiveRole.isAdmin(), // true apenas para ADMIN, false para outros
                     currentTime,
                     expiresAt);
 

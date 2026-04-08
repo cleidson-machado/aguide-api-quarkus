@@ -21,7 +21,7 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
      * @return Lista de conversas do usuário
      */
     public List<ConversationModel> findByUserId(UUID userId) {
-        return find("SELECT DISTINCT c FROM ConversationModel c " +
+        return find("SELECT c FROM ConversationModel c " +
                 "JOIN c.participants p " +
                 "WHERE p.user.id = ?1 " +
                 "AND p.leftAt IS NULL " +
@@ -37,7 +37,7 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
      * @return Lista de conversas ativas
      */
     public List<ConversationModel> findActiveByUserId(UUID userId) {
-        return find("SELECT DISTINCT c FROM ConversationModel c " +
+        return find("SELECT c FROM ConversationModel c " +
                 "JOIN c.participants p " +
                 "WHERE p.user.id = ?1 " +
                 "AND p.leftAt IS NULL " +
