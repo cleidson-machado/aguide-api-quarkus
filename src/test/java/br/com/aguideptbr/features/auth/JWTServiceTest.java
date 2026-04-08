@@ -71,7 +71,7 @@ class JWTServiceTest {
     }
 
     @Test
-    void testGenerateToken_NullRole() {
+    void testGenerateToken_NullRole() throws Exception {
         assumeTrue(isJwtEnabled(), "JWT desabilitado no profile de teste");
         UserModel user = new UserModel();
         user.id = UUID.randomUUID();
@@ -82,8 +82,17 @@ class JWTServiceTest {
 
         String token = jwtService.generateToken(user);
 
-        // Deve gerar token com role padrão "USER"
+        // Deve gerar token com role padrão "FREE"
         assertNotNull(token, "Token deve ser gerado mesmo com role nulo");
+
+        // Verifica que o token contém role padrão "FREE" no claim "groups"
+        String[] parts = token.split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode payloadJson = mapper.readTree(payload);
+
+        assertTrue(payloadJson.has("groups"), "Token deve ter claim 'groups'");
+        assertEquals("FREE", payloadJson.get("groups").get(0).asText(), "Role padrão deve ser FREE");
     }
 
     @Test
@@ -113,18 +122,24 @@ class JWTServiceTest {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode payloadJson = mapper.readTree(payload);
 
-        // ✅ Deve conter apenas identificadores essenciais
+        // ✅ Deve conter claims essenciais para autenticação/autorização
         assertTrue(payloadJson.has("sub"), "Payload deve ter claim 'sub' (user ID)");
         assertTrue(payloadJson.has("upn"), "Payload deve ter claim 'upn' (username)");
         assertTrue(payloadJson.has("iss"), "Payload deve ter claim 'iss' (issuer)");
         assertTrue(payloadJson.has("iat"), "Payload deve ter claim 'iat' (issued at)");
         assertTrue(payloadJson.has("exp"), "Payload deve ter claim 'exp' (expiration)");
 
-        // ❌ NÃO deve conter dados sensíveis (segurança)
-        assertFalse(payloadJson.has("groups"), "Payload NÃO deve expor 'groups' (roles)");
+        // ⚠️ CLAIM 'groups' AGORA É OBRIGATÓRIO (SmallRye JWT precisa para
+        // @RolesAllowed)
+        // Este claim foi re-habilitado em 08/04/2026 para corrigir erro 403 em
+        // endpoints
+        assertTrue(payloadJson.has("groups"), "Payload DEVE ter 'groups' (necessário para @RolesAllowed)");
+        assertTrue(payloadJson.has("admin"), "Payload deve ter claim 'admin' (flag administrativa)");
+
+        // ❌ NÃO deve conter dados pessoais desnecessários (segurança)
         assertFalse(payloadJson.has("name"), "Payload NÃO deve expor 'name' (informação pessoal)");
         assertFalse(payloadJson.has("surname"), "Payload NÃO deve expor 'surname' (informação pessoal)");
         assertFalse(payloadJson.has("email"), "Payload NÃO deve expor 'email' duplicado (já está em 'upn')");
-        assertFalse(payloadJson.has("role"), "Payload NÃO deve expor 'role' (informação sensível)");
+        assertFalse(payloadJson.has("role"), "Payload NÃO deve expor 'role' redundante (já está em 'groups')");
     }
 }
