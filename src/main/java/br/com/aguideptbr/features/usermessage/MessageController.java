@@ -24,10 +24,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 
 /**
  * Controller REST para gerenciamento de mensagens.
@@ -68,8 +66,7 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response sendMessage(
             @Valid SendMessageRequest request,
-            @HeaderParam("Authorization") String authHeader,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("POST /api/v1/messages - Sending message to conversation %s", request.getConversationId());
 
@@ -100,8 +97,7 @@ public class MessageController {
             @PathParam("conversationId") UUID conversationId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size,
-            @HeaderParam("Authorization") String authHeader,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         if (page < 0) {
             log.warnf("Invalid pagination request for conversation %s: page=%d", conversationId, page);
@@ -145,15 +141,13 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getMessageById(
             @PathParam("messageId") UUID messageId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("GET /api/v1/messages/%s", messageId);
 
-        // TODO: Adicionar validação de permissão (usuário é participante da conversa)
-        UserMessageModel message = messageService.getMessagesByConversation(null, null, 0, 1).get(0); // PLACEHOLDER
-        MessageResponse response = new MessageResponse(message);
-
-        return Response.ok(response).build();
+        // TODO: Implementar validação de permissão e busca real por ID
+        // Por enquanto retorna NotImplementedException
+        throw new jakarta.ws.rs.NotSupportedException("Endpoint not yet implemented");
     }
 
     /**
@@ -166,12 +160,11 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response markAsRead(
             @PathParam("messageId") UUID messageId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("PUT /api/v1/messages/%s/read - Marking as read", messageId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         messageService.markAsRead(messageId, userId);
 
@@ -191,12 +184,11 @@ public class MessageController {
     public Response editMessage(
             @PathParam("messageId") UUID messageId,
             Map<String, String> body,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("PUT /api/v1/messages/%s - Editing message", messageId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         String newContent = body.get("content");
         UserMessageModel message = messageService.editMessage(messageId, userId, newContent);
@@ -216,12 +208,11 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response deleteMessage(
             @PathParam("messageId") UUID messageId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("DELETE /api/v1/messages/%s - Deleting message", messageId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         messageService.deleteMessage(messageId, userId);
 
@@ -240,12 +231,11 @@ public class MessageController {
     public Response searchMessages(
             @PathParam("conversationId") UUID conversationId,
             @QueryParam("query") String query,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("GET /api/v1/messages/conversation/%s/search?query=%s", conversationId, query);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         List<UserMessageModel> messages = messageService.searchMessages(conversationId, query, userId);
         List<MessageResponse> response = messages.stream()
@@ -266,12 +256,11 @@ public class MessageController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getThreadReplies(
             @PathParam("messageId") UUID messageId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("GET /api/v1/messages/%s/replies - Getting thread", messageId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         List<UserMessageModel> replies = messageService.getThreadReplies(messageId, userId);
         List<MessageResponse> response = replies.stream()
