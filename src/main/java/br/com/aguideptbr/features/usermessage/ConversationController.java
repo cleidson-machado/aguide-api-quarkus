@@ -24,10 +24,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 
 /**
  * Controller REST para gerenciamento de conversas.
@@ -69,12 +67,11 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response createDirectConversation(
             @Valid CreateDirectConversationRequest request,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("POST /api/v1/conversations/direct - Creating conversation with user %s", request.getOtherUserId());
 
-        // TODO: Extrair userId do SecurityContext (JWT)
-        UUID currentUserId = UUID.randomUUID(); // PLACEHOLDER
+        UUID currentUserId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         ConversationModel conversation = conversationService.createDirectConversation(
                 currentUserId,
@@ -98,13 +95,12 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response createGroupConversation(
             @Valid CreateGroupRequest request,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("POST /api/v1/conversations/group - Creating group '%s' with %d participants",
                 request.getName(), request.getParticipantIds() != null ? request.getParticipantIds().size() : 0);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID creatorId = UUID.randomUUID(); // PLACEHOLDER
+        UUID creatorId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         ConversationModel conversation = conversationService.createGroupConversation(
                 request.getName(),
@@ -127,8 +123,7 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getUserConversations(
             @QueryParam("includeArchived") @DefaultValue("false") boolean includeArchived,
-            @HeaderParam("Authorization") String authHeader,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("GET /api/v1/conversations - includeArchived=%b", includeArchived);
 
@@ -151,12 +146,11 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getConversationDetails(
             @PathParam("conversationId") UUID conversationId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("GET /api/v1/conversations/%s", conversationId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         ConversationModel conversation = conversationService.getConversationDetails(conversationId, userId);
         ConversationDetailResponse response = new ConversationDetailResponse(conversation);
@@ -175,12 +169,11 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response archiveConversation(
             @PathParam("conversationId") UUID conversationId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("PUT /api/v1/conversations/%s/archive - Toggling archive", conversationId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         // TODO: Implementar toggle real (buscar estado atual e inverter)
         // Por enquanto, sempre arquiva (true)
@@ -200,12 +193,11 @@ public class ConversationController {
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response pinConversation(
             @PathParam("conversationId") UUID conversationId,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("PUT /api/v1/conversations/%s/pin - Toggling pin", conversationId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         // TODO: Implementar toggle real (buscar estado atual e inverter)
         // Por enquanto, sempre fixa (true)
@@ -227,14 +219,13 @@ public class ConversationController {
     public Response addParticipant(
             @PathParam("conversationId") UUID conversationId,
             Map<String, String> body,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         UUID newUserId = UUID.fromString(body.get("userId"));
 
         log.infof("POST /api/v1/conversations/%s/participants - Adding user %s", conversationId, newUserId);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID adminId = UUID.randomUUID(); // PLACEHOLDER
+        UUID adminId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         conversationService.addParticipant(conversationId, newUserId, adminId);
 
@@ -253,13 +244,12 @@ public class ConversationController {
     public Response removeParticipant(
             @PathParam("conversationId") UUID conversationId,
             @PathParam("userId") UUID userIdToRemove,
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.infof("DELETE /api/v1/conversations/%s/participants/%s - Removing participant", conversationId,
                 userIdToRemove);
 
-        // TODO: Extrair userId do SecurityContext
-        UUID requesterId = UUID.randomUUID(); // PLACEHOLDER
+        UUID requesterId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         conversationService.removeParticipant(conversationId, userIdToRemove, requesterId);
 
@@ -276,12 +266,11 @@ public class ConversationController {
     @Path("/unread-count")
     @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
     public Response getTotalUnreadCount(
-            @Context SecurityContext securityContext) {
+            @HeaderParam("Authorization") String authHeader) {
 
         log.info("GET /api/v1/conversations/unread-count");
 
-        // TODO: Extrair userId do SecurityContext
-        UUID userId = UUID.randomUUID(); // PLACEHOLDER
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
         long unreadCount = conversationService.getTotalUnreadCount(userId);
 
