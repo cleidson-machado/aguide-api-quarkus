@@ -108,6 +108,15 @@ public class MessageController {
             throw new BadRequestException("Size must be between 1 and 100");
         }
 
+        if (page < 0) {
+            log.warnf("Invalid pagination request for conversation %s: page=%d", conversationId, page);
+            throw new BadRequestException("Page must be greater than or equal to 0");
+        }
+        if (size < 1 || size > 100) {
+            log.warnf("Invalid pagination request for conversation %s: size=%d", conversationId, size);
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
         log.infof("GET /api/v1/messages/conversation/%s - page=%d, size=%d", conversationId, page, size);
 
         UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
