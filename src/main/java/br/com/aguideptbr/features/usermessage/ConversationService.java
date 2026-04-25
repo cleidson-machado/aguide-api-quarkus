@@ -81,14 +81,8 @@ public class ConversationService {
             throw new BadRequestException("Não é possível criar uma conversa consigo mesmo");
         }
 
-        // Verificar se usuários existem
-        UserModel user1 = UserModel.findByIdActive(user1Id);
-        UserModel user2 = UserModel.findByIdActive(user2Id);
-        if (user1 == null || user2 == null) {
-            throw new NotFoundException("Um ou mais usuários não encontrados");
-        }
-
-        // Verificar bloqueio em qualquer direção
+        // Verificar bloqueio em qualquer direção (fail-fast, antes de carregar
+        // entidades)
         if (blockRepository.isBlockedInAnyDirection(user1Id, user2Id)) {
             throw new jakarta.ws.rs.WebApplicationException(
                     jakarta.ws.rs.core.Response.status(409)
@@ -96,6 +90,13 @@ public class ConversationService {
                                     "error", "BUSINESS_RULE",
                                     "message", "Não é possível iniciar conversa com este usuário"))
                             .build());
+        }
+
+        // Verificar se usuários existem
+        UserModel user1 = UserModel.findByIdActive(user1Id);
+        UserModel user2 = UserModel.findByIdActive(user2Id);
+        if (user1 == null || user2 == null) {
+            throw new NotFoundException("Um ou mais usuários não encontrados");
         }
 
         // Verificar se já existe conversa direta entre eles
