@@ -6,10 +6,12 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
+import br.com.aguideptbr.features.usermessage.dto.ClearConversationResponse;
 import br.com.aguideptbr.features.usermessage.dto.ConversationDetailResponse;
 import br.com.aguideptbr.features.usermessage.dto.ConversationSummaryDTO;
 import br.com.aguideptbr.features.usermessage.dto.CreateDirectConversationRequest;
 import br.com.aguideptbr.features.usermessage.dto.CreateGroupRequest;
+import br.com.aguideptbr.features.usermessage.dto.MuteStatusResponse;
 import br.com.aguideptbr.util.SecurityUtils;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -165,7 +167,7 @@ public class ConversationController {
     }
 
     /**
-     * Arquiva ou desarquiva uma conversa (toggle).
+     * Arquiva ou desarquiva uma conversa (toggle real).
      *
      * PUT /api/v1/conversations/{conversationId}/archive
      */
@@ -180,16 +182,14 @@ public class ConversationController {
 
         UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
-        // TODO: Implementar toggle real (buscar estado atual e inverter)
-        // Por enquanto, sempre arquiva (true)
-        conversationService.archiveConversation(conversationId, userId, true);
+        boolean isArchived = conversationService.archiveConversation(conversationId, userId);
 
-        log.infof("Conversation %s archived", conversationId);
-        return Response.noContent().build();
+        log.infof("Conversation %s archive toggled to %b", conversationId, isArchived);
+        return Response.ok(Map.of("conversationId", conversationId, "isArchived", isArchived)).build();
     }
 
     /**
-     * Fixa ou desfixa uma conversa (toggle).
+     * Fixa ou desfixa uma conversa (toggle real).
      *
      * PUT /api/v1/conversations/{conversationId}/pin
      */
@@ -204,12 +204,67 @@ public class ConversationController {
 
         UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
 
-        // TODO: Implementar toggle real (buscar estado atual e inverter)
-        // Por enquanto, sempre fixa (true)
-        conversationService.pinConversation(conversationId, userId, true);
+        boolean isPinned = conversationService.pinConversation(conversationId, userId);
 
-        log.infof("Conversation %s pinned", conversationId);
-        return Response.noContent().build();
+        log.infof("Conversation %s pin toggled to %b", conversationId, isPinned);
+        return Response.ok(Map.of("conversationId", conversationId, "isPinned", isPinned)).build();
+    }
+
+    /**
+     * Silencia ou dessilencia uma conversa (toggle).
+     *
+     * PUT /api/v1/conversations/{conversationId}/mute
+     * Resposta: { "conversationId": "uuid", "isMuted": true, "mutedAt": "..." }
+     */
+    @PUT
+    @Path("/{conversationId}/mute")
+    @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
+    public Response muteConversation(
+            @PathParam("conversationId") UUID conversationId,
+            @HeaderParam("Authorization") String authHeader) {
+
+        log.infof("PUT /api/v1/conversations/%s/mute - Toggling mute", conversationId);
+
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
+
+        ConversationParticipantModel participant = conversationService.muteConversation(conversationId, userId);
+
+        MuteStatusResponse responseBody = new MuteStatusResponse(
+                conversationId,
+                participant.isMuted,
+                participant.mutedAt);
+
+        log.infof("Conversation %s mute toggled to %b", conversationId, participant.isMuted);
+        return Response.ok(responseBody).build();
+    }
+
+    /**
+     * Limpa o histórico da conversa para o usuário atual (clear por participante).
+     * Não apaga mensagens — define um marco clearedAt; mensagens anteriores ficam
+     * ocultas.
+     *
+     * PUT /api/v1/conversations/{conversationId}/clear
+     * Resposta: { "conversationId": "uuid", "clearedAt": "..." }
+     */
+    @PUT
+    @Path("/{conversationId}/clear")
+    @RolesAllowed({ "USER", "ADMIN", "FREE", "PREMIUM_USER", "CHANNEL_OWNER", "MANAGER" })
+    public Response clearConversation(
+            @PathParam("conversationId") UUID conversationId,
+            @HeaderParam("Authorization") String authHeader) {
+
+        log.infof("PUT /api/v1/conversations/%s/clear - Clearing conversation", conversationId);
+
+        UUID userId = SecurityUtils.extractUserIdFromToken(authHeader);
+
+        ConversationParticipantModel participant = conversationService.clearConversation(conversationId, userId);
+
+        ClearConversationResponse responseBody = new ClearConversationResponse(
+                conversationId,
+                participant.clearedAt);
+
+        log.infof("Conversation %s cleared at %s for user %s", conversationId, participant.clearedAt, userId);
+        return Response.ok(responseBody).build();
     }
 
     /**

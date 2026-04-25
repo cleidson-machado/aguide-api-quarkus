@@ -2,6 +2,7 @@ package br.com.aguideptbr.features.usermessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.jboss.logging.Logger;
@@ -32,6 +33,7 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final ConversationParticipantRepository participantRepository;
     private final UserMessageRepository messageRepository;
+    private final UserBlockRepository blockRepository;
     private final Logger log;
 
     @Inject
@@ -39,10 +41,12 @@ public class ConversationService {
             ConversationRepository conversationRepository,
             ConversationParticipantRepository participantRepository,
             UserMessageRepository messageRepository,
+            UserBlockRepository blockRepository,
             Logger log) {
         this.conversationRepository = conversationRepository;
         this.participantRepository = participantRepository;
         this.messageRepository = messageRepository;
+        this.blockRepository = blockRepository;
         this.log = log;
     }
 
@@ -77,11 +81,32 @@ public class ConversationService {
             throw new BadRequestException("Não é possível criar uma conversa consigo mesmo");
         }
 
+        // Verificar bloqueio em qualquer direção (fail-fast, antes de carregar
+        // entidades)
+        if (blockRepository.isBlockedInAnyDirection(user1Id, user2Id)) {
+            throw new jakarta.ws.rs.WebApplicationException(
+                    jakarta.ws.rs.core.Response.status(409)
+                            .entity(Map.of(
+                                    "error", "BUSINESS_RULE",
+                                    "message", "Não é possível iniciar conversa com este usuário"))
+                            .build());
+        }
+
         // Verificar se usuários existem
         UserModel user1 = UserModel.findByIdActive(user1Id);
         UserModel user2 = UserModel.findByIdActive(user2Id);
         if (user1 == null || user2 == null) {
             throw new NotFoundException("Um ou mais usuários não encontrados");
+        }
+
+        // Verificar bloqueio em qualquer direção
+        if (blockRepository.isBlockedInAnyDirection(user1Id, user2Id)) {
+            throw new jakarta.ws.rs.WebApplicationException(
+                    jakarta.ws.rs.core.Response.status(409)
+                            .entity(Map.of(
+                                    "error", "BUSINESS_RULE",
+                                    "message", "Não é possível iniciar conversa com este usuário"))
+                            .build());
         }
 
         // Verificar se já existe conversa direta entre eles
@@ -259,25 +284,22 @@ public class ConversationService {
     }
 
     /**
-     * Arquiva ou desarquiva uma conversa para um usuário.
+     * Arquiva ou desarquiva uma conversa para um usuário (toggle).
      *
      * @param conversationId ID da conversa
      * @param userId         ID do usuário
-     * @param archive        true para arquivar, false para desarquivar
      * @throws NotFoundException  se conversa não existe
      * @throws ForbiddenException se usuário não é participante
+     * @return true se ficou arquivada, false se foi desarquivada
      */
     @Transactional
-    public void archiveConversation(UUID conversationId, UUID userId, boolean archive) {
-        log.infof("Archiving conversation: conversation=%s, user=%s, archive=%b",
-                conversationId, userId, archive);
+    public boolean archiveConversation(UUID conversationId, UUID userId) {
+        log.infof("Toggling archive: conversation=%s, user=%s", conversationId, userId);
 
-        // Validar conversa existe
         if (conversationRepository.findByIdActive(conversationId) == null) {
             throw new NotFoundException("Conversa não encontrada");
         }
 
-        // Buscar participante
         ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
                 conversationId);
 
@@ -285,33 +307,30 @@ public class ConversationService {
             throw new ForbiddenException("Você não é participante desta conversa");
         }
 
-        // Atualizar status de arquivamento
-        participant.isArchived = archive;
+        participant.isArchived = !participant.isArchived;
         participantRepository.persist(participant);
 
-        log.infof("Conversation archive status updated");
+        log.infof("Conversation %s archive toggled to: %b", conversationId, participant.isArchived);
+        return participant.isArchived;
     }
 
     /**
-     * Fixa ou desfixa uma conversa para um usuário.
+     * Fixa ou desfixa uma conversa para um usuário (toggle).
      *
      * @param conversationId ID da conversa
      * @param userId         ID do usuário
-     * @param pin            true para fixar, false para desfixar
      * @throws NotFoundException  se conversa não existe
      * @throws ForbiddenException se usuário não é participante
+     * @return true se ficou fixada, false se foi desfixada
      */
     @Transactional
-    public void pinConversation(UUID conversationId, UUID userId, boolean pin) {
-        log.infof("Pinning conversation: conversation=%s, user=%s, pin=%b",
-                conversationId, userId, pin);
+    public boolean pinConversation(UUID conversationId, UUID userId) {
+        log.infof("Toggling pin: conversation=%s, user=%s", conversationId, userId);
 
-        // Validar conversa existe
         if (conversationRepository.findByIdActive(conversationId) == null) {
             throw new NotFoundException("Conversa não encontrada");
         }
 
-        // Buscar participante
         ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
                 conversationId);
 
@@ -319,11 +338,77 @@ public class ConversationService {
             throw new ForbiddenException("Você não é participante desta conversa");
         }
 
-        // Atualizar status de fixação
-        participant.isPinned = pin;
+        participant.isPinned = !participant.isPinned;
         participantRepository.persist(participant);
 
-        log.infof("Conversation pin status updated");
+        log.infof("Conversation %s pin toggled to: %b", conversationId, participant.isPinned);
+        return participant.isPinned;
+    }
+
+    /**
+     * Silencia ou dessilencia uma conversa para um usuário (toggle).
+     *
+     * @param conversationId ID da conversa
+     * @param userId         ID do usuário
+     * @throws NotFoundException  se conversa não existe
+     * @throws ForbiddenException se usuário não é participante
+     * @return participante atualizado (isMuted, mutedAt)
+     */
+    @Transactional
+    public ConversationParticipantModel muteConversation(UUID conversationId, UUID userId) {
+        log.infof("Toggling mute: conversation=%s, user=%s", conversationId, userId);
+
+        if (conversationRepository.findByIdActive(conversationId) == null) {
+            throw new NotFoundException("Conversa não encontrada");
+        }
+
+        ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
+                conversationId);
+
+        if (participant == null || !participant.isActive()) {
+            throw new ForbiddenException("Você não é participante desta conversa");
+        }
+
+        participant.isMuted = !participant.isMuted;
+        participant.mutedAt = participant.isMuted ? LocalDateTime.now() : null;
+        participantRepository.persist(participant);
+
+        log.infof("Conversation %s mute toggled to: %b", conversationId, participant.isMuted);
+        return participant;
+    }
+
+    /**
+     * Limpa o histórico de uma conversa para um participante (clear por
+     * participante).
+     * Define um marco {@code clearedAt}: mensagens com sentAt &lt;= clearedAt ficam
+     * ocultas apenas para este usuário. Outros participantes não são afetados.
+     *
+     * @param conversationId ID da conversa
+     * @param userId         ID do usuário
+     * @throws NotFoundException  se conversa não existe
+     * @throws ForbiddenException se usuário não é participante
+     * @return participante atualizado (clearedAt)
+     */
+    @Transactional
+    public ConversationParticipantModel clearConversation(UUID conversationId, UUID userId) {
+        log.infof("Clearing conversation: conversation=%s, user=%s", conversationId, userId);
+
+        if (conversationRepository.findByIdActive(conversationId) == null) {
+            throw new NotFoundException("Conversa não encontrada");
+        }
+
+        ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
+                conversationId);
+
+        if (participant == null || !participant.isActive()) {
+            throw new ForbiddenException("Você não é participante desta conversa");
+        }
+
+        participant.clearedAt = LocalDateTime.now();
+        participantRepository.persist(participant);
+
+        log.infof("Conversation %s cleared at: %s for user %s", conversationId, participant.clearedAt, userId);
+        return participant;
     }
 
     /**
@@ -362,7 +447,9 @@ public class ConversationService {
                     ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
                             conversation.id);
                     UserMessageModel lastMessage = messageRepository.findLastByConversation(conversation.id);
-                    long unreadCount = messageRepository.countUnreadByUser(userId, conversation.id);
+                    long unreadCount = messageRepository.countUnreadByUserAfterClearedAt(
+                            userId, conversation.id,
+                            participant != null ? participant.clearedAt : null);
 
                     String preview = lastMessage != null ? lastMessage.txtContent : null;
                     if (preview != null && preview.length() > 100) {
