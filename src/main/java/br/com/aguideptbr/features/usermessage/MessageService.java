@@ -2,6 +2,7 @@ package br.com.aguideptbr.features.usermessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.jboss.logging.Logger;
@@ -12,6 +13,8 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 /**
  * Service para lógica de negócio relacionada a mensagens.
@@ -30,6 +33,7 @@ public class MessageService {
     private final UserMessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final ConversationParticipantRepository participantRepository;
+    private final UserBlockRepository blockRepository;
     private final Logger log;
 
     @Inject
@@ -37,10 +41,12 @@ public class MessageService {
             UserMessageRepository messageRepository,
             ConversationRepository conversationRepository,
             ConversationParticipantRepository participantRepository,
+            UserBlockRepository blockRepository,
             Logger log) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.participantRepository = participantRepository;
+        this.blockRepository = blockRepository;
         this.log = log;
     }
 
@@ -79,6 +85,22 @@ public class MessageService {
         if (!participantRepository.isUserParticipant(senderId, conversationId)) {
             log.warnf("Send message denied: user %s is not participant of conversation %s", senderId, conversationId);
             throw new ForbiddenException("Você não é participante desta conversa");
+        }
+
+        // Para conversas DIRECT, verificar bloqueio entre os participantes
+        if (conversation.conversationType == ConversationType.DIRECT) {
+            List<ConversationParticipantModel> participants = participantRepository.findByConversation(conversationId);
+            for (ConversationParticipantModel p : participants) {
+                if (!p.user.id.equals(senderId) && blockRepository.isBlockedInAnyDirection(senderId, p.user.id)) {
+                    log.warnf("Send message denied: block detected between %s and %s", senderId, p.user.id);
+                    throw new WebApplicationException(
+                            Response.status(409)
+                                    .entity(Map.of(
+                                            "error", "BUSINESS_RULE",
+                                            "message", "Não é possível enviar mensagem para este usuário"))
+                                    .build());
+                }
+            }
         }
 
         // Validar conteúdo
@@ -262,12 +284,15 @@ public class MessageService {
         }
 
         // Validar usuário é participante
-        if (!participantRepository.isUserParticipant(userId, conversationId)) {
+        ConversationParticipantModel participant = participantRepository.findByUserAndConversation(userId,
+                conversationId);
+        if (participant == null || !participant.isActive()) {
             log.warnf("Get messages denied: user %s is not participant of conversation %s", userId, conversationId);
             throw new ForbiddenException("Você não é participante desta conversa");
         }
 
-        return messageRepository.findByConversation(conversationId, page, size);
+        // Respeitar marco de limpeza do participante
+        return messageRepository.findByConversationAfterClearedAt(conversationId, participant.clearedAt, page, size);
     }
 
     /**

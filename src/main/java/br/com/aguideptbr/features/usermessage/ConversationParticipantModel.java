@@ -99,6 +99,22 @@ public class ConversationParticipantModel extends PanacheEntityBase {
     public boolean isMuted = false;
 
     /**
+     * Data/hora em que o usuário silenciou esta conversa.
+     * Null quando não silenciada. Atualizado junto com isMuted.
+     */
+    @Column(name = "muted_at")
+    public LocalDateTime mutedAt;
+
+    /**
+     * Marco de limpeza por participante.
+     * Mensagens com sentAt {@literal <=} clearedAt ficam ocultas apenas para este
+     * usuário.
+     * Outros participantes continuam vendo o histórico completo.
+     */
+    @Column(name = "cleared_at")
+    public LocalDateTime clearedAt;
+
+    /**
      * Data de entrada do usuário na conversa.
      */
     @CreationTimestamp

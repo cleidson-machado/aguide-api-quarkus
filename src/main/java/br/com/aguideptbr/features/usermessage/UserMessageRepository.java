@@ -1,5 +1,6 @@
 package br.com.aguideptbr.features.usermessage;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +27,43 @@ public class UserMessageRepository implements PanacheRepositoryBase<UserMessageM
         return find("conversation.id = ?1 and deletedAt is null ORDER BY sentAt DESC", conversationId)
                 .page(Page.of(page, size))
                 .list();
+    }
+
+    /**
+     * Busca mensagens de uma conversa respeitando o marco de limpeza do
+     * participante.
+     * Exclui mensagens com sentAt {@literal <=} clearedAt (ocultas apenas para este
+     * usuário).
+     *
+     * @param conversationId ID da conversa
+     * @param clearedAt      Marco de limpeza do participante (null = sem filtro)
+     * @param page           Número da página (0-based)
+     * @param size           Tamanho da página
+     * @return Lista de mensagens paginadas visíveis para o participante
+     */
+    public List<UserMessageModel> findByConversationAfterClearedAt(
+            UUID conversationId, LocalDateTime clearedAt, int page, int size) {
+        if (clearedAt == null) {
+            return findByConversation(conversationId, page, size);
+        }
+        return find(
+                "conversation.id = ?1 and deletedAt is null and sentAt > ?2 ORDER BY sentAt DESC",
+                conversationId, clearedAt)
+                .page(Page.of(page, size))
+                .list();
+    }
+
+    /**
+     * Conta mensagens não lidas de um usuário em uma conversa, respeitando
+     * cleared_at.
+     */
+    public long countUnreadByUserAfterClearedAt(UUID userId, UUID conversationId, LocalDateTime clearedAt) {
+        if (clearedAt == null) {
+            return countUnreadByUser(userId, conversationId);
+        }
+        return count(
+                "conversation.id = ?1 and sender.id != ?2 and isRead = false and deletedAt is null and sentAt > ?3",
+                conversationId, userId, clearedAt);
     }
 
     /**
