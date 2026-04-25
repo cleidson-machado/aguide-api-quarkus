@@ -276,7 +276,11 @@ public class UserRankingService {
             existing.setLastActivityAt(updatedData.getLastActivityAt());
         }
         if (updatedData.getLastContentViewAt() != null) {
-            validationService.validateTimestamp(updatedData.getLastContentViewAt(), "lastContentViewAt");
+            // Não valida limite de passado para lastContentViewAt: é um timestamp
+            // histórico legítimo (usuário inativo por dias/semanas ainda tem uma última
+            // visualização válida de qualquer data no passado).
+            // Apenas rejeita timestamps futuros (tolerância de 5 min).
+            validationService.validateTimestampNotFuture(updatedData.getLastContentViewAt(), "lastContentViewAt");
             existing.setLastContentViewAt(updatedData.getLastContentViewAt());
         }
         if (updatedData.getLastMessageSentAt() != null) {

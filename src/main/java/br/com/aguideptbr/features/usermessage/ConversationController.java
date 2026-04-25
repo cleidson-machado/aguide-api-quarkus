@@ -73,14 +73,19 @@ public class ConversationController {
 
         UUID currentUserId = SecurityUtils.extractUserIdFromToken(authHeader);
 
+        // Verificar se já existe antes de criar (para determinar status HTTP correto)
+        boolean alreadyExists = conversationService.directConversationExists(currentUserId, request.getOtherUserId());
+
         ConversationModel conversation = conversationService.createDirectConversation(
                 currentUserId,
                 request.getOtherUserId());
 
         ConversationDetailResponse response = new ConversationDetailResponse(conversation);
 
-        log.infof("Direct conversation created: id=%s", conversation.id);
-        return Response.status(Response.Status.CREATED).entity(response).build();
+        // POST idempotente: 200 se já existia, 201 se foi criada agora
+        Response.Status status = alreadyExists ? Response.Status.OK : Response.Status.CREATED;
+        log.infof("Direct conversation %s: id=%s", alreadyExists ? "found (existing)" : "created", conversation.id);
+        return Response.status(status).entity(response).build();
     }
 
     /**
