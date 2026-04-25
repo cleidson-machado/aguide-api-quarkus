@@ -47,6 +47,18 @@ public class ConversationService {
     }
 
     /**
+     * Verifica se já existe uma conversa direta entre dois usuários.
+     * Usado pelo controller para determinar o status HTTP correto (200 vs 201).
+     *
+     * @param user1Id ID do primeiro usuário
+     * @param user2Id ID do segundo usuário
+     * @return true se já existe conversa direta entre eles
+     */
+    public boolean directConversationExists(UUID user1Id, UUID user2Id) {
+        return conversationRepository.findDirectConversation(user1Id, user2Id) != null;
+    }
+
+    /**
      * Cria uma conversa direta entre dois usuários.
      * Se já existe uma conversa entre eles, retorna a existente.
      *
@@ -76,7 +88,10 @@ public class ConversationService {
         ConversationModel existingConversation = conversationRepository.findDirectConversation(user1Id, user2Id);
         if (existingConversation != null) {
             log.infof("Direct conversation already exists: id=%s", existingConversation.id);
-            return existingConversation;
+            // Recarregar com participantes e usuários usando JOIN FETCH para evitar
+            // LazyInitializationException ao construir ConversationDetailResponse fora
+            // desta transação (participants é LAZY no ConversationModel).
+            return conversationRepository.findByIdWithParticipants(existingConversation.id);
         }
 
         // Criar nova conversa
@@ -330,8 +345,15 @@ public class ConversationService {
 
     /**
      * Retorna summaries enriquecidos para inbox com campos usados no frontend.
+     *
+     * @Transactional garante que todas as operações Hibernate (incluindo o JOIN
+     *                FETCH
+     *                em findOtherParticipantWithUser) compartilhem a mesma sessão,
+     *                evitando
+     *                LazyInitializationException e garantindo que displayName seja
+     *                populado.
      */
-    @SuppressWarnings("null")
+    @Transactional
     public List<ConversationSummaryDTO> getUserConversationSummaries(UUID userId, boolean includeArchived) {
         List<ConversationModel> conversations = getUserConversations(userId, includeArchived);
 
@@ -354,8 +376,16 @@ public class ConversationService {
                     if (conversation.conversationType == ConversationType.DIRECT) {
                         ConversationParticipantModel other = participantRepository
                                 .findOtherParticipantWithUser(userId, conversation.id);
-                        if (other != null) {
+                        if (other != null && other.user != null) {
                             displayName = other.user.getFullName();
+                            log.debugf("displayName resolved for DIRECT conversation %s: '%s'",
+                                    conversation.id, displayName);
+                        } else {
+                            log.warnf("Could not resolve displayName for DIRECT conversation %s: "
+                                    + "otherParticipant=%s, user=%s",
+                                    conversation.id,
+                                    other != null ? other.id : "null",
+                                    other != null ? other.user : "null");
                         }
                     }
 

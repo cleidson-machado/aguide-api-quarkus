@@ -85,6 +85,31 @@ public class UserRankingValidationService {
     }
 
     /**
+     * Valida que um timestamp não está no futuro (sem restrição de passado).
+     * Uso: campos históricos como {@code lastContentViewAt} onde um valor antigo
+     * é completamente legítimo (ex.: usuário inativo há semanas).
+     *
+     * @param timestamp Timestamp a validar
+     * @param fieldName Nome do campo (para mensagem de erro)
+     * @throws WebApplicationException (400) se timestamp estiver no futuro
+     */
+    public void validateTimestampNotFuture(LocalDateTime timestamp, String fieldName) {
+        if (timestamp == null) {
+            return;
+        }
+
+        LocalDateTime maxFuture = LocalDateTime.now().plusMinutes(TIMESTAMP_TOLERANCE_MINUTES);
+
+        if (timestamp.isAfter(maxFuture)) {
+            log.warnf("⚠️ Timestamp is in the future: %s = %s (max: %s)",
+                    fieldName, timestamp, maxFuture);
+            throw new WebApplicationException(
+                    String.format("%s cannot be in the future (received: %s)", fieldName, timestamp),
+                    Response.Status.BAD_REQUEST);
+        }
+    }
+
+    /**
      * Valida consecutiveDaysStreak para garantir que está dentro de limites
      * razoáveis.
      *
