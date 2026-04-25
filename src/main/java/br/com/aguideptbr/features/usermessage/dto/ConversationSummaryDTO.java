@@ -23,6 +23,13 @@ public class ConversationSummaryDTO {
     private Boolean isArchived;
     private LocalDateTime createdAt;
 
+    /**
+     * Nome de exibição calculado.
+     * Para conversas DIRECT: nome completo do outro participante.
+     * Para GROUP/CHANNEL: igual ao campo {@code name}.
+     */
+    private String displayName;
+
     // Construtores
 
     public ConversationSummaryDTO() {
@@ -52,6 +59,17 @@ public class ConversationSummaryDTO {
         this.lastMessagePreview = lastMessagePreview;
         this.isPinned = isPinned != null ? isPinned : Boolean.FALSE;
         this.isArchived = isArchived != null ? isArchived : Boolean.FALSE;
+    }
+
+    public ConversationSummaryDTO(
+            ConversationModel conversation,
+            Long unreadCount,
+            String lastMessagePreview,
+            Boolean isPinned,
+            Boolean isArchived,
+            String displayName) {
+        this(conversation, unreadCount, lastMessagePreview, isPinned, isArchived);
+        this.displayName = displayName;
     }
 
     // Getters e Setters
@@ -134,5 +152,13 @@ public class ConversationSummaryDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }

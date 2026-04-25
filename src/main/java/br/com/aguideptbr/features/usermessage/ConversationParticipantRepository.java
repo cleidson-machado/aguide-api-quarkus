@@ -129,4 +129,20 @@ public class ConversationParticipantRepository implements PanacheRepositoryBase<
         update("leftAt = CURRENT_TIMESTAMP WHERE user.id = ?1 and conversation.id = ?2 and leftAt is null",
                 userId, conversationId);
     }
+
+    /**
+     * Busca o participante oposto em uma conversa DIRECT, com o {@code user} já
+     * carregado (JOIN FETCH) para evitar LazyInitializationException fora de
+     * transação.
+     *
+     * @param currentUserId  ID do usuário logado (a excluir)
+     * @param conversationId ID da conversa
+     * @return O outro participante com {@code user} populado, ou {@code null}
+     */
+    public ConversationParticipantModel findOtherParticipantWithUser(UUID currentUserId, UUID conversationId) {
+        return find("SELECT p FROM ConversationParticipantModel p JOIN FETCH p.user " +
+                "WHERE p.conversation.id = ?1 AND p.user.id != ?2 AND p.leftAt IS NULL",
+                conversationId, currentUserId)
+                .firstResult();
+    }
 }

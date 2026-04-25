@@ -331,6 +331,7 @@ public class ConversationService {
     /**
      * Retorna summaries enriquecidos para inbox com campos usados no frontend.
      */
+    @SuppressWarnings("null")
     public List<ConversationSummaryDTO> getUserConversationSummaries(UUID userId, boolean includeArchived) {
         List<ConversationModel> conversations = getUserConversations(userId, includeArchived);
 
@@ -349,12 +350,22 @@ public class ConversationService {
                     boolean isPinned = participant != null && participant.isPinned;
                     boolean isArchived = participant != null && participant.isArchived;
 
+                    String displayName = null;
+                    if (conversation.conversationType == ConversationType.DIRECT) {
+                        ConversationParticipantModel other = participantRepository
+                                .findOtherParticipantWithUser(userId, conversation.id);
+                        if (other != null) {
+                            displayName = other.user.getFullName();
+                        }
+                    }
+
                     return new ConversationSummaryDTO(
                             conversation,
                             unreadCount,
                             preview,
                             isPinned,
-                            isArchived);
+                            isArchived,
+                            displayName);
                 })
                 .toList();
     }
@@ -428,5 +439,8 @@ public class ConversationService {
         participant.isCreator = isCreator;
         participant.joinedAt = LocalDateTime.now();
         participantRepository.persist(participant);
+        // Keep in-memory collection in sync so the response DTO reflects the
+        // newly added participants without requiring a DB re-fetch.
+        conversation.participants.add(participant);
     }
 }

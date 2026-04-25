@@ -98,6 +98,8 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
 
     /**
      * Busca conversa com participantes carregados (eager loading).
+     * Também carrega o {@code user} de cada participante via JOIN FETCH para
+     * evitar LazyInitializationException ao construir os DTOs fora de transação.
      *
      * @param conversationId ID da conversa
      * @return Conversa com participantes ou null
@@ -105,6 +107,7 @@ public class ConversationRepository implements PanacheRepositoryBase<Conversatio
     public ConversationModel findByIdWithParticipants(UUID conversationId) {
         return find("SELECT DISTINCT c FROM ConversationModel c " +
                 "LEFT JOIN FETCH c.participants p " +
+                "LEFT JOIN FETCH p.user " +
                 "WHERE c.id = ?1 " +
                 "AND c.deletedAt IS NULL", conversationId)
                 .firstResult();
