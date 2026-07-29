@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir *)"
+      "Bash(mkdir *)",
+      "Bash(cd /Users/cleidson/RestAPIsApps/GoBack_Java_Quarkus/mobile-rest-api && ./mvnw compile -pl . -q 2>&1 | tail -10)"
     ]
   }
 }
