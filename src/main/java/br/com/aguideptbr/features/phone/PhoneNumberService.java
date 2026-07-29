@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 
 import br.com.aguideptbr.features.user.UserModel;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+//import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -16,11 +16,19 @@ import jakarta.ws.rs.NotFoundException;
 @ApplicationScoped
 public class PhoneNumberService {
 
-    @Inject
-    PhoneNumberRepository phoneRepository;
+    private final PhoneNumberRepository phoneRepository;
+    private final Logger log;
 
-    @Inject
-    Logger log;
+    public PhoneNumberService(PhoneNumberRepository phoneRepository, Logger log) {
+        this.phoneRepository = phoneRepository;
+        this.log = log;
+    }
+
+    // @Inject
+    // PhoneNumberRepository phoneRepository;
+
+    // @Inject
+    // Logger log;
 
     private static final Pattern BRAZIL_MOBILE = Pattern.compile("^\\+55([1-9]{2})(9[0-9]{8})$");
 
