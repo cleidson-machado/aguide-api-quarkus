@@ -1,0 +1,334 @@
+# AI Assistant Configuration
+# This file defines project-wide AI assistant settings and agent definitions
+# Compatible with: Abacus AI CLI, GitHub Copilot, Cursor, Continue, and other AI coding assistants
+
+project:
+  name: mobile-rest-api
+  type: java-quarkus-backend
+  version: 1.0.0-SNAPSHOT
+  description: "REST API Backend for Mobile Applications built with Quarkus 3.x and Java 17"
+
+# Primary documentation files for AI assistants
+documentation:
+  main: "AGENTS.md"
+  guides:
+    - "README.md"
+    - "DEVELOPMENT_GUIDE.md"
+    - "QUICK_START.md"
+    - "SETUP_GUIDE_DATABASES.md"
+  copilot_instructions: ".github/copilot-instructions.md"
+
+# Critical rules that AI assistants MUST follow
+critical_rules:
+  database_safety:
+    - "NEVER connect to quarkus_db (production) locally"
+    - "ALWAYS use quarkus_dev for local development"
+    - "NEVER use clean-at-start=true in production config"
+    - "ALWAYS verify QUARKUS_PROFILE before executing code"
+  
+  code_patterns:
+    - "ALWAYS use constructor injection (never field @Inject)"
+    - "ALWAYS use private fields in DTOs with getters/setters"
+    - "ALWAYS use soft delete (deletedAt) instead of hard delete"
+    - "NEVER add @Transactional to repository methods"
+    - "NEVER put business logic in controllers or repositories"
+  
+  before_code_changes:
+    - "Read existing code in the feature package first"
+    - "Follow existing architecture patterns"
+    - "Compile after changes: ./mvnw compile"
+    - "Run tests if modifying business logic: ./mvnw test"
+
+# Technology stack
+stack:
+  language: Java
+  version: "17"
+  framework: Quarkus
+  framework_version: "3.23.3"
+  build_tool: Maven
+  database: PostgreSQL
+  orm: "Hibernate ORM with Panache"
+  rest: "RESTEasy Reactive"
+  testing: "JUnit 5 with JaCoCo"
+
+# Project structure
+structure:
+  source_root: "src/main/java/br/com/aguideptbr"
+  test_root: "src/test/java/br/com/aguideptbr"
+  migrations: "src/main/resources/db/migration"
+  resources: "src/main/resources"
+  
+  package_pattern: "br.com.aguideptbr.features.<feature>/"
+  layer_pattern:
+    - "*Controller.java  # REST endpoints"
+    - "*Service.java     # Business logic"
+    - "*Repository.java  # Data access"
+    - "*Model.java       # JPA entities"
+    - "dto/*.java        # Request/Response DTOs"
+
+# Common commands for AI assistants to use
+commands:
+  dev:
+    start: "source .env && ./mvnw quarkus:dev"
+    compile: "./mvnw compile"
+    test: "./mvnw test"
+    verify: "./mvnw verify"
+    package: "./mvnw package"
+  
+  database:
+    check_profile: "echo $QUARKUS_PROFILE"
+    check_db: "grep DB_DEV_NAME .env"
+    check_postgres: "docker ps | grep postgres"
+  
+  quality:
+    coverage: "./mvnw verify"
+    view_coverage: "open target/site/jacoco/index.html"
+
+# Environment profiles
+environments:
+  dev:
+    database: "quarkus_dev"
+    profile: "dev"
+    clean_at_start: true
+    location: "local"
+  
+  test:
+    database: "quarkus_test"
+    profile: "test"
+    clean_at_start: false
+    location: "local"
+  
+  prod:
+    database: "quarkus_db"
+    profile: "prod"
+    clean_at_start: false
+    location: "vps"
+    warning: "NEVER connect to this database locally!"
+
+# Specialized agents available for invocation
+agents:
+  quarkus_db_specialist:
+    description: "PostgreSQL + Quarkus database expert for schema design, migrations, entities, and SQL"
+    reference: ".github/skills/quarkus-db-specialist/SKILL.md"
+    use_for:
+      - "Database schema design and evolution"
+      - "Flyway migration files"
+      - "JPA/Panache entity modeling and relationships"
+      - "Advanced SQL queries (CTEs, window functions, indexes)"
+      - "Seed/fixture data scripts"
+      - "REST API layer design aligned with DB model"
+    expertise:
+      - "PostgreSQL"
+      - "Flyway"
+      - "JPA/Hibernate"
+      - "Panache"
+      - "SQL optimization"
+  
+  usermessage_backend:
+    description: "Specialist in user messaging feature implementation (conversations, messages, participants)"
+    reference: ".github/agents/usermessage-backend.agent.md"
+    use_for:
+      - "Implementing messaging endpoints"
+      - "Debugging conversation flows"
+      - "Message persistence and retrieval"
+      - "Read receipts and unread counts"
+      - "Participant management"
+      - "Message threading"
+    expertise:
+      - "Messaging system architecture"
+      - "Business logic enforcement"
+      - "API contract compliance"
+  
+  usermessage_implementation:
+    description: "Complete workflow for implementing/completing the messaging feature"
+    reference: ".github/skills/usermessage-implementation/SKILL.md"
+    use_for:
+      - "End-to-end messaging feature implementation"
+      - "Architecture compliance validation"
+      - "Business logic verification"
+      - "Code quality checks"
+      - "API contract verification"
+    phases:
+      - "Discovery & Analysis"
+      - "Implementation"
+      - "Validation"
+      - "Documentation & Handoff"
+
+# Code patterns and templates
+patterns:
+  controller:
+    template: |
+      @Path("/api/v1/resource")
+      @Produces(MediaType.APPLICATION_JSON)
+      @Consumes(MediaType.APPLICATION_JSON)
+      public class ResourceController {
+          private final ResourceService service;
+          private final Logger log;
+          
+          public ResourceController(ResourceService service, Logger log) {
+              this.service = service;
+              this.log = log;
+          }
+      }
+    rules:
+      - "Constructor injection only"
+      - "Log at method entry"
+      - "Delegate to service layer"
+      - "Return proper HTTP status codes"
+  
+  service:
+    template: |
+      @ApplicationScoped
+      public class ResourceService {
+          private final ResourceRepository repository;
+          private final Logger log;
+          
+          public ResourceService(ResourceRepository repository, Logger log) {
+              this.repository = repository;
+              this.log = log;
+          }
+          
+          @Transactional
+          public ResourceResponse create(CreateResourceRequest request) {
+              // Business logic here
+          }
+      }
+    rules:
+      - "Constructor injection only"
+      - "@Transactional on CUD operations only"
+      - "Business logic and validation"
+      - "Never direct repository in controller"
+  
+  repository:
+    template: |
+      @ApplicationScoped
+      public class ResourceRepository implements PanacheRepositoryBase<ResourceModel, UUID> {
+          public List<ResourceModel> findActive() {
+              return find("deletedAt is null").list();
+          }
+      }
+    rules:
+      - "Extend PanacheRepositoryBase"
+      - "NO @Transactional"
+      - "NO business logic"
+      - "Filter soft deletes"
+  
+  entity:
+    template: |
+      @Entity
+      @Table(name = "app_resource")
+      public class ResourceModel extends PanacheEntityBase {
+          @Id
+          @GeneratedValue(strategy = GenerationType.UUID)
+          public UUID id;
+          
+          @Column(nullable = false)
+          public String name;
+          
+          @CreationTimestamp
+          @Column(name = "created_at", updatable = false)
+          public LocalDateTime createdAt;
+          
+          @UpdateTimestamp
+          @Column(name = "updated_at")
+          public LocalDateTime updatedAt;
+          
+          @Column(name = "deleted_at")
+          public LocalDateTime deletedAt;
+      }
+    rules:
+      - "Extend PanacheEntityBase"
+      - "UUID primary key"
+      - "Audit fields (createdAt, updatedAt, deletedAt)"
+      - "Public fields (Panache convention)"
+  
+  dto:
+    request_template: |
+      public class CreateResourceRequest {
+          @NotBlank(message = "Name is required")
+          private String name;
+          
+          public CreateResourceRequest() {}
+          
+          public String getName() { return name; }
+          public void setName(String name) { this.name = name; }
+      }
+    response_template: |
+      public class ResourceResponse {
+          private UUID id;
+          private String name;
+          
+          public ResourceResponse(UUID id, String name) {
+              this.id = id;
+              this.name = name;
+          }
+          
+          public UUID getId() { return id; }
+          public String getName() { return name; }
+      }
+    rules:
+      - "Private fields always"
+      - "Bean Validation annotations"
+      - "Getters/setters for JSON"
+      - "Request DTOs: default constructor + setters"
+      - "Response DTOs: constructor + getters only"
+
+# Validation and quality checks
+quality_gates:
+  before_commit:
+    - "Code compiles: ./mvnw compile"
+    - "Tests pass: ./mvnw test"
+    - "No field injection (constructor injection only)"
+    - "No public fields in DTOs"
+    - "Business logic in service layer only"
+    - "Soft deletes used (deletedAt)"
+    - "Proper logging (JBoss Logger, no System.out)"
+  
+  sonar_checks:
+    - "java:S6813 - No field injection"
+    - "java:S1104 - No public fields in DTOs"
+    - "No business logic in controllers"
+    - "Constructor injection everywhere"
+
+# Migration guidelines
+migrations:
+  naming: "V{major}.{minor}.{patch}__{PascalCase_Description}.sql"
+  example: "V1.0.25__Add_user_preferences.sql"
+  location: "src/main/resources/db/migration/"
+  
+  allowed_operations:
+    - "ALTER TABLE ADD COLUMN"
+    - "CREATE INDEX CONCURRENTLY"
+    - "UPDATE ... WHERE ..."
+    - "INSERT ... ON CONFLICT DO NOTHING"
+  
+  forbidden_in_production:
+    - "DROP TABLE"
+    - "DROP COLUMN"
+    - "TRUNCATE"
+    - "DROP SCHEMA"
+  
+  rules:
+    - "Idempotent (use IF NOT EXISTS, ON CONFLICT)"
+    - "Non-destructive only"
+    - "Add comments to tables/columns"
+    - "Create indexes with WHERE deleted_at IS NULL"
+
+# Best practices
+best_practices:
+  - "Follow existing patterns in the codebase"
+  - "Search for similar implementations before creating new code"
+  - "Read entity relationships before modifying"
+  - "Check business rules in documentation"
+  - "Make minimal, focused changes"
+  - "Compile and test after changes"
+  - "Use git log and git blame for context"
+  - "Ask questions if business rules are unclear"
+
+# Quick reference URLs
+references:
+  quarkus: "https://quarkus.io/guides/"
+  panache: "https://quarkus.io/guides/hibernate-orm-panache"
+  resteasy: "https://quarkus.io/guides/resteasy-reactive"
+  flyway: "https://quarkus.io/guides/flyway"
+  maven: "https://quarkus.io/guides/maven-tooling"
