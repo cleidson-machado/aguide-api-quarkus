@@ -1,0 +1,30 @@
+---
+description: mobile-rest-api — regras críticas para Cursor Composer (Quarkus)
+alwaysApply: true
+---
+
+# mobile-rest-api (Composer)
+
+Projeto: REST API Quarkus 3.23.3, Java 17+, PostgreSQL, `./mvnw`.
+
+**Documentação completa:** [.github/composer-instructions.md](../../.github/composer-instructions.md) e [AGENTS.md](../../AGENTS.md).
+
+## Bancos (ler antes de Quarkus/Flyway)
+
+- Local dev: `quarkus_dev` + `source .env` + `QUARKUS_PROFILE=dev`.
+- Testes: `quarkus_test` via `src/test/resources/application.properties`.
+- Produção `quarkus_db`: **somente VPS**; nunca `clean-at-start=true` em prod.
+
+## Código
+
+- Constructor injection (Controller/Service/Repository); exceção `@Provider` JAX-RS.
+- DTOs privados + getters/setters; entidades Panache podem ter campos public.
+- Camadas: Controller → Service → Repository; soft delete (`deletedAt`).
+- API: `/api/v1/...`; migrations Flyway não destrutivas; pedir OK antes de nova migration.
+
+## Composer
+
+- Rodar `./mvnw compile` (e testes quando fizer sentido) após mudanças de lógica.
+- Skills Cursor: `.cursor/skills/` (`git-cicd`, `quarkus-java`, `quarkus-db-specialist`); usermessage em `.github/` quando no domínio.
+- Rascunhos/temp: `a_error_log_temp/` apenas.
+- Git: commit/push só se o usuário pedir; stage por arquivo; não commitar `.env`/`security/`.

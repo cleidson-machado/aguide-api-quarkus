@@ -240,7 +240,7 @@ This project has specialized configurations for focused tasks. Agents can be inv
 #### 1. **Quarkus DB Specialist**
 Use for: Database schema design, Flyway migrations, JPA entity modeling, SQL queries, REST API layer design
 
-**Invocation:** Reference `.github/skills/quarkus-db-specialist/SKILL.md`
+**Invocation:** Reference `.cursor/skills/quarkus-db-specialist/SKILL.md` (Cursor) or `.github/skills/quarkus-db-specialist/SKILL.md` (legado)
 
 **Expertise:**
 - PostgreSQL schema evolution
@@ -282,6 +282,12 @@ Use for: Complete end-to-end implementation of messaging features
 @workspace Use the Quarkus DB Specialist to create a new migration for user preferences table
 ```
 
+**For Cursor Composer (skills em `.cursor/skills/`):**
+```
+Siga a skill quarkus-db-specialist para criar a migration de user preferences
+```
+Skills do projeto: `git-cicd`, `quarkus-java`, `quarkus-db-specialist`.
+
 **For Abacus AI CLI:**
 When working on specific domains, AI assistants should:
 1. Read the relevant agent/skill documentation first
@@ -293,6 +299,7 @@ When working on specific domains, AI assistants should:
 
 ## 🔍 Key Documentation Files
 
+- **`.github/composer-instructions.md`** - Comprehensive instructions for Cursor Composer (Agent)
 - **`.github/copilot-instructions.md`** - Comprehensive instructions for GitHub Copilot
 - **`.env.example`** - Environment variable template
 - **`README.md`** - Project setup and usage
