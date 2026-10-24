@@ -211,19 +211,19 @@ Use database_architect to create migration:
 ## 🆘 Troubleshooting
 
 ### AI suggests wrong database
-**Problem:** AI tries to connect to `quarkus_db`  
+**Problem:** AI tries to connect to `quarkus_db`
 **Fix:** Remind: "Use quarkus_dev database, not quarkus_db"
 
 ### AI uses field injection
-**Problem:** AI writes `@Inject private Logger log;`  
+**Problem:** AI writes `@Inject private Logger log;`
 **Fix:** Remind: "Use constructor injection, not field injection"
 
 ### AI puts business logic in controller
-**Problem:** Validation/logic in controller  
+**Problem:** Validation/logic in controller
 **Fix:** Remind: "Move business logic to service layer"
 
 ### AI uses hard delete
-**Problem:** AI writes `repository.delete(entity)`  
+**Problem:** AI writes `repository.delete(entity)`
 **Fix:** Remind: "Use soft delete with deletedAt timestamp"
 
 ## 🎓 Learning Path
@@ -242,6 +242,10 @@ Use database_architect to create migration:
 1. Review agent definitions in `.abacus/agents.yml`
 2. Review skill definitions in `.github/skills/`
 3. Try a complete feature with multiple agents
+
+### LOCAL only Swagger Documentation
+https://localhost:8443/q/swagger-ui/
+https://localhost:8443/q/swagger-ui/
 
 ## 💡 Pro Tips
 
