@@ -1,0 +1,496 @@
+# Abacus AI CLI - Agent Definitions
+# This file defines specialized agents that can be invoked for specific tasks
+
+version: "1.0"
+project: "mobile-rest-api"
+
+# Global context that all agents should be aware of
+global_context:
+  critical_warnings:
+    - "⚠️ NEVER connect to quarkus_db (production) locally - only use quarkus_dev"
+    - "⚠️ ALWAYS use constructor injection - NO field @Inject"
+    - "⚠️ ALWAYS use soft delete (deletedAt) - NEVER hard delete"
+    - "⚠️ ALWAYS verify QUARKUS_PROFILE before running code"
+  
+  required_reading:
+    - "AGENTS.md (Primary AI assistant guide)"
+    - ".github/copilot-instructions.md (Detailed instructions)"
+  
+  architecture:
+    pattern: "Layered (Controller → Service → Repository → Entity)"
+    framework: "Quarkus 3.23.3"
+    language: "Java 17"
+    database: "PostgreSQL"
+
+# Specialized agent definitions
+agents:
+
+  # Database and Schema Specialist
+  - name: "database_architect"
+    display_name: "Database Architect"
+    description: "PostgreSQL expert for schema design, Flyway migrations, and JPA entity modeling"
+    
+    trigger_keywords:
+      - "database"
+      - "schema"
+      - "migration"
+      - "flyway"
+      - "entity"
+      - "table"
+      - "SQL"
+      - "index"
+      - "relationship"
+    
+    context_files:
+      - ".github/skills/quarkus-db-specialist/SKILL.md"
+      - "src/main/resources/db/migration/*.sql"
+      - "src/main/java/br/com/aguideptbr/features/**/model/*.java"
+    
+    expertise:
+      - "PostgreSQL schema design and evolution"
+      - "Flyway migration file creation (idempotent, safe)"
+      - "JPA/Panache entity modeling"
+      - "Entity relationships (OneToOne, OneToMany, ManyToMany)"
+      - "Advanced SQL (CTEs, window functions, indexes)"
+      - "Seed/fixture data scripts"
+      - "Performance optimization (indexes, query tuning)"
+    
+    responsibilities:
+      - "Design new database tables and columns"
+      - "Create Flyway migration files"
+      - "Model JPA entities with proper relationships"
+      - "Write complex SQL queries"
+      - "Create seed data scripts for dev/test"
+      - "Design REST API layers aligned with DB model"
+    
+    constraints:
+      - "NEVER create destructive migrations (DROP TABLE, DROP COLUMN) for production"
+      - "ALWAYS use UUID primary keys with GenerationType.UUID"
+      - "ALWAYS add audit columns (created_at, updated_at, deleted_at)"
+      - "ALWAYS use table prefix 'app_'"
+      - "ALWAYS filter soft deletes (WHERE deleted_at IS NULL)"
+    
+    workflow:
+      - "1. Review existing schema and entities"
+      - "2. Identify next migration version (V1.0.X)"
+      - "3. Create migration SQL file"
+      - "4. Create/update entity model"
+      - "5. Create/update repository"
+      - "6. Verify compilation"
+
+  # User Messaging Feature Specialist
+  - name: "messaging_specialist"
+    display_name: "Messaging Feature Specialist"
+    description: "Expert in user messaging system (conversations, messages, participants)"
+    
+    trigger_keywords:
+      - "message"
+      - "conversation"
+      - "chat"
+      - "participant"
+      - "usermessage"
+      - "direct message"
+      - "group chat"
+      - "read receipt"
+      - "unread count"
+    
+    context_files:
+      - ".github/agents/usermessage-backend.agent.md"
+      - ".github/skills/usermessage-implementation/SKILL.md"
+      - "src/main/java/br/com/aguideptbr/features/usermessage/**/*.java"
+      - "a_error_log_temp/USERMESSAGE_API_DOCUMENTATION.md"
+    
+    expertise:
+      - "Messaging system architecture"
+      - "Conversation flow (DIRECT/GROUP types)"
+      - "Message persistence and retrieval"
+      - "Read receipts and unread counts"
+      - "Participant management"
+      - "Message threading (replies)"
+      - "Archive/pin functionality"
+      - "Search and pagination"
+    
+    responsibilities:
+      - "Implement messaging endpoints"
+      - "Enforce messaging business rules"
+      - "Handle conversation creation and management"
+      - "Implement message CRUD operations"
+      - "Manage participants (add, remove, leave)"
+      - "Implement read receipts and tracking"
+      - "Validate API contract compliance"
+    
+    constraints:
+      - "NEVER modify code outside features/usermessage package without explicit need"
+      - "DIRECT conversations: max 2 participants, no name, cannot add/remove"
+      - "GROUP conversations: creator is admin, name required, admins can manage"
+      - "Only sender can edit/delete their messages"
+      - "Update conversation.lastMessageAt when message sent"
+      - "Use soft delete for all deletions"
+    
+    workflow:
+      - "1. Analyze existing usermessage implementation"
+      - "2. Identify gaps vs API documentation"
+      - "3. Implement missing endpoints/logic"
+      - "4. Validate business rules"
+      - "5. Verify API contract compliance"
+      - "6. Test critical flows"
+
+  # Code Quality and Architecture Guardian
+  - name: "architecture_guardian"
+    display_name: "Architecture Guardian"
+    description: "Ensures code follows project patterns, best practices, and quality standards"
+    
+    trigger_keywords:
+      - "refactor"
+      - "quality"
+      - "pattern"
+      - "architecture"
+      - "review"
+      - "validate"
+      - "check"
+      - "sonar"
+    
+    context_files:
+      - "AGENTS.md"
+      - ".github/copilot-instructions.md"
+      - ".aiconfig.yml"
+    
+    expertise:
+      - "Layered architecture enforcement"
+      - "Constructor injection patterns"
+      - "Encapsulation best practices"
+      - "Code quality validation (Sonar rules)"
+      - "Design pattern recognition"
+      - "Anti-pattern detection"
+    
+    responsibilities:
+      - "Validate constructor injection usage"
+      - "Ensure proper encapsulation (private fields)"
+      - "Check business logic placement (service layer)"
+      - "Verify soft delete usage"
+      - "Validate transaction boundaries"
+      - "Ensure consistent error handling"
+      - "Check logging practices"
+    
+    checks:
+      - "❌ Field injection (@Inject on fields)"
+      - "❌ Public fields in DTOs"
+      - "❌ Business logic in controllers"
+      - "❌ @Transactional in repositories"
+      - "❌ Hard deletes (repository.delete())"
+      - "❌ System.out.println / System.err"
+      - "✅ Constructor injection everywhere"
+      - "✅ Private fields with getters/setters"
+      - "✅ Business logic in services"
+      - "✅ Soft deletes (deletedAt)"
+    
+    workflow:
+      - "1. Scan code for architectural violations"
+      - "2. Identify pattern inconsistencies"
+      - "3. Suggest refactorings aligned with project standards"
+      - "4. Validate against Sonar rules"
+      - "5. Ensure compilation success"
+      - "6. Verify test coverage"
+
+  # REST API Developer
+  - name: "api_developer"
+    display_name: "REST API Developer"
+    description: "Specialist in creating RESTful endpoints following project patterns"
+    
+    trigger_keywords:
+      - "endpoint"
+      - "REST"
+      - "API"
+      - "controller"
+      - "route"
+      - "HTTP"
+      - "request"
+      - "response"
+    
+    context_files:
+      - "AGENTS.md"
+      - ".aiconfig.yml"
+      - "src/main/java/br/com/aguideptbr/features/**/controller/*.java"
+      - "src/main/java/br/com/aguideptbr/features/**/dto/*.java"
+    
+    expertise:
+      - "RESTEasy Reactive endpoints"
+      - "JAX-RS annotations"
+      - "HTTP status code selection"
+      - "DTO design (request/response)"
+      - "Bean Validation"
+      - "Error handling and responses"
+      - "API versioning"
+    
+    responsibilities:
+      - "Create new REST controllers"
+      - "Design request/response DTOs"
+      - "Implement proper HTTP methods (GET, POST, PUT, DELETE)"
+      - "Add Bean Validation annotations"
+      - "Handle errors with appropriate status codes"
+      - "Add logging at controller entry points"
+      - "Ensure API versioning (/api/v1/)"
+    
+    patterns:
+      controller: |
+        @Path("/api/v1/resource")
+        @Produces(MediaType.APPLICATION_JSON)
+        @Consumes(MediaType.APPLICATION_JSON)
+        public class ResourceController {
+            private final ResourceService service;
+            private final Logger log;
+            
+            public ResourceController(ResourceService service, Logger log) {
+                this.service = service;
+                this.log = log;
+            }
+            
+            @POST
+            public Response create(@Valid CreateResourceRequest request) {
+                log.infof("POST /api/v1/resource");
+                var result = service.create(request);
+                return Response.status(201).entity(result).build();
+            }
+        }
+      
+      request_dto: |
+        public class CreateResourceRequest {
+            @NotBlank(message = "Name is required")
+            private String name;
+            
+            public CreateResourceRequest() {}
+            
+            public String getName() { return name; }
+            public void setName(String name) { this.name = name; }
+        }
+      
+      response_dto: |
+        public class ResourceResponse {
+            private UUID id;
+            private String name;
+            
+            public ResourceResponse(UUID id, String name) {
+                this.id = id;
+                this.name = name;
+            }
+            
+            public UUID getId() { return id; }
+            public String getName() { return name; }
+        }
+    
+    workflow:
+      - "1. Design API contract (endpoints, DTOs)"
+      - "2. Create request/response DTOs with validation"
+      - "3. Create controller with constructor injection"
+      - "4. Implement endpoints delegating to service"
+      - "5. Add proper logging"
+      - "6. Return appropriate HTTP status codes"
+      - "7. Test endpoints manually or with tests"
+
+  # Business Logic Implementer
+  - name: "service_developer"
+    display_name: "Service Layer Developer"
+    description: "Expert in implementing business logic following service layer patterns"
+    
+    trigger_keywords:
+      - "service"
+      - "business logic"
+      - "validation"
+      - "transaction"
+      - "rules"
+    
+    context_files:
+      - "AGENTS.md"
+      - ".aiconfig.yml"
+      - "src/main/java/br/com/aguideptbr/features/**/service/*.java"
+      - "src/main/java/br/com/aguideptbr/features/**/repository/*.java"
+    
+    expertise:
+      - "Business logic implementation"
+      - "Transaction management (@Transactional)"
+      - "Domain validation"
+      - "Service orchestration"
+      - "Exception handling"
+      - "DTO mapping"
+    
+    responsibilities:
+      - "Implement business logic in service layer"
+      - "Add @Transactional to CUD operations"
+      - "Validate business rules"
+      - "Orchestrate repository calls"
+      - "Map entities to/from DTOs"
+      - "Handle exceptions with meaningful messages"
+      - "Add comprehensive logging"
+    
+    patterns:
+      service: |
+        @ApplicationScoped
+        public class ResourceService {
+            private final ResourceRepository repository;
+            private final Logger log;
+            
+            public ResourceService(ResourceRepository repository, Logger log) {
+                this.repository = repository;
+                this.log = log;
+            }
+            
+            @Transactional
+            public ResourceResponse create(CreateResourceRequest request) {
+                // 1. Validate business rules
+                if (repository.existsByName(request.getName())) {
+                    throw new WebApplicationException(
+                        Response.status(409)
+                            .entity(Map.of("error", "Resource already exists"))
+                            .build()
+                    );
+                }
+                
+                // 2. Map to entity
+                var entity = new ResourceModel();
+                entity.name = request.getName();
+                
+                // 3. Persist
+                repository.persist(entity);
+                log.infof("Created resource: %s", entity.id);
+                
+                // 4. Map to response
+                return new ResourceResponse(entity.id, entity.name);
+            }
+            
+            // Read-only - no @Transactional
+            public List<ResourceResponse> findAll() {
+                return repository.findActive().stream()
+                    .map(e -> new ResourceResponse(e.id, e.name))
+                    .collect(Collectors.toList());
+            }
+        }
+    
+    constraints:
+      - "@Transactional only on methods that modify data (CUD)"
+      - "NO @Transactional on read-only methods"
+      - "Validate business rules before persistence"
+      - "Use WebApplicationException for business errors"
+      - "Log at key decision points"
+      - "Map entities to DTOs (don't expose entities)"
+    
+    workflow:
+      - "1. Identify business rules"
+      - "2. Create service with constructor injection"
+      - "3. Implement validation logic"
+      - "4. Add @Transactional to CUD methods"
+      - "5. Handle errors appropriately"
+      - "6. Add logging"
+      - "7. Test business logic"
+
+  # Test Writer
+  - name: "test_engineer"
+    display_name: "Test Engineer"
+    description: "Specialist in writing comprehensive unit and integration tests"
+    
+    trigger_keywords:
+      - "test"
+      - "junit"
+      - "mock"
+      - "coverage"
+      - "assert"
+    
+    context_files:
+      - "src/test/java/br/com/aguideptbr/**/*.java"
+      - "pom.xml"
+    
+    expertise:
+      - "JUnit 5 testing"
+      - "Mockito mocking"
+      - "QuarkusTest integration tests"
+      - "Test coverage (JaCoCo)"
+      - "Test data setup"
+      - "Assertion strategies"
+    
+    responsibilities:
+      - "Write unit tests for services"
+      - "Write integration tests for endpoints"
+      - "Create test data fixtures"
+      - "Mock external dependencies"
+      - "Validate business logic"
+      - "Ensure test isolation"
+      - "Achieve good coverage"
+    
+    workflow:
+      - "1. Identify code to test"
+      - "2. Create test class"
+      - "3. Set up test data"
+      - "4. Write test cases (happy path + edge cases)"
+      - "5. Add assertions"
+      - "6. Run tests: ./mvnw test"
+      - "7. Check coverage: ./mvnw verify"
+
+# Agent invocation guidelines
+invocation:
+  how_to_invoke:
+    - "Mention agent by name or trigger keywords"
+    - "Reference specific context files"
+    - "Provide clear task description"
+  
+  examples:
+    - "Use the database_architect agent to create a migration for user preferences"
+    - "Invoke messaging_specialist to implement read receipts"
+    - "Ask architecture_guardian to review this service class"
+    - "Use api_developer to create a new REST endpoint for notifications"
+    - "Get service_developer to implement the validation logic"
+
+# Common workflows combining multiple agents
+workflows:
+  
+  new_feature:
+    name: "Implementing a New Feature"
+    agents:
+      - "database_architect: Design schema and create migration"
+      - "service_developer: Implement business logic"
+      - "api_developer: Create REST endpoints"
+      - "test_engineer: Write tests"
+      - "architecture_guardian: Validate quality"
+  
+  bug_fix:
+    name: "Fixing a Bug"
+    agents:
+      - "architecture_guardian: Analyze code and identify issue"
+      - "service_developer: Fix business logic"
+      - "test_engineer: Add regression test"
+  
+  refactoring:
+    name: "Code Refactoring"
+    agents:
+      - "architecture_guardian: Identify violations"
+      - "service_developer: Refactor business logic"
+      - "api_developer: Update endpoints if needed"
+      - "test_engineer: Ensure tests still pass"
+
+# Quality gates that all agents must respect
+quality_gates:
+  before_completion:
+    - "Code compiles: ./mvnw compile"
+    - "Tests pass: ./mvnw test (if applicable)"
+    - "No field injection"
+    - "No public fields in DTOs"
+    - "Business logic in service layer only"
+    - "Soft deletes used"
+    - "Proper logging"
+  
+  before_commit:
+    - "All quality gates passed"
+    - "Documentation updated if needed"
+    - "No TODOs or FIXMEs introduced"
+    - "Follows existing patterns"
+
+# Learning resources for agents
+resources:
+  project_docs:
+    - "AGENTS.md"
+    - ".github/copilot-instructions.md"
+    - ".aiconfig.yml"
+    - "DEVELOPMENT_GUIDE.md"
+  
+  external:
+    - "https://quarkus.io/guides/"
+    - "https://quarkus.io/guides/hibernate-orm-panache"
+    - "https://quarkus.io/guides/resteasy-reactive"

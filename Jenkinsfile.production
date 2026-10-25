@@ -113,19 +113,24 @@ pipeline {
                     // Configura o Maven tool
                     def mvn = tool 'Default Maven'
 
-                    // Executa a análise do SonarQube COM testes
-                    // IMPORTANTE: Configura URL do banco de testes usando o nome do container PostgreSQL
-                    withSonarQubeEnv() {
-                        sh """
-                            export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_test
-                            export QUARKUS_DATASOURCE_USERNAME=quarkus
-                            export QUARKUS_DATASOURCE_PASSWORD=quarkus123
-                            
-                            cd /opt/apps/aguide-api-quarkus
-                            ${mvn}/bin/mvn verify sonar:sonar \
-                                -Dsonar.projectKey=aguide-api-quarkus \
-                                -Dsonar.projectName='Aguide API Quarkus'
-                        """
+                    // ✅ CONFIGURAÇÃO CRÍTICA: Usa withEnv() para variáveis de ambiente (padrão seguro)
+                    // Configura URL do banco de testes usando o nome do container PostgreSQL
+                    withEnv([
+                        'QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://quarkus_postgres:5432/quarkus_test',
+                        'QUARKUS_DATASOURCE_USERNAME=quarkus',
+                        'QUARKUS_DATASOURCE_PASSWORD=quarkus123'
+                    ]) {
+                        withSonarQubeEnv() {
+                            sh """
+                                cd /opt/apps/aguide-api-quarkus
+                                echo '▶️  Iniciando execução de testes com análise de cobertura...'
+                                echo '🔗 Database URL: \${QUARKUS_DATASOURCE_JDBC_URL}'
+                                ${mvn}/bin/mvn verify sonar:sonar \
+                                    -Dsonar.projectKey=aguide-api-quarkus \
+                                    -Dsonar.projectName='Aguide API Quarkus' \
+                                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                            """
+                        }
                     }
                 }
                 echo '✅ Análise do SonarQube e testes concluídos!'
